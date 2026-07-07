@@ -234,6 +234,7 @@ const DB={
          {id:uid(),title:"매일 성경읽고 기도하기",progress:60,desc:""}],
   prayers:[{id:uid(),title:"가족 건강",content:"",answered:false}],
   qt:[{id:uid(),date:T(),title:"시편 23편",content:"여호와는 나의 목자시니 내게 부족함이 없으리로다."}],
+  sermons:[{id:uid(),date:T(),title:"예시 설교",ref:"요 3:16",speaker:"목사님"}],
   clients:[{name:"최재혁",cycle:"월화금",recontract:"",note:"",sheet:""},
            {name:"임원제",cycle:"수목",recontract:"06.19",note:"수→수",sheet:""}],
   books:[{id:uid(),year:"2026",status:"완료",genre:"자기계발",title:"예시 책 제목",note:"여기에 독서 노트를 적어요. 목록에서 눌러 들어오면 이 내용이 보여요."}],
@@ -244,7 +245,7 @@ const DB={
   notes:[{id:uid(),date:T(),title:"첫 노트",content:"자유롭게 기록하는 공간이에요."}]
 };
 if(!DB.books)DB.books=[];
-if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];
+if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];
 let _saveT;function save(){clearTimeout(_saveT);_saveT=setTimeout(()=>{if(sb&&currentUser)sb.from("app_data").upsert({user_id:currentUser.id,data:DB,updated_at:new Date().toISOString()}).then(null,e=>console.warn("save",e));},700);}
 function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function fmt(d){if(!d)return"";const x=new Date(d+"T00:00:00");const w=["일","월","화","수","목","금","토"];return `${x.getMonth()+1}월 ${x.getDate()}일 (${w[x.getDay()]})`;}
@@ -532,11 +533,12 @@ function rFaith(){
   <div class="sub-tabs" style="align-items:center;flex-wrap:wrap">
     <button data-f="prayer" class="${faithTab==="prayer"?"on":""}">기도제목</button>
     <button data-f="qt" class="${faithTab==="qt"?"on":""}">QT · 말씀</button>
+    <button data-f="sermon" class="${faithTab==="sermon"?"on":""}">설교말씀</button>
     <a class="linkchip" href="https://docs.google.com/spreadsheets/d/1FVIHNJuDUAIhb8Ito_5BJGkOBK0R2T0tN4vat7QXYuo/edit?gid=1013255948#gid=1013255948" target="_blank" rel="noopener">전체 출석현황 ↗</a>
     <a class="linkchip" href="https://docs.google.com/spreadsheets/d/1ds7rZMMqnEPDJUhimsc_9QNtlQFTwN5YSX_QuqzO2ss/edit" target="_blank" rel="noopener">청년부 출석현황 ↗</a></div>
   <div id="fbody"></div>`;
   main.querySelectorAll(".sub-tabs button").forEach(b=>b.onclick=()=>{faithTab=b.dataset.f;qtMode="list";rFaith();});
-  if(faithTab==="prayer")renderPrayer();else renderQT();
+  if(faithTab==="prayer")renderPrayer();else if(faithTab==="qt")renderQT();else renderSermon();
 }
 function renderPrayer(){
   document.getElementById("fbody").innerHTML=`
@@ -600,6 +602,34 @@ window.qtNew=()=>{qtMode="write";rFaith();};
 window.qtOpen=(id)=>{qtMode="detail";qtSel=id;rFaith();};
 window.qtBack=()=>{qtMode="list";rFaith();};
 window.qtDel=(id)=>{if(!confirm("이 기록을 삭제할까요?"))return;DB.qt=DB.qt.filter(x=>x.id!==id);save();qtBack();};
+
+/* ----- 설교말씀 (연도별, 월 구분 없음) ----- */
+let sermonYear=null;
+function renderSermon(){
+  const fb=document.getElementById("fbody");
+  if(sermonYear===null)sermonYear=String(new Date().getFullYear());
+  const years=[...new Set(DB.sermons.map(s=>s.date.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
+  if(!years.includes(String(sermonYear)))sermonYear=years[0];
+  const list=DB.sermons.filter(s=>s.date.slice(0,4)===String(sermonYear)).sort((a,b)=>b.date.localeCompare(a.date));
+  fb.innerHTML=`
+    <div class="card"><h2>설교말씀 추가</h2>
+      <div class="row"><input type="date" id="sd" class="n1" value="${T()}"><input id="stt" placeholder="설교 제목"></div>
+      <div class="row mt"><input id="sref" placeholder="본문 (예: 출 25:31-40)"><input id="ssp" placeholder="인도자 (예: 이원규 목사님)"></div>
+      <button class="addb mt" id="sadd">+ 추가</button></div>
+    <div class="card"><div class="row" style="align-items:center">
+      <select class="n2" onchange="setSermonYear(this.value)" style="flex:0 0 120px">${years.map(y=>`<option value="${y}" ${y===String(sermonYear)?"selected":""}>${y}년</option>`).join("")}</select>
+      <span style="flex:1"></span><span class="meta">총 ${list.length}편</span></div></div>
+    <div class="card"><h2>설교 목록</h2>${list.length?list.map(s=>`
+      <div class="item">
+        <div class="bd"><div class="meta">${fmt(s.date)}</div><div class="t">${esc(s.title)}</div>
+        ${(s.ref||s.speaker)?`<div class="meta" style="margin-top:2px">${s.ref?esc(s.ref):""}${s.ref&&s.speaker?" · ":""}${s.speaker?esc(s.speaker):""}</div>`:""}</div>
+        <button class="del" onclick="sermonDel('${s.id}')">×</button></div>`).join(""):'<div class="empty">이 해에 설교 기록이 없어요.</div>'}</div>`;
+  document.getElementById("sadd").onclick=()=>{const t=val("stt");if(!t)return alert("설교 제목을 입력하세요.");
+    DB.sermons.push({id:uid(),date:val("sd")||T(),title:t,ref:val("sref"),speaker:val("ssp")});save();
+    sermonYear=(val("sd")||T()).slice(0,4);rFaith();};
+}
+window.setSermonYear=(v)=>{sermonYear=v;rFaith();};
+window.sermonDel=(id)=>{if(!confirm("이 기록을 삭제할까요?"))return;DB.sermons=DB.sermons.filter(x=>x.id!==id);save();rFaith();};
 
 /* ===== 6) 클라이언트 (문의시트 링크 연동) ===== */
 function rClients(){
@@ -928,7 +958,7 @@ async function boot(pw){
   const {data,error}=await sb.auth.signInWithPassword({email:USER_EMAIL,password:pw});
   if(error)return false;
   currentUser=data.user;
-  const ARR=["schedules","diary","goals","prayers","qt","clients","costs","notes","books","accounts","places","banks","backups"];
+  const ARR=["schedules","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups"];
   let loaded=false;
   try{const r=await sb.from("app_data").select("data").eq("user_id",currentUser.id).maybeSingle();
     if(r.data&&r.data.data){const d=r.data.data;Object.keys(d).forEach(k=>{DB[k]=d[k];});loaded=true;}}catch(_){}
