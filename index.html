@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Planner · 미리보기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#192338; --side:#12192b; --side-ink:#aebdd8; --side-hover:#22304f;
+    --card:#1e2e4f; --ink:#d9e1f1; --muted:#8ba0c4; --line:#2c3f66;
+    --accent:#8fb3e2; --accent-soft:#223357; --on-accent:#16233f; --good:#6a9a88; --bad:#cf7f7f;
+    --shadow:0 4px 18px rgba(0,0,0,.45); --input:#172642;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+  h1,h2,h3,.brand{font-family:'Gowun Dodum',sans-serif}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:9px;transition:.12s}
+  input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--input);color:var(--ink);width:100%}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  input[type=range]{accent-color:var(--accent);padding:0}
+  input[type=date],input[type=time]{cursor:pointer}
+  input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(0.85);cursor:pointer;opacity:.85;font-size:16px}
+  .hidden{display:none!important}
+
+  .demo-banner{background:#1a2947;color:#8fb3e2;text-align:center;font-size:12.5px;padding:7px}
+
+  .layout{display:flex;min-height:100vh}
+  .topbar{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--side);position:sticky;top:0;z-index:40;border-bottom:1px solid var(--line)}
+  .topbar .hamb{background:transparent;border:none;color:var(--ink);padding:4px;cursor:pointer}
+  .topbar .hamb svg{width:24px;height:24px}
+  .topbar .tb-title{font-family:'Gowun Dodum',sans-serif;font-weight:500;font-size:17px;margin-left:auto}
+  .side-close{display:none}
+  .side-collapse{margin-left:auto;background:transparent;border:none;color:#5b6a8a;padding:4px;cursor:pointer;border-radius:6px}
+  .side-collapse svg{width:18px;height:18px}
+  .side-collapse:hover{color:var(--accent);background:var(--side-hover)}
+  .copyright-fixed{position:fixed;right:14px;bottom:9px;font-size:11px;color:#46567a;z-index:20;pointer-events:none}
+  .lock{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+  .lock-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:36px 28px;width:100%;max-width:320px;text-align:center;box-shadow:var(--shadow)}
+  .lock-logo{color:var(--accent);margin-bottom:12px}
+  .lock-logo svg{width:34px;height:34px}
+  .lock-card h1{font-size:22px;margin-bottom:4px}
+  .lock-card p{color:var(--muted);font-size:13.5px;margin-bottom:18px}
+  .lock-card input{text-align:center;margin-bottom:12px;font-size:16px;letter-spacing:3px}
+  .lock-card button{width:100%;background:var(--accent);color:var(--on-accent);font-weight:700;padding:12px;border-radius:10px;cursor:pointer}
+  .lock-msg{color:var(--bad);font-size:13px;min-height:18px;margin-top:8px}
+  @media(min-width:761px){
+    .layout.collapsed aside{width:58px;flex-basis:58px;padding-left:8px;padding-right:8px}
+    .layout.collapsed .brand{justify-content:center;padding:6px 0 12px}
+    .layout.collapsed .brand>svg,.layout.collapsed .brand>i,.layout.collapsed .brand span{display:none}
+    .layout.collapsed .side-collapse{margin-left:0}
+    .layout.collapsed .nav-sec{display:none}
+    .layout.collapsed .lab{display:none}
+    .layout.collapsed aside nav button{justify-content:center;padding:11px 0;gap:0}
+    .layout.collapsed .side-foot{display:none}
+  }
+  .backdrop{display:none}
+  .backdrop.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
+  aside{width:210px;flex:0 0 210px;background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+  aside nav{flex:1;overflow-y:auto;min-height:0}
+  .side-foot{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+  aside .brand{font-size:20px;color:#fff;padding:6px 10px 16px;display:flex;align-items:center;gap:8px}
+  aside nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;color:var(--side-ink);padding:10px 12px;font-size:14.5px;border-radius:9px;margin-bottom:2px}
+  aside nav button:hover{background:var(--side-hover)}
+  aside nav button.on{background:var(--accent);color:var(--on-accent);font-weight:500}
+  aside .nav-sec{font-size:10.5px;color:#5b6a8a;padding:14px 12px 5px;letter-spacing:.03em}
+  aside .ico{width:20px;text-align:center}
+  aside nav button svg,aside .brand svg{width:18px;height:18px}
+  aside nav button svg{color:var(--side-ink)}
+  aside nav button.on svg{color:var(--on-accent)}
+  aside .brand svg{color:var(--accent)}
+  details.acard{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.22);margin-bottom:14px}
+  details.acard>summary{cursor:pointer;padding:15px 20px;font-size:15px;font-weight:600;color:var(--ink);list-style:none}
+  details.acard>summary::-webkit-details-marker{display:none}
+  details.acard>summary::before{content:"＋ ";color:var(--accent)}
+  details.acard[open]>summary::before{content:"− ";color:var(--accent)}
+  details.acard .acbody{padding:0 20px 18px}
+
+  main{flex:1;padding:26px 34px 70px;max-width:none}
+  .page-h{font-size:23px;font-weight:600;letter-spacing:-.01em;margin-bottom:5px;color:var(--ink)}
+  .page-sub{color:var(--muted);font-size:13.5px;margin-bottom:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.22);padding:18px 20px;margin-bottom:14px}
+  .card h2{font-size:15px;font-weight:600;letter-spacing:-.005em;margin-bottom:14px;color:var(--ink)}
+  .row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:0}
+  .row .n1{flex:0 0 130px}.row .n2{flex:0 0 100px}
+  .mt{margin-top:9px}
+  .addb{background:var(--accent-soft);color:var(--accent);font-weight:700;padding:10px;width:100%}
+  .addb:hover{background:var(--accent);color:var(--on-accent)}
+  .ghostb{background:var(--input);border:1px solid var(--line);color:var(--ink);padding:10px 14px;border-radius:9px}
+  .ghostb:hover{border-color:var(--accent)}
+  .ghostb.danger{color:var(--bad)}
+  .linklike{background:none;border:none;color:var(--accent);font-size:12.5px;cursor:pointer;padding:2px 4px}
+  .empty{color:var(--muted);text-align:center;padding:22px 0;font-size:13.5px}
+  .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent)}
+
+  .item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:none}
+  .chk{width:20px;height:20px;flex:0 0 20px;border:2px solid var(--line);border-radius:6px;background:none;margin-top:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+  .chk.on{background:#3f5578;border-color:#3f5578}
+  .item .bd{flex:1;min-width:0}.item .bd .t{font-weight:500}
+  .item.done .bd .t{text-decoration:line-through;color:var(--muted)}
+  .item.link:hover{background:#22304f;border-radius:8px}
+  .meta{font-size:12px;color:var(--muted)}
+  .del{background:none;color:var(--muted);font-size:17px;line-height:1;padding:0 3px}
+  .del:hover{color:var(--bad)}
+  .sub-tabs{display:flex;gap:6px;margin-bottom:14px}
+  .sub-tabs button{background:var(--input);border:1px solid var(--line);color:var(--muted);padding:7px 14px;font-size:13px;border-radius:20px}
+  .sub-tabs button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+  .linkchip{display:inline-block;background:var(--input);border:1px solid var(--line);color:var(--accent);padding:8px 14px;border-radius:20px;font-size:13px;text-decoration:none}
+  .linkchip:hover{border-color:var(--accent)}
+
+  table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.tbl th{text-align:left;color:var(--muted);font-weight:500;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+  table.tbl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .tblwrap{overflow-x:auto}
+  .stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+  .stat .s{background:var(--input);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .stat .s .lab{font-size:12px;color:var(--muted)}
+  .stat .s .val{font-size:22px;font-weight:700;margin-top:3px;color:var(--accent)}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .cal-head button{background:#22314f;border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;color:var(--ink)}
+  .cal-head button:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .cal-grid .dow{background:#17233d;text-align:center;font-size:12px;color:var(--muted);padding:7px 0}
+  .cal-grid .cell{background:var(--card);min-height:82px;padding:5px 6px;font-size:12px}
+  .cal-grid .cell .dn{color:var(--muted);display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:12px}
+  .cal-grid .cell.today .dn{background:var(--accent);color:var(--on-accent)}
+  .cal-grid .cell.out{background:#15203a}
+  .cal-grid .ev{background:#2b4068;color:#dbe6f7;border-radius:5px;padding:2px 5px;margin-top:3px;font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sort-toggle{display:flex;gap:4px}
+  .sort-toggle button{background:var(--input);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 11px;border-radius:7px}
+  .sort-toggle button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+
+  .week-scroll{overflow-x:auto;margin:0 -2px}
+  .week-grid{display:grid;gap:7px}
+  .wcol{background:#172642;border:1px solid var(--line);border-radius:10px;padding:7px;min-height:104px;cursor:pointer}
+  .wcol:hover{border-color:var(--accent)}
+  .wcol.today{border-color:var(--accent);background:var(--card)}
+  .wcol.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .wcol-h{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-align:center}
+  .wcol.today .wcol-h{color:var(--accent)}
+  .wtask{font-size:12px;line-height:1.35;display:flex;align-items:flex-start;gap:5px;padding:4px 6px;border-radius:6px;margin-bottom:3px;background:var(--card);border:1px solid var(--line);word-break:keep-all}
+  .wtask.done{opacity:.5;text-decoration:line-through}
+  .pdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:4px}
+  .wempty{color:#566688;font-size:11px;text-align:center;padding:4px 0}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){
+    .two-col{grid-template-columns:1fr}
+    .topbar{display:flex}
+    aside{position:fixed;left:0;top:0;width:90%;max-width:360px;height:100vh;transform:translateX(-100%);transition:transform .22s ease;z-index:60;padding:14px 16px}
+    aside.open{transform:translateX(0)}
+    .side-close{display:block;position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--side-ink);padding:6px;cursor:pointer}
+    .side-close svg{width:26px;height:26px}
+    .side-collapse{display:none}
+    aside nav{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start}
+    aside nav .nav-sec{grid-column:1/-1;padding-top:8px}
+    aside nav>button:first-of-type{grid-column:1/-1}
+    aside nav button{padding:12px 12px;font-size:15.5px}
+    main{padding:14px 14px 60px;max-width:100%}
+    .page-h{font-size:20px}
+    .card{padding:15px 16px}
+    .row .n1,.row .n2{flex:1 1 46%}
+    .sub-tabs{flex-wrap:wrap}
+    .stat{grid-template-columns:1fr 1fr}
+    .cal-grid .cell{min-height:60px;font-size:11px}
+  }
+</style>
+</head>
+<body>
+<div id="lock" class="lock">
+  <div class="lock-card">
+    <div class="lock-logo"><i data-lucide="lock"></i></div>
+    <h1>업무관리</h1>
+    <p>비밀번호를 입력하세요</p>
+    <input type="password" id="lockpw" inputmode="numeric" placeholder="비밀번호" />
+    <button id="lockbtn">들어가기</button>
+    <div id="lockmsg" class="lock-msg"></div>
+  </div>
+</div>
+<header class="topbar"><button class="hamb" onclick="toggleMenu()" aria-label="메뉴"><i data-lucide="menu"></i></button><span class="tb-title">업무관리</span></header>
+<div class="backdrop" id="backdrop" onclick="toggleMenu()"></div>
+<div class="layout">
+  <aside>
+    <button class="side-close" onclick="toggleMenu()" aria-label="닫기"><i data-lucide="x"></i></button>
+    <div class="brand"><i data-lucide="sprout"></i> <span>업무관리</span><button class="side-collapse" onclick="toggleMenu()" aria-label="메뉴 접기/펼치기"><i data-lucide="panel-left"></i></button></div>
+    <nav id="nav">
+      <button data-p="dashboard" class="on"><i class="ico" data-lucide="layout-dashboard"></i><span class="lab">대시보드</span></button>
+      <div class="nav-sec">개인</div>
+      <button data-p="schedule"><i class="ico" data-lucide="calendar-check"></i><span class="lab">일정</span></button>
+      <button data-p="calendar"><i class="ico" data-lucide="calendar"></i><span class="lab">캘린더</span></button>
+      <button data-p="diary"><i class="ico" data-lucide="book"></i><span class="lab">일기</span></button>
+      <button data-p="goals"><i class="ico" data-lucide="target"></i><span class="lab">목표</span></button>
+      <button data-p="faith"><i class="ico" data-lucide="heart"></i><span class="lab">신앙</span></button>
+      <div class="nav-sec">업무</div>
+      <button data-p="clients"><i class="ico" data-lucide="users"></i><span class="lab">클라이언트</span></button>
+      <button data-p="costs"><i class="ico" data-lucide="wallet"></i><span class="lab">비용관리</span></button>
+      <div class="nav-sec">기록 · 관리</div>
+      <button data-p="retro"><i class="ico" data-lucide="history"></i><span class="lab">회고</span></button>
+      <button data-p="books"><i class="ico" data-lucide="book-open"></i><span class="lab">독서노트</span></button>
+      <button data-p="notes"><i class="ico" data-lucide="sticky-note"></i><span class="lab">노트</span></button>
+      <button data-p="accounts"><i class="ico" data-lucide="lock"></i><span class="lab">계정관리</span></button>
+      <button data-p="backup"><i class="ico" data-lucide="database-backup"></i><span class="lab">백업</span></button>
+    </nav>
+    <div class="side-foot">
+      <div style="padding:0 6px"><button class="del" id="logout" style="font-size:12px;color:#6a7a9a">로그아웃</button></div>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div class="copyright-fixed">© 2026 배재혁</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===== Supabase 설정: 아래 3줄을 본인 값으로 바꾸세요 ===== */
+const SUPABASE_URL="https://wsjpncrrpioyipitxxlk.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzanBuY3JycGlveWlwaXR4eGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDAwNjcsImV4cCI6MjA5ODg3NjA2N30.0yNyCkAcf76FIt8MRmnBSy5onAgZdqFtvqJRW2zXBpo";
+const USER_EMAIL="heuk1218@gmail.com";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let currentUser=null;
+function T(){return new Date().toLocaleDateString("sv-SE");}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+const DB={
+  schedules:[{date:T(),time:"09:00",title:"기도",priority:2,done:true,note:""},
+             {date:T(),time:"10:00",title:"신승 칼럼",priority:1,done:true,note:""},
+             {date:T(),time:"14:00",title:"최재혁 세무사님 디자인 변경",priority:1,done:false,note:"확인 필요"}],
+  dayinfo:(()=>{const o={};o[T()]={main:"11시 스터디, 14시 전문직팀 회의"};return o;})(),
+  monthmemo:{},
+  diary:[{id:uid(),date:T(),title:"오늘의 기록",content:"미리보기 일기예요.\n게시판처럼 눌러서 들어오면 내용이 보여요."}],
+  goals:[{id:uid(),title:"팀장 역량 갖추기",progress:30,desc:""},
+         {id:uid(),title:"매일 성경읽고 기도하기",progress:60,desc:""}],
+  prayers:[{id:uid(),title:"가족 건강",content:"",answered:false}],
+  qt:[{id:uid(),date:T(),title:"시편 23편",content:"여호와는 나의 목자시니 내게 부족함이 없으리로다."}],
+  clients:[{name:"최재혁",cycle:"월화금",recontract:"",note:"",sheet:""},
+           {name:"임원제",cycle:"수목",recontract:"06.19",note:"수→수",sheet:""}],
+  books:[{id:uid(),year:"2026",status:"완료",genre:"자기계발",title:"예시 책 제목",note:"여기에 독서 노트를 적어요. 목록에서 눌러 들어오면 이 내용이 보여요."}],
+  accounts:[{id:uid(),title:"예시 사이트",accId:"myid",pw:"****",etc:""}],
+  places:[{id:uid(),title:"집",pw:"****",etc:""}],
+  banks:[{id:uid(),title:"토스",use:"주거래",account:"1000-0000-0000",pw:"",sendOnce:"",sendDay:"",withdrawOnce:"",withdrawDay:"",payday:"",biz:false}],
+  costs:[{id:uid(),item:"월세 및 관리비",amount:400000,day:"말일",comment:""},{id:uid(),item:"핸드폰",amount:39000,day:"20일",comment:""}],
+  notes:[{id:uid(),date:T(),title:"첫 노트",content:"자유롭게 기록하는 공간이에요."}]
+};
+if(!DB.books)DB.books=[];
+if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];
+let _saveT;function save(){clearTimeout(_saveT);_saveT=setTimeout(()=>{if(sb&&currentUser)sb.from("app_data").upsert({user_id:currentUser.id,data:DB,updated_at:new Date().toISOString()}).then(null,e=>console.warn("save",e));},700);}
+function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function fmt(d){if(!d)return"";const x=new Date(d+"T00:00:00");const w=["일","월","화","수","목","금","토"];return `${x.getMonth()+1}월 ${x.getDate()}일 (${w[x.getDay()]})`;}
+function val(id){return document.getElementById(id).value.trim();}
+const main=document.getElementById("main");
+const DOW=["일","월","화","수","목","금","토"];
+
+/* ===== 네비게이션 ===== */
+let page="dashboard";
+window.toggleMenu=()=>{
+  if(window.innerWidth<=760){document.querySelector("aside").classList.toggle("open");document.getElementById("backdrop").classList.toggle("show");}
+  else{document.querySelector(".layout").classList.toggle("collapsed");}
+};
+function closeMenu(){document.querySelector("aside").classList.remove("open");document.getElementById("backdrop").classList.remove("show");}
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
+  page=b.dataset.p;
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x===b));
+  render();
+  closeMenu();
+});
+document.getElementById("logout").onclick=async()=>{if(confirm("로그아웃할까요?")){await sb.auth.signOut();location.reload();}};
+function render(){({dashboard:rDashboard,schedule:rSchedule,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();}
+window.goPage=(p)=>{page=p;document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x.dataset.p===p));render();};
+
+/* ===== 0) 대시보드 ===== */
+function rDashboard(){
+  const today=T();
+  const todayTasks=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===today).sort((a,b)=>(a.s.done-b.s.done)||((a.s.time||"99:99").localeCompare(b.s.time||"99:99")));
+  const ws=weekStart(today);const wdays=[...Array(7)].map((_,i)=>{const x=new Date(ws);x.setDate(ws.getDate()+i);return x.toLocaleDateString("sv-SE");});
+  const wkTasks=DB.schedules.filter(s=>wdays.includes(s.date));
+  const wkRate=wkTasks.length?Math.round(wkTasks.filter(s=>s.done).length/wkTasks.length*100):0;
+  const tdRate=todayTasks.length?Math.round(todayTasks.filter(o=>o.s.done).length/todayTasks.length*100):0;
+  const curM=new Date().getMonth()+1;
+  const dueThis=DB.clients.filter(c=>recontractMonth(c.recontract)===curM);
+  const ym=today.slice(0,7);
+  const monthMains=Object.entries(DB.dayinfo).filter(([d,v])=>d.slice(0,7)===ym&&v.main&&v.main.trim()).sort((a,b)=>a[0].localeCompare(b[0]));
+  const wname=DOW[new Date(today+"T00:00:00").getDay()];
+  const tdDone=todayTasks.filter(o=>o.s.done).length;
+  const nextM=curM===12?1:curM+1;
+  const dueNext=DB.clients.filter(c=>recontractMonth(c.recontract)===nextM);
+  const C=2*Math.PI*50;
+  const bars=wdays.map(d=>{const items=DB.schedules.filter(s=>s.date===d);const done=items.filter(s=>s.done).length;const r=items.length?Math.round(done/items.length*100):0;const isT=d===today;const dt=new Date(d+"T00:00:00");
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end">
+      <div class="meta" style="font-size:10px;color:${isT?"var(--accent)":"var(--muted)"}">${r}%</div>
+      <div style="width:60%;height:${Math.max(r,3)}px;background:${isT?"var(--accent)":"#2c3f66"};border-radius:5px 5px 0 0"></div>
+      <div class="meta" style="font-size:10px;color:${isT?"var(--accent)":"var(--muted)"}">${DOW[dt.getDay()]}</div></div>`;}).join("");
+  main.innerHTML=`<h1 class="page-h">대시보드</h1><p class="page-sub">${new Date().getMonth()+1}월 ${new Date().getDate()}일 (${wname})</p>
+  <div style="border-left:3px solid var(--accent);padding:9px 0 9px 16px;margin-bottom:20px;color:var(--ink);font-size:14px;line-height:1.8;font-family:'Gowun Dodum',sans-serif">
+    휴식은 아기들을 위한 것이고 여유는 은퇴자를 위한 것이다<br>부족한 건 시간이 아니라 강력한 비전이다<br><span style="color:var(--accent);font-size:13px">— 아놀드 슈워제네거</span></div>
+  <div class="two-col">
+    <div class="card" style="display:flex;align-items:center;gap:18px">
+      <svg width="112" height="112" viewBox="0 0 120 120" style="flex:0 0 112px">
+        <circle cx="60" cy="60" r="50" fill="none" stroke="var(--line)" stroke-width="11"/>
+        <circle cx="60" cy="60" r="50" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-tdRate/100)}" transform="rotate(-90 60 60)"/>
+        <text x="60" y="60" text-anchor="middle" dominant-baseline="central" fill="var(--ink)" font-size="26" font-weight="700">${tdRate}%</text></svg>
+      <div><div style="font-size:15px;font-weight:600">오늘 달성률</div>
+        <div class="meta" style="margin-top:5px">완료 ${tdDone} · 남은 할 일 <b style="color:var(--accent)">${todayTasks.length-tdDone}</b></div>
+        <button class="linklike" style="padding:0;margin-top:7px" onclick="goPage('schedule')">일정으로 가기 ›</button></div></div>
+    <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">이번 주 달성률</h2><span class="meta">평균 ${wkRate}%</span></div>
+      <div style="display:flex;align-items:flex-end;gap:8px;margin-top:14px;min-height:112px">${bars}</div></div></div>
+  <div class="two-col">
+    <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">오늘 일정 <span class="meta" style="font-weight:400">· 시간순</span></h2><button class="linklike" onclick="goPage('schedule')">더보기 ›</button></div>
+      <div class="mt">${todayTasks.length?todayTasks.map(({s,i})=>`<div class="item ${s.done?"done":""}"><button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button><div class="bd"><div class="t">${esc(s.title)}</div><div class="meta">${s.time?`<b>${s.time}</b> · `:""}<span style="color:${PRI[s.priority||4].c}">${PRI[s.priority||4].t}</span></div></div></div>`).join(""):'<div class="empty">오늘 일정이 없어요.</div>'}</div></div>
+    <div>
+      <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">이번 주</h2><button class="linklike" onclick="goPage('schedule')">›</button></div>
+        <div class="mt">${wdays.map(d=>{const dt=new Date(d+"T00:00:00");const items=DB.schedules.filter(s=>s.date===d);const done=items.filter(s=>s.done).length;const isT=d===today;
+          return `<div class="item" style="padding:8px 0"><div class="bd"><div class="t" style="font-size:13.5px;${isT?"color:var(--accent)":""}">${dt.getDate()}일 ${DOW[dt.getDay()]}</div></div><span class="meta" style="align-self:center">${items.length?`${done}/${items.length}`:"—"}</span></div>`;}).join("")}</div></div>
+      <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">${curM}월 주요 일정</h2><button class="linklike" onclick="goPage('calendar')">›</button></div>
+        <div class="mt">${monthMains.length?monthMains.slice(0,5).map(([d,v])=>`<div class="item" style="padding:8px 0"><div class="bd"><div class="meta" style="color:var(--accent)">${fmt(d)}</div><div style="font-size:13.5px">${esc(v.main)}</div></div></div>`).join(""):'<div class="empty">주요 일정이 없어요.</div>'}</div></div></div></div>
+  <div class="stat">
+    <div class="s" style="cursor:pointer" onclick="goPage('clients')"><div class="lab">클라이언트</div><div class="val" style="font-size:18px">${DB.clients.length}명</div></div>
+    <div class="s" style="cursor:pointer" onclick="goPage('clients')"><div class="lab">${curM}월 재계약</div><div class="val" style="font-size:18px">${dueThis.length}명</div></div>
+    <div class="s" style="cursor:pointer" onclick="goPage('clients')"><div class="lab">${nextM}월 재계약</div><div class="val" style="font-size:18px">${dueNext.length}명</div></div>
+    <div class="s" style="cursor:pointer" onclick="goPage('goals')"><div class="lab">목표 평균 진행률</div><div class="val" style="font-size:18px">${DB.goals.length?Math.round(DB.goals.reduce((a,g)=>a+(g.progress||0),0)/DB.goals.length):0}%</div></div></div>`;
+}
+
+/* ===== 1) 일정 (주간 보기 · 날짜 선택 · 반응형) ===== */
+const PRI={1:{t:"1순위",c:"#c47b71"},2:{t:"2순위",c:"#c99a66"},3:{t:"3순위",c:"#6b9fc0"},4:{t:"4순위",c:"#8090ad"}};
+let selDay=null;
+function isMobile(){return window.innerWidth<=760;}
+function weekStart(ds){const d=new Date(ds+"T00:00:00");const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return d;}
+function fmtShort(ds){const x=new Date(ds+"T00:00:00");return `${x.getMonth()+1}.${x.getDate()}`;}
+function rSchedule(){
+  if(!selDay)selDay=T();
+  const mob=isMobile();
+  let days;
+  if(mob){days=[selDay];}
+  else{const ws=weekStart(selDay);days=[...Array(7)].map((_,i)=>{const x=new Date(ws);x.setDate(ws.getDate()+i);return x.toLocaleDateString("sv-SE");});}
+  const label = mob ? fmt(days[0]) : `${fmtShort(days[0])} ~ ${fmtShort(days[6])}`;
+  const step = mob ? 1 : 7;
+  const dsel=new Date(selDay+"T00:00:00");
+  const dayLabel = selDay===T() ? "오늘" : `${dsel.getMonth()+1}월 ${dsel.getDate()}일`;
+  const di=DB.dayinfo[selDay]||{};
+  const rate=(list)=>list.length?Math.round(list.filter(s=>s.done).length/list.length*100):0;
+  const ws2=weekStart(selDay);const weekDays=[...Array(7)].map((_,i)=>{const x=new Date(ws2);x.setDate(ws2.getDate()+i);return x.toLocaleDateString("sv-SE");});
+  const weekRate=rate(DB.schedules.filter(s=>weekDays.includes(s.date)));
+  const dayRate=rate(DB.schedules.filter(s=>s.date===selDay));
+  main.innerHTML=`<h1 class="page-h">일정</h1><p class="page-sub">${mob?"하루씩 넘겨보며 정리해요.":"이번 주 업무를 한눈에 보고 정리해요."}</p>
+  <div class="card"><div class="cal-head">
+      <button onclick="weekMove(${-step})">${mob?"‹ 이전날":"‹ 이전주"}</button>
+      <h2 style="margin:0">${label}</h2>
+      <button onclick="weekMove(${step})">${mob?"다음날 ›":"다음주 ›"}</button></div>
+    <div class="week-scroll"><div class="week-grid" style="grid-template-columns:repeat(${days.length},minmax(${mob?"100%":"130px"},1fr))">${days.map(weekCol).join("")}</div></div>
+    <div style="display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:var(--muted)"><span>이번주 달성률 <b style="color:var(--accent)">${weekRate}%</b></span><span>${dayLabel} 달성률 <b style="color:var(--accent)">${dayRate}%</b></span></div></div>
+  <div class="card"><h2>${dayLabel} 주요업무</h2>
+    <textarea id="daymain" rows="2" placeholder="이 날의 핵심 일정·업무를 적어두세요 (예: 11시 스터디, 14시 회의)" onchange="setMain(this.value)">${esc((DB.dayinfo[selDay]||{}).main||"")}</textarea></div>
+  <details class="acard"><summary>업무 추가</summary><div class="acbody">
+    <div class="row"><input type="date" id="sd" class="n1" value="${selDay}"><input type="time" id="stime" class="n2"><input id="stt" placeholder="업무 내용"></div>
+    <div class="row mt"><select id="spri" class="n1">
+        <option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4" selected>4순위</option></select>
+      <input id="snote" placeholder="비고 (선택)">
+      <button class="addb" id="sadd" style="flex:0 0 84px">+ 추가</button></div></div></details>
+  <div class="card">
+    <div style="display:flex;align-items:center;margin-bottom:12px"><h2 style="flex:1;margin:0">${dayLabel} 업무</h2>
+      <div class="sort-toggle"><button class="${todaySort==="pri"?"on":""}" onclick="setTodaySort('pri')">우선순위순</button><button class="${todaySort==="time"?"on":""}" onclick="setTodaySort('time')">시간순</button></div></div>
+    <div id="tlist"></div></div>
+  <div class="card"><h2>${dayLabel} 메모</h2><textarea rows="3" placeholder="메모를 적어두세요" onchange="setDayField('memo',this.value)">${esc(di.memo||"")}</textarea></div>
+  <div class="card"><h2>${dayLabel} 회고</h2><textarea rows="3" placeholder="오늘 하루를 돌아보며 회고를 적어보세요" onchange="setDayField('retro',this.value)">${esc(di.retro||"")}</textarea></div>`;
+  document.getElementById("sadd").onclick=()=>{
+    const t=val("stt");if(!t)return alert("업무 내용을 입력하세요.");
+    DB.schedules.push({date:val("sd")||selDay,time:val("stime"),title:t,priority:parseInt(val("spri")),done:false,note:val("snote")});
+    save();render();
+  };
+  drawDay();
+}
+window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");rSchedule();};
+window.selectDay=(d)=>{selDay=d;rSchedule();};
+window.setMain=(v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay].main=v;save();};
+window.setDayField=(f,v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay][f]=v;save();};
+function weekCol(d){
+  const isT=d===T();const isSel=d===selDay;const dt=new Date(d+"T00:00:00");
+  const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===d).sort(byPri);
+  const r=items.length?Math.round(items.filter(o=>o.s.done).length/items.length*100):null;
+  return `<div class="wcol ${isT?"today":""} ${isSel?"sel":""}" onclick="selectDay('${d}')">
+    <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${r!==null?` · <span style="color:var(--accent)">${r}%</span>`:""}</div>
+    ${items.length?items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${PRI[s.priority||4].c}"></span>${s.time?`<b style="font-weight:500;color:var(--muted)">${s.time}</b> `:""}${esc(s.title)}</div>`).join(""):'<div class="wempty">—</div>'}</div>`;
+}
+const byPri=(a,b)=>(a.s.done-b.s.done)||((a.s.priority||4)-(b.s.priority||4));
+const byTime=(a,b)=>(a.s.done-b.s.done)||((a.s.time||"99:99").localeCompare(b.s.time||"99:99"));
+function taskRows(items){
+  return items.length?items.map(({s,i})=>{const p=PRI[s.priority||4];
+    return `<div class="item ${s.done?"done":""}">
+      <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+      <div class="bd"><div class="t">${esc(s.title)}</div>
+        <div class="meta">${s.time?`<b>${s.time}</b> · `:""}<span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
+      <button class="del" onclick="rm('schedules',${i})">×</button></div>`;}).join(""):'<div class="empty">이 날 업무가 없어요.</div>';
+}
+let todaySort="pri";
+function drawDay(){
+  const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===selDay);
+  document.getElementById("tlist").innerHTML=taskRows([...items].sort(todaySort==="time"?byTime:byPri));
+}
+window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
+
+/* ===== 2) 캘린더 ===== */
+let calY,calM;
+function rCalendar(){
+  const now=new Date();if(calY==null){calY=now.getFullYear();calM=now.getMonth();}
+  const ym=`${calY}-${String(calM+1).padStart(2,"0")}`;
+  const mob=isMobile();
+  main.innerHTML=`<h1 class="page-h">캘린더</h1><p class="page-sub">이 달의 일정을 한눈에.</p>
+  <div class="card"><div class="cal-head">
+    <button onclick="calMove(-1)">‹ 이전</button>
+    <h2 style="margin:0">${calY}년 ${calM+1}월</h2>
+    <button onclick="calMove(1)">다음 ›</button></div>
+    ${mob?`<div id="cg"></div>`:`<div class="cal-grid" id="cg"></div>`}</div>
+  <div class="card"><h2>${calM+1}월 주요 메모</h2>
+    <textarea id="mmemo" rows="4" placeholder="이번 달 중요한 것을 메모해두세요" onchange="setMonthMemo(this.value)">${esc(DB.monthmemo[ym]||"")}</textarea></div>`;
+  mob?drawCalList():drawCal();
+}
+function drawCalList(){
+  const g=document.getElementById("cg");const days=new Date(calY,calM+1,0).getDate();const rows=[];
+  for(let d=1;d<=days;d++){const ds=`${calY}-${String(calM+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;const m=(DB.dayinfo[ds]||{}).main;if(m&&m.trim())rows.push({ds,d,m});}
+  g.innerHTML=rows.length?rows.map(r=>{const dt=new Date(r.ds+"T00:00:00");const isT=r.ds===T();return `<div class="item"><div class="bd"><div class="meta" style="color:${isT?"var(--accent)":"var(--muted)"}">${r.d}일 (${DOW[dt.getDay()]})</div><div style="margin-top:2px">${esc(r.m)}</div></div></div>`;}).join(""):'<div class="empty">이 달 주요 일정이 없어요.<br>일정 화면에서 주요업무를 적으면 여기 표시돼요.</div>';
+}
+window.calMove=(d)=>{calM+=d;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}rCalendar();};
+window.setMonthMemo=(v)=>{const ym=`${calY}-${String(calM+1).padStart(2,"0")}`;DB.monthmemo[ym]=v;save();};
+function drawCal(){
+  const g=document.getElementById("cg");
+  let html=DOW.map(d=>`<div class="dow">${d}</div>`).join("");
+  const first=new Date(calY,calM,1).getDay();const days=new Date(calY,calM+1,0).getDate();
+  const prev=new Date(calY,calM,0).getDate();
+  for(let i=0;i<first;i++){html+=`<div class="cell out"><div class="dn">${prev-first+i+1}</div></div>`;}
+  for(let d=1;d<=days;d++){
+    const ds=`${calY}-${String(calM+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const isT=ds===T();
+    const mtxt=(DB.dayinfo[ds]||{}).main;
+    html+=`<div class="cell ${isT?"today":""}"><div class="dn">${d}</div>${mtxt?`<div class="ev" style="white-space:normal;border-left:3px solid var(--accent)">${esc(mtxt)}</div>`:""}</div>`;
+  }
+  g.innerHTML=html;
+}
+
+/* ===== 3) 일기 (게시판식 · 연/월 필터) ===== */
+let diaryMode="list", diarySel=null, diaryYear=null, diaryMonth="all";
+function rDiary(){
+  if(diaryYear===null)diaryYear=String(new Date().getFullYear());
+  if(diaryMode==="write")return diaryWrite();
+  if(diaryMode==="detail")return diaryDetail();
+  const years=[...new Set(DB.diary.map(d=>d.date.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
+  const list=DB.diary.filter(d=>d.date.slice(0,4)===String(diaryYear)&&(diaryMonth==="all"||d.date.slice(5,7)===diaryMonth))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  main.innerHTML=`<h1 class="page-h">일기</h1><p class="page-sub">날짜별로 기록을 남겨요.</p>
+  <div class="card"><div class="row" style="align-items:center">
+      <select class="n2" onchange="setDiaryYear(this.value)" style="flex:0 0 110px">${years.map(y=>`<option value="${y}" ${y===String(diaryYear)?"selected":""}>${y}년</option>`).join("")}</select>
+      <select class="n2" onchange="setDiaryMonth(this.value)" style="flex:0 0 110px"><option value="all" ${diaryMonth==="all"?"selected":""}>전체 월</option>${[...Array(12)].map((_,i)=>{const m=String(i+1).padStart(2,"0");return `<option value="${m}" ${diaryMonth===m?"selected":""}>${i+1}월</option>`;}).join("")}</select>
+      <span style="flex:1"></span>
+      <button class="addb" style="flex:0 0 130px" onclick="diaryNew()">✏️ 일기 쓰기</button></div></div>
+  <div class="card"><h2>지난 일기</h2>${list.length?list.map(d=>`
+    <div class="item link" style="cursor:pointer" onclick="diaryOpen('${d.id}')">
+      <div class="bd"><div class="meta">${fmt(d.date)}</div><div class="t">${esc(d.title)}</div></div>
+      <span class="meta" style="align-self:center">›</span></div>`).join(""):'<div class="empty">이 기간에 쓴 일기가 없어요.</div>'}</div>`;
+}
+window.setDiaryYear=(v)=>{diaryYear=v;rDiary();};
+window.setDiaryMonth=(v)=>{diaryMonth=v;rDiary();};
+window.diaryNew=()=>{diaryMode="write";rDiary();};
+window.diaryOpen=(id)=>{diaryMode="detail";diarySel=id;rDiary();};
+window.diaryBack=()=>{diaryMode="list";rDiary();};
+function diaryWrite(){
+  main.innerHTML=`<h1 class="page-h">일기 쓰기</h1><p class="page-sub">오늘 하루를 기록해요.</p>
+  <div class="card">
+    <div class="row"><input type="date" id="dd" class="n1" value="${T()}"><input id="dt" placeholder="제목"></div>
+    <textarea id="dc" class="mt" rows="9" placeholder="오늘 하루는 어땠나요?"></textarea>
+    <div class="row mt"><button class="addb" id="dsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="diaryBack()">취소</button></div></div>`;
+  document.getElementById("dsave").onclick=()=>{
+    const c=val("dc");if(!c)return alert("내용을 입력하세요.");
+    DB.diary.push({id:uid(),date:val("dd")||T(),title:val("dt")||"무제",content:c});save();diaryBack();
+  };
+}
+function diaryDetail(){
+  const d=DB.diary.find(x=>x.id===diarySel);if(!d){diaryBack();return;}
+  main.innerHTML=`<h1 class="page-h">일기</h1>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <button class="ghostb" onclick="diaryBack()">‹ 목록</button>
+      <button class="ghostb danger" onclick="diaryDel('${d.id}')">삭제</button></div>
+    <div class="meta">${fmt(d.date)}</div>
+    <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
+    <div style="white-space:pre-wrap;line-height:1.8">${esc(d.content)}</div></div>`;
+}
+window.diaryDel=(id)=>{if(!confirm("이 일기를 삭제할까요?"))return;DB.diary=DB.diary.filter(x=>x.id!==id);save();diaryBack();};
+
+/* ===== 4) 목표 (카테고리 없음 · 진행바 1줄 · 설명) ===== */
+let goalOpen={};
+let goalYear=null;
+function rGoals(){
+  if(goalYear===null)goalYear=String(new Date().getFullYear());
+  const cy=String(new Date().getFullYear());
+  const years=[...new Set(DB.goals.map(g=>String(g.year||cy)).concat(cy,String(goalYear)))].sort().reverse();
+  main.innerHTML=`<h1 class="page-h">목표</h1><p class="page-sub">연도별로 목표와 진행률을 관리해요.</p>
+  <div class="sub-tabs" style="flex-wrap:wrap">${years.map(y=>`<button class="${y===String(goalYear)?"on":""}" onclick="setGoalYear('${y}')">${y}년</button>`).join("")}<button onclick="addGoalYear()" style="border-style:dashed;color:var(--muted)">＋ 연도</button></div>
+  <details class="acard"><summary>목표 추가</summary><div class="acbody">
+    <div class="row"><input id="gt" placeholder="이루고 싶은 목표"><button class="addb" id="gadd" style="flex:0 0 84px">+ 추가</button></div></div></details>
+  <div class="card"><h2>${goalYear}년 목표</h2><div id="glist"></div></div>`;
+  document.getElementById("gadd").onclick=()=>{const t=val("gt");if(!t)return alert("목표를 입력하세요.");
+    DB.goals.push({id:uid(),year:String(goalYear),title:t,progress:0,desc:""});save();drawG();document.getElementById("gt").value="";};
+  drawG();
+}
+window.setGoalYear=(y)=>{goalYear=y;rGoals();};
+window.addGoalYear=()=>{const y=prompt("추가할 연도 (예: 2027)",String(Number(new Date().getFullYear())+1));if(y&&/^\d{4}$/.test(y.trim())){goalYear=y.trim();rGoals();}};
+function drawG(){
+  const cy=String(new Date().getFullYear());
+  const rows=DB.goals.filter(g=>String(g.year||cy)===String(goalYear));
+  const e=document.getElementById("glist");
+  e.innerHTML=rows.length?rows.map(g=>`
+    <div style="padding:12px 0;border-bottom:1px solid var(--line)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="flex:1;font-weight:500;cursor:pointer" onclick="toggleGoalDesc('${g.id}')" title="클릭하면 설명을 적을 수 있어요">${esc(g.title)} <span class="meta" style="font-weight:400">${goalOpen[g.id]?"▴":"▾"}</span></span>
+        <button class="del" onclick="delGoal('${g.id}')">×</button></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+        <input type="range" min="0" max="100" value="${g.progress}" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="setProg('${g.id}',this.value)" style="flex:1">
+        <span class="meta" style="width:42px;text-align:right">${g.progress}%</span></div>
+      ${goalOpen[g.id]?`<textarea class="mt" rows="3" placeholder="목표에 대한 설명·계획을 적어보세요" onchange="setGoalDesc('${g.id}',this.value)">${esc(g.desc||"")}</textarea>`:""}
+    </div>`).join(""):'<div class="empty">이 해에 등록된 목표가 없어요.</div>';
+}
+window.toggleGoalDesc=(id)=>{goalOpen[id]=!goalOpen[id];drawG();};
+window.setGoalDesc=(id,v)=>{const g=DB.goals.find(x=>x.id===id);if(g){g.desc=v;save();}};
+window.setProg=(id,v)=>{const g=DB.goals.find(x=>x.id===id);if(g){g.progress=parseInt(v);save();drawG();}};
+window.delGoal=(id)=>{DB.goals=DB.goals.filter(x=>x.id!==id);save();drawG();};
+
+/* ===== 5) 신앙 (기도제목 + QT 게시판) ===== */
+let faithTab="prayer";
+let qtMode="list", qtSel=null, qtYear=null, qtMonth="all";
+function rFaith(){
+  main.innerHTML=`<h1 class="page-h">신앙 생활</h1><p class="page-sub">기도제목과 말씀을 기록해요.</p>
+  <div class="sub-tabs" style="align-items:center;flex-wrap:wrap">
+    <button data-f="prayer" class="${faithTab==="prayer"?"on":""}">기도제목</button>
+    <button data-f="qt" class="${faithTab==="qt"?"on":""}">QT · 말씀</button>
+    <a class="linkchip" href="https://docs.google.com/spreadsheets/d/1FVIHNJuDUAIhb8Ito_5BJGkOBK0R2T0tN4vat7QXYuo/edit?gid=1013255948#gid=1013255948" target="_blank" rel="noopener">전체 출석현황 ↗</a>
+    <a class="linkchip" href="https://docs.google.com/spreadsheets/d/1ds7rZMMqnEPDJUhimsc_9QNtlQFTwN5YSX_QuqzO2ss/edit" target="_blank" rel="noopener">청년부 출석현황 ↗</a></div>
+  <div id="fbody"></div>`;
+  main.querySelectorAll(".sub-tabs button").forEach(b=>b.onclick=()=>{faithTab=b.dataset.f;qtMode="list";rFaith();});
+  if(faithTab==="prayer")renderPrayer();else renderQT();
+}
+function renderPrayer(){
+  document.getElementById("fbody").innerHTML=`
+    <div class="card"><h2>기도제목 추가</h2>
+      <input id="pt" placeholder="기도제목">
+      <textarea id="pc" class="mt" rows="2" placeholder="내용 (선택)"></textarea>
+      <button class="addb mt" id="padd">+ 추가</button></div>
+    <div class="card"><h2>기도제목 목록</h2><div id="plist"></div></div>`;
+  document.getElementById("padd").onclick=()=>{const t=val("pt");if(!t)return alert("기도제목을 입력하세요.");
+    DB.prayers.push({id:uid(),title:t,content:val("pc"),answered:false});save();drawP();
+    document.getElementById("pt").value="";document.getElementById("pc").value="";};
+  drawP();
+}
+function drawP(){
+  const e=document.getElementById("plist");
+  e.innerHTML=DB.prayers.length?DB.prayers.map(p=>`<div class="item ${p.answered?"done":""}">
+    <button class="chk ${p.answered?"on":""}" onclick="togglePrayer('${p.id}')">${p.answered?"✓":""}</button>
+    <div class="bd"><div class="t">${esc(p.title)}</div>${p.content?`<div class="meta" style="white-space:pre-wrap;margin-top:2px">${esc(p.content)}</div>`:""}${p.answered?'<div class="meta">응답됨 🙏</div>':""}</div>
+    <button class="del" onclick="delPrayer('${p.id}')">×</button></div>`).join(""):'<div class="empty">기도제목이 없어요.</div>';
+}
+window.togglePrayer=(id)=>{const p=DB.prayers.find(x=>x.id===id);if(p){p.answered=!p.answered;save();drawP();}};
+window.delPrayer=(id)=>{DB.prayers=DB.prayers.filter(x=>x.id!==id);save();drawP();};
+function renderQT(){
+  const fb=document.getElementById("fbody");
+  if(qtMode==="write"){
+    fb.innerHTML=`<div class="card"><h2>말씀 기록 쓰기</h2>
+      <div class="row"><input type="date" id="qd" class="n1" value="${T()}"><input id="qv" placeholder="말씀 (예: 시편 23편)"></div>
+      <textarea id="qn" class="mt" rows="7" placeholder="묵상 내용"></textarea>
+      <div class="row mt"><button class="addb" id="qsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="qtBack()">취소</button></div></div>`;
+    document.getElementById("qsave").onclick=()=>{const v=val("qv"),n=val("qn");if(!v&&!n)return alert("내용을 입력하세요.");
+      DB.qt.push({id:uid(),date:val("qd")||T(),title:v||"말씀",content:n});save();qtBack();};
+    return;
+  }
+  if(qtMode==="detail"){
+    const q=DB.qt.find(x=>x.id===qtSel);if(!q){qtMode="list";return renderQT();}
+    fb.innerHTML=`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <button class="ghostb" onclick="qtBack()">‹ 목록</button>
+        <button class="ghostb danger" onclick="qtDel('${q.id}')">삭제</button></div>
+      <div class="meta">${fmt(q.date)}</div>
+      <h2 style="font-size:20px;margin:4px 0 12px">${esc(q.title)}</h2>
+      <div style="white-space:pre-wrap;line-height:1.8">${esc(q.content)}</div></div>`;
+    return;
+  }
+  if(qtYear===null)qtYear=String(new Date().getFullYear());
+  const years=[...new Set(DB.qt.map(q=>q.date.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
+  const list=DB.qt.filter(q=>q.date.slice(0,4)===String(qtYear)&&(qtMonth==="all"||q.date.slice(5,7)===qtMonth)).sort((a,b)=>b.date.localeCompare(a.date));
+  fb.innerHTML=`<div class="card"><div class="row" style="align-items:center">
+      <select class="n2" onchange="setQtYear(this.value)" style="flex:0 0 110px">${years.map(y=>`<option value="${y}" ${y===String(qtYear)?"selected":""}>${y}년</option>`).join("")}</select>
+      <select class="n2" onchange="setQtMonth(this.value)" style="flex:0 0 110px"><option value="all" ${qtMonth==="all"?"selected":""}>전체 월</option>${[...Array(12)].map((_,i)=>{const m=String(i+1).padStart(2,"0");return `<option value="${m}" ${qtMonth===m?"selected":""}>${i+1}월</option>`;}).join("")}</select>
+      <span style="flex:1"></span>
+      <button class="addb" style="flex:0 0 130px" onclick="qtNew()">✏️ 기록 쓰기</button></div></div>
+    <div class="card"><h2>지난 기록</h2>${list.length?list.map(q=>`
+      <div class="item link" style="cursor:pointer" onclick="qtOpen('${q.id}')">
+        <div class="bd"><div class="meta">${fmt(q.date)}</div><div class="t">${esc(q.title)}</div></div>
+        <span class="meta" style="align-self:center">›</span></div>`).join(""):'<div class="empty">이 기간에 기록이 없어요.</div>'}</div>`;
+}
+window.setQtYear=(v)=>{qtYear=v;rFaith();};
+window.setQtMonth=(v)=>{qtMonth=v;rFaith();};
+window.qtNew=()=>{qtMode="write";rFaith();};
+window.qtOpen=(id)=>{qtMode="detail";qtSel=id;rFaith();};
+window.qtBack=()=>{qtMode="list";rFaith();};
+window.qtDel=(id)=>{if(!confirm("이 기록을 삭제할까요?"))return;DB.qt=DB.qt.filter(x=>x.id!==id);save();qtBack();};
+
+/* ===== 6) 클라이언트 (문의시트 링크 연동) ===== */
+function rClients(){
+  main.innerHTML=`<h1 class="page-h">클라이언트</h1><p class="page-sub">고객 정보를 관리해요.</p>
+  <details class="acard"><summary>고객 추가</summary><div class="acbody">
+    <div class="row"><input id="cn" class="n2" placeholder="성함"><input id="cc" class="n2" placeholder="포스팅 주기"><input type="date" id="cr" class="n1" title="재계약일"><input id="ci" placeholder="메모"></div>
+    <div class="row mt"><input id="cs" placeholder="문의시트 링크 (선택, https://...)"><input id="ck" placeholder="클라이언트 링크 (선택, https://...)"></div>
+    <button class="addb mt" id="cadd">+ 고객 추가</button></div></details>
+  <div class="card"><h2>고객 목록</h2><div id="clist"></div></div>
+  <div class="card"><h2>요약</h2><div id="csummary"></div></div>`;
+  document.getElementById("cadd").onclick=()=>{const n=val("cn");if(!n)return alert("성함을 입력하세요.");
+    DB.clients.push({name:n,cycle:val("cc"),recontract:val("cr"),note:val("ci"),sheet:val("cs"),clink:val("ck")});save();drawC();
+    ["cn","cc","cr","ci","cs","ck"].forEach(id=>document.getElementById(id).value="");};
+  drawC();
+}
+function drawC(){
+  const e=document.getElementById("clist");
+  if(!DB.clients.length){e.innerHTML='<div class="empty">등록된 고객이 없어요.</div>';drawSummary();return;}
+  if(isMobile()){
+    e.innerHTML=DB.clients.map((c,i)=>`<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center"><span style="flex:1;font-weight:600">${esc(c.name)}</span><button class="del" onclick="delClient(${i})">×</button></div>
+      <div class="meta" style="margin-top:6px;line-height:1.9">포스팅 ${esc(c.cycle||"-")} · 재계약 ${esc(recDisp(c.recontract))}${c.note?"<br>"+esc(c.note):""}<br>
+        ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`} &nbsp;
+        ${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">클라이언트 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋클라이언트</button>`}</div></div>`).join("");
+    drawSummary();return;
+  }
+  e.innerHTML=`<table class="tbl"><tr><th>성함</th><th>문의시트</th><th>클라이언트</th><th>포스팅</th><th>재계약</th><th>메모</th><th></th></tr>
+    ${DB.clients.map((c,i)=>`<tr>
+      <td style="font-weight:500">${esc(c.name)}</td>
+      <td>${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">바로가기 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋ 링크추가</button>`}</td>
+      <td>${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">바로가기 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋ 링크추가</button>`}</td>
+      <td>${esc(c.cycle||"-")}</td><td class="meta">${esc(recDisp(c.recontract))}</td>
+      <td class="meta">${esc(c.note||"")}</td>
+      <td style="text-align:right"><button class="del" onclick="delClient(${i})">×</button></td></tr>`).join("")}</table>`;
+  drawSummary();
+}
+function weeklyPosts(cycle){
+  if(!cycle)return 0;
+  const days=(cycle.match(/[월화수목금토일]/g)||[]).length;
+  if(days)return days;
+  const m=cycle.match(/(\d+)\s*회/)||cycle.match(/(\d+)/);
+  return m?parseInt(m[1]):0;
+}
+function recontractMonth(s){
+  if(!s)return null;
+  const iso=s.match(/^\d{4}-(\d{2})-\d{2}/);
+  if(iso)return parseInt(iso[1]);
+  const m=s.match(/(\d{1,2})[.\-\/]/);
+  return m?parseInt(m[1]):null;
+}
+function recDisp(s){if(!s)return"-";const m=s.match(/^\d{4}-(\d{2})-(\d{2})/);return m?`${+m[1]}.${+m[2]}`:s;}
+function drawSummary(){
+  const el=document.getElementById("csummary");if(!el)return;
+  const n=DB.clients.length;
+  const weekly=DB.clients.reduce((a,c)=>a+weeklyPosts(c.cycle),0);
+  const monthly=weekly*4;
+  const curM=new Date().getMonth()+1;
+  const nextM=curM===12?1:curM+1;
+  const due=DB.clients.filter(c=>recontractMonth(c.recontract)===curM);
+  const dueNext=DB.clients.filter(c=>recontractMonth(c.recontract)===nextM);
+  el.innerHTML=`
+    <div class="stat">
+      <div class="s"><div class="lab">현재 클라이언트</div><div class="val">${n}명</div></div>
+      <div class="s"><div class="lab">주간 포스트</div><div class="val">${weekly}개</div></div>
+      <div class="s"><div class="lab">월간 포스트</div><div class="val">${monthly}개</div></div>
+      <div class="s"><div class="lab">${curM}월 재계약</div><div class="val">${due.length}명</div></div>
+      <div class="s"><div class="lab">${nextM}월 재계약</div><div class="val">${dueNext.length}명</div></div>
+    </div>
+    <div class="meta">📌 ${curM}월 재계약 대상: ${due.length?due.map(c=>esc(c.name)).join(", "):"없음"}</div>
+    <div class="meta" style="margin-top:4px">📌 ${nextM}월 재계약 대상: ${dueNext.length?dueNext.map(c=>esc(c.name)).join(", "):"없음"}</div>`;
+}
+window.setSheet=(i)=>{const u=prompt("문의시트 링크를 붙여넣으세요 (https://...)",DB.clients[i].sheet||"");if(u!==null){DB.clients[i].sheet=u.trim();save();drawC();}};
+window.setClink=(i)=>{const u=prompt("클라이언트 링크를 붙여넣으세요 (https://...)",DB.clients[i].clink||"");if(u!==null){DB.clients[i].clink=u.trim();save();drawC();}};
+window.delClient=(i)=>{DB.clients.splice(i,1);save();drawC();};
+
+/* ===== 7) 회고 (연도별) ===== */
+let retroYear=null;
+function rRetro(){
+  if(retroYear===null)retroYear=String(new Date().getFullYear());
+  const entries=Object.entries(DB.dayinfo)
+    .filter(([d,v])=>d.slice(0,4)===String(retroYear)&&v.retro&&v.retro.trim())
+    .sort((a,b)=>b[0].localeCompare(a[0]));
+  const years=[...new Set(Object.keys(DB.dayinfo).map(d=>d.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
+  main.innerHTML=`<h1 class="page-h">회고</h1><p class="page-sub">일정 화면에서 적은 회고를 연도별로 모아봐요.</p>
+  <div class="card"><div class="row" style="align-items:center">
+      <select class="n2" onchange="setRetroYear(this.value)" style="flex:0 0 120px">${years.map(y=>`<option value="${y}" ${y===String(retroYear)?"selected":""}>${y}년</option>`).join("")}</select>
+      <span style="flex:1"></span>
+      <span class="meta">${entries.length}개</span></div></div>
+  <div class="card"><h2>${retroYear}년 회고</h2>${entries.length?entries.map(([d,v])=>`
+    <div class="item"><div class="bd"><div class="meta" style="color:var(--accent)">${fmt(d)}</div>
+      <div style="white-space:pre-wrap;margin-top:3px">${esc(v.retro)}</div></div></div>`).join(""):'<div class="empty">이 해에 작성한 회고가 없어요.<br>일정 화면 맨 아래 회고 칸에 적으면 여기에 모여요.</div>'}</div>`;
+}
+window.setRetroYear=(v)=>{retroYear=v;rRetro();};
+
+/* ===== 계정관리 (계정정보 · 장소 · 은행) ===== */
+let acctTab="accounts";
+function rAccounts(){
+  main.innerHTML=`<h1 class="page-h">계정관리</h1><p class="page-sub">계정·장소·은행 정보를 한 곳에. (민감 정보이니 신중히 관리하세요)</p>
+  <div class="sub-tabs">
+    <button data-a="accounts" class="${acctTab==="accounts"?"on":""}">계정정보</button>
+    <button data-a="places" class="${acctTab==="places"?"on":""}">장소</button>
+    <button data-a="banks" class="${acctTab==="banks"?"on":""}">은행</button>
+    <button data-a="bizAccounts" class="${acctTab==="bizAccounts"?"on":""}">사업자 계정정보</button>
+    <button data-a="bizBanks" class="${acctTab==="bizBanks"?"on":""}">사업자 은행</button></div>
+  <div id="abody"></div>`;
+  main.querySelectorAll(".sub-tabs button").forEach(b=>b.onclick=()=>{acctTab=b.dataset.a;rAccounts();});
+  if(acctTab==="accounts")renderAccts(false);
+  else if(acctTab==="places")renderPlaces();
+  else if(acctTab==="banks")renderBanks(false);
+  else if(acctTab==="bizAccounts")renderAccts(true);
+  else if(acctTab==="bizBanks")renderBanks(true);
+  else renderAccts(false);
+}
+function renderAccts(biz){
+  const lbl=biz?"사업자 ":"";
+  document.getElementById("abody").innerHTML=`
+   <details class="acard"><summary>${lbl}계정 추가</summary><div class="acbody">
+     <div class="row"><input id="a_t" class="n2" placeholder="이름(TITLE)"><input id="a_id" class="n2" placeholder="ID"><input id="a_pw" class="n2" placeholder="PW"><input id="a_etc" placeholder="ETC"></div>
+     <button class="addb mt" id="a_add">+ 추가</button></div></details>
+   <div class="card"><h2>${lbl}계정정보</h2><div class="tblwrap" id="a_list"></div></div>`;
+  document.getElementById("a_add").onclick=()=>{const t=val("a_t");if(!t)return alert("이름을 입력하세요.");
+    DB.accounts.push({id:uid(),title:t,accId:val("a_id"),pw:val("a_pw"),etc:val("a_etc"),biz:!!biz});save();drawAccts(biz);
+    ["a_t","a_id","a_pw","a_etc"].forEach(id=>document.getElementById(id).value="");};
+  drawAccts(biz);
+}
+function drawAccts(biz){
+  const e=document.getElementById("a_list");
+  const rows=DB.accounts.map((a,i)=>({a,i})).filter(o=>!!o.a.biz===!!biz);
+  e.innerHTML=rows.length?`<table class="tbl"><tr><th>TITLE</th><th>ID</th><th>PW</th><th>ETC</th><th></th></tr>
+    ${rows.map(({a,i})=>`<tr><td style="font-weight:500">${esc(a.title)}</td><td>${esc(a.accId||"")}</td><td>${esc(a.pw||"")}</td><td class="meta">${esc(a.etc||"")}</td><td style="text-align:right"><button class="del" onclick="delAcct(${i})">×</button></td></tr>`).join("")}</table>`
+    :'<div class="empty">등록된 계정이 없어요.</div>';
+}
+window.delAcct=(i)=>{DB.accounts.splice(i,1);save();rAccounts();};
+function renderPlaces(){
+  document.getElementById("abody").innerHTML=`
+   <details class="acard"><summary>장소 추가</summary><div class="acbody">
+     <div class="row"><input id="p_t" class="n2" placeholder="이름(TITLE)"><input id="p_pw" class="n2" placeholder="PW"><input id="p_etc" placeholder="ETC"></div>
+     <button class="addb mt" id="p_add">+ 추가</button></div></details>
+   <div class="card"><h2>장소</h2><div class="tblwrap" id="p_list"></div></div>`;
+  document.getElementById("p_add").onclick=()=>{const t=val("p_t");if(!t)return alert("이름을 입력하세요.");
+    DB.places.push({id:uid(),title:t,pw:val("p_pw"),etc:val("p_etc")});save();drawPlaces();
+    ["p_t","p_pw","p_etc"].forEach(id=>document.getElementById(id).value="");};
+  drawPlaces();
+}
+function drawPlaces(){
+  const e=document.getElementById("p_list");
+  e.innerHTML=DB.places.length?`<table class="tbl"><tr><th>TITLE</th><th>PW</th><th>ETC</th><th></th></tr>
+    ${DB.places.map((p,i)=>`<tr><td style="font-weight:500">${esc(p.title)}</td><td>${esc(p.pw||"")}</td><td class="meta">${esc(p.etc||"")}</td><td style="text-align:right"><button class="del" onclick="delPlace(${i})">×</button></td></tr>`).join("")}</table>`
+    :'<div class="empty">등록된 장소가 없어요.</div>';
+}
+window.delPlace=(i)=>{DB.places.splice(i,1);save();drawPlaces();};
+const BANKCOLS=[["title","TITLE"],["use","용도"],["account","계좌번호"],["pw","PW"],["sendOnce","송금한도(1회)"],["sendDay","송금한도(1일)"],["withdrawOnce","인출한도(1회)"],["withdrawDay","인출한도(1일)"],["payday","결제일"]];
+function renderBanks(biz){
+  const lbl=biz?"사업자 ":"";
+  document.getElementById("abody").innerHTML=`
+   <details class="acard"><summary>${lbl}은행 추가</summary><div class="acbody">
+     <div class="row"><input id="b_t" class="n2" placeholder="은행(TITLE)"><input id="b_use" class="n2" placeholder="용도"><input id="b_acc" placeholder="계좌번호"><input id="b_pw" class="n2" placeholder="PW"></div>
+     <div class="row mt"><input id="b_so" class="n2" placeholder="송금한도(1회)"><input id="b_sd" class="n2" placeholder="송금한도(1일)"><input id="b_wo" class="n2" placeholder="인출한도(1회)"><input id="b_wd" class="n2" placeholder="인출한도(1일)"><input id="b_pay" class="n2" placeholder="결제일"></div>
+     <button class="addb mt" id="b_add">+ 추가</button></div></details>
+   <div class="card"><h2>${lbl}은행</h2><div class="tblwrap">${bankTable(biz)}</div></div>`;
+  document.getElementById("b_add").onclick=()=>{const t=val("b_t");if(!t)return alert("은행명을 입력하세요.");
+    DB.banks.push({id:uid(),title:t,use:val("b_use"),account:val("b_acc"),pw:val("b_pw"),sendOnce:val("b_so"),sendDay:val("b_sd"),withdrawOnce:val("b_wo"),withdrawDay:val("b_wd"),payday:val("b_pay"),biz:!!biz});save();renderBanks(biz);};
+}
+function bankTable(biz){
+  const rows=DB.banks.map((b,i)=>({b,i})).filter(o=>!!o.b.biz===!!biz);
+  if(!rows.length)return '<div class="empty">등록된 은행이 없어요.</div>';
+  return `<table class="tbl" style="min-width:1120px"><tr>${BANKCOLS.map(c=>`<th>${c[1]}</th>`).join("")}<th></th></tr>
+    ${rows.map(({b,i})=>`<tr>${BANKCOLS.map(c=>`<td class="${c[0]==="title"?"":"meta"}" style="white-space:nowrap${c[0]==="title"?";font-weight:500":""}">${esc(b[c[0]]||"")}</td>`).join("")}<td style="text-align:right"><button class="del" onclick="delBank(${i})">×</button></td></tr>`).join("")}</table>`;
+}
+window.delBank=(i)=>{DB.banks.splice(i,1);save();rAccounts();};
+
+/* ===== 8) 독서노트 (연도·상태·장르·제목·노트) ===== */
+let bookMode="list", bookSel=null, bookYear=null, bookStatus="all";
+function rBooks(){
+  if(bookYear===null)bookYear=String(new Date().getFullYear());
+  if(bookMode==="write")return bookWrite();
+  if(bookMode==="detail")return bookDetail();
+  const years=[...new Set(DB.books.map(b=>String(b.year)).concat(String(new Date().getFullYear())))].sort().reverse();
+  const list=DB.books.filter(b=>String(b.year)===String(bookYear)&&(bookStatus==="all"||b.status===bookStatus));
+  main.innerHTML=`<h1 class="page-h">독서노트</h1><p class="page-sub">읽은 책과 노트를 기록해요.</p>
+  <div class="card"><div class="row" style="align-items:center">
+      <select class="n2" onchange="setBookYear(this.value)" style="flex:0 0 110px">${years.map(y=>`<option value="${y}" ${y===String(bookYear)?"selected":""}>${y}년</option>`).join("")}</select>
+      <select class="n2" onchange="setBookStatus(this.value)" style="flex:0 0 120px">
+        <option value="all" ${bookStatus==="all"?"selected":""}>전체</option>
+        <option value="읽는중" ${bookStatus==="읽는중"?"selected":""}>읽는중</option>
+        <option value="완료" ${bookStatus==="완료"?"selected":""}>완료</option></select>
+      <span style="flex:1"></span>
+      <button class="addb" style="flex:0 0 120px" onclick="bookNew()">✏️ 책 추가</button></div></div>
+  <div class="card"><h2>${bookYear}년 독서 목록</h2>${list.length?list.map(b=>`
+    <div class="item link" style="cursor:pointer" onclick="bookOpen('${b.id}')">
+      <div class="bd"><div class="t">${esc(b.title)}</div>
+        <div class="meta"><span class="pill" style="background:${b.status==="완료"?"#2c3a2c":"var(--accent-soft)"};color:${b.status==="완료"?"var(--good)":"var(--accent)"}">${esc(b.status)}</span> ${b.genre?esc(b.genre):""}</div></div>
+      <span class="meta" style="align-self:center">›</span></div>`).join(""):'<div class="empty">이 조건에 책이 없어요.</div>'}</div>`;
+}
+window.setBookYear=(v)=>{bookYear=v;rBooks();};
+window.setBookStatus=(v)=>{bookStatus=v;rBooks();};
+window.bookNew=()=>{bookMode="write";bookSel=null;rBooks();};
+window.bookOpen=(id)=>{bookMode="detail";bookSel=id;rBooks();};
+window.bookEdit=(id)=>{bookMode="write";bookSel=id;rBooks();};
+window.bookBack=()=>{bookMode="list";bookSel=null;rBooks();};
+window.bookDel=(id)=>{if(!confirm("이 독서노트를 삭제할까요?"))return;DB.books=DB.books.filter(x=>x.id!==id);save();bookBack();};
+function bookWrite(){
+  const b=bookSel?DB.books.find(x=>x.id===bookSel):null;
+  main.innerHTML=`<h1 class="page-h">${b?"독서노트 수정":"책 추가"}</h1><p class="page-sub">책 정보와 노트를 적어요.</p>
+  <div class="card">
+    <div class="row"><input id="bYear" class="n2" type="number" placeholder="연도" value="${b?esc(String(b.year)):new Date().getFullYear()}">
+      <select id="bStatus" class="n2"><option ${b&&b.status==="읽는중"?"selected":""}>읽는중</option><option ${b&&b.status==="완료"?"selected":""}>완료</option></select>
+      <input id="bGenre" class="n2" placeholder="장르" value="${b?esc(b.genre):""}"></div>
+    <input id="bTitle" class="mt" placeholder="책 제목" value="${b?esc(b.title):""}">
+    <textarea id="bNote" class="mt" rows="8" placeholder="노트 내용">${b?esc(b.note):""}</textarea>
+    <div class="row mt"><button class="addb" id="bSave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="bookBack()">취소</button></div></div>`;
+  document.getElementById("bSave").onclick=()=>{
+    const t=val("bTitle");if(!t)return alert("책 제목을 입력하세요.");
+    const data={year:val("bYear")||String(new Date().getFullYear()),status:document.getElementById("bStatus").value,genre:val("bGenre"),title:t,note:val("bNote")};
+    if(b){Object.assign(b,data);}else{DB.books.push({id:uid(),...data});}
+    save();bookBack();
+  };
+}
+function bookDetail(){
+  const b=DB.books.find(x=>x.id===bookSel);if(!b){bookBack();return;}
+  main.innerHTML=`<h1 class="page-h">독서노트</h1>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <button class="ghostb" onclick="bookBack()">‹ 목록</button>
+      <div style="display:flex;gap:8px"><button class="ghostb" onclick="bookEdit('${b.id}')">수정</button><button class="ghostb danger" onclick="bookDel('${b.id}')">삭제</button></div></div>
+    <div class="meta">${esc(String(b.year))}년 · <span class="pill">${esc(b.status)}</span> ${b.genre?esc(b.genre):""}</div>
+    <h2 style="font-size:21px;margin:6px 0 12px">${esc(b.title)}</h2>
+    <div style="white-space:pre-wrap;line-height:1.8">${esc(b.note||"")}</div></div>`;
+}
+
+/* ===== 비용관리 (고정 비용) ===== */
+function costDay(s){const m=(s||"").match(/\d+/);return m?parseInt(m[1]):32;}
+function rCosts(){
+  main.innerHTML=`<h1 class="page-h">비용관리</h1><p class="page-sub">고정 비용을 관리해요.</p>
+  <div class="stat" id="costStat"></div>
+  <details class="acard"><summary>항목 추가</summary><div class="acbody">
+    <div class="row"><input id="co_item" class="n2" placeholder="항목"><input id="co_amt" class="n2" type="number" placeholder="액수"><input id="co_day" class="n2" placeholder="날짜 (예: 10일, 말일)"><input id="co_cmt" placeholder="코멘트"></div>
+    <button class="addb mt" id="co_add">+ 추가</button></div></details>
+  <div class="card"><h2>고정 비용</h2><div class="tblwrap" id="co_list"></div></div>`;
+  document.getElementById("co_add").onclick=()=>{const it=val("co_item");if(!it)return alert("항목을 입력하세요.");
+    DB.costs.push({id:uid(),item:it,amount:parseInt(val("co_amt"))||0,day:val("co_day"),comment:val("co_cmt")});save();drawCosts();
+    ["co_item","co_amt","co_day","co_cmt"].forEach(id=>document.getElementById(id).value="");};
+  drawCosts();
+}
+function drawCosts(){
+  const total=DB.costs.reduce((a,c)=>a+(c.amount||0),0);
+  document.getElementById("costStat").innerHTML=`<div class="s"><div class="lab">월 고정비용 합계</div><div class="val">₩${total.toLocaleString("ko-KR")}</div></div><div class="s"><div class="lab">항목 수</div><div class="val">${DB.costs.length}개</div></div>`;
+  const rows=DB.costs.map((c,i)=>({c,i})).sort((a,b)=>costDay(a.c.day)-costDay(b.c.day));
+  const e=document.getElementById("co_list");
+  e.innerHTML=DB.costs.length?`<table class="tbl"><tr><th>항목</th><th style="text-align:right">액수</th><th>날짜</th><th>코멘트</th><th></th></tr>
+    ${rows.map(({c,i})=>`<tr><td style="font-weight:500">${esc(c.item)}</td><td style="text-align:right">₩${(c.amount||0).toLocaleString("ko-KR")}</td><td class="meta">${esc(c.day||"")}</td><td class="meta">${esc(c.comment||"")}</td><td style="text-align:right"><button class="del" onclick="delCost(${i})">×</button></td></tr>`).join("")}</table>`
+    :'<div class="empty">등록된 고정 비용이 없어요.</div>';
+}
+window.delCost=(i)=>{DB.costs.splice(i,1);save();drawCosts();};
+
+/* ===== 노트 (게시판식 · 연도별) ===== */
+let noteMode="list", noteSel=null, noteYear=null;
+function rNotes(){
+  if(noteYear===null)noteYear=String(new Date().getFullYear());
+  if(noteMode==="write")return noteWrite();
+  if(noteMode==="detail")return noteDetail();
+  const years=[...new Set(DB.notes.map(d=>d.date.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
+  const list=DB.notes.filter(d=>d.date.slice(0,4)===String(noteYear)).sort((a,b)=>b.date.localeCompare(a.date));
+  main.innerHTML=`<h1 class="page-h">노트</h1><p class="page-sub">자유롭게 기록해요.</p>
+  <div class="card"><div class="row" style="align-items:center">
+      <select class="n2" onchange="setNoteYear(this.value)" style="flex:0 0 110px">${years.map(y=>`<option value="${y}" ${y===String(noteYear)?"selected":""}>${y}년</option>`).join("")}</select>
+      <span style="flex:1"></span>
+      <button class="addb" style="flex:0 0 120px" onclick="noteNew()">✏️ 노트 쓰기</button></div></div>
+  <div class="card"><h2>지난 노트</h2>${list.length?list.map(d=>`
+    <div class="item link" style="cursor:pointer" onclick="noteOpen('${d.id}')">
+      <div class="bd"><div class="meta">${fmt(d.date)}</div><div class="t">${esc(d.title)}</div></div>
+      <span class="meta" style="align-self:center">›</span></div>`).join(""):'<div class="empty">이 해에 쓴 노트가 없어요.</div>'}</div>`;
+}
+window.setNoteYear=(v)=>{noteYear=v;rNotes();};
+window.noteNew=()=>{noteMode="write";noteSel=null;rNotes();};
+window.noteOpen=(id)=>{noteMode="detail";noteSel=id;rNotes();};
+window.noteBack=()=>{noteMode="list";noteSel=null;rNotes();};
+window.noteDel=(id)=>{if(!confirm("이 노트를 삭제할까요?"))return;DB.notes=DB.notes.filter(x=>x.id!==id);save();noteBack();};
+function noteWrite(){
+  main.innerHTML=`<h1 class="page-h">노트 쓰기</h1><p class="page-sub">자유롭게 기록해요.</p>
+  <div class="card">
+    <div class="row"><input type="date" id="nt_d" class="n1" value="${T()}"><input id="nt_t" placeholder="제목"></div>
+    <textarea id="nt_c" class="mt" rows="9" placeholder="내용을 적어보세요"></textarea>
+    <div class="row mt"><button class="addb" id="nt_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="noteBack()">취소</button></div></div>`;
+  document.getElementById("nt_save").onclick=()=>{const c=val("nt_c");if(!c)return alert("내용을 입력하세요.");
+    DB.notes.push({id:uid(),date:val("nt_d")||T(),title:val("nt_t")||"무제",content:c});save();noteBack();};
+}
+function noteDetail(){
+  const d=DB.notes.find(x=>x.id===noteSel);if(!d){noteBack();return;}
+  main.innerHTML=`<h1 class="page-h">노트</h1>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <button class="ghostb" onclick="noteBack()">‹ 목록</button>
+      <button class="ghostb danger" onclick="noteDel('${d.id}')">삭제</button></div>
+    <div class="meta">${fmt(d.date)}</div>
+    <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
+    <div style="white-space:pre-wrap;line-height:1.8">${esc(d.content)}</div></div>`;
+}
+
+/* ===== 백업 (하루 1회 자동 · 30일 보관) ===== */
+function snapshotData(){const c={...DB};delete c.backups;return JSON.stringify(c);}
+function fmtDT(iso){const x=new Date(iso);return `${x.getMonth()+1}월 ${x.getDate()}일 (${DOW[x.getDay()]}) ${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`;}
+function pruneBackups(){DB.backups.sort((a,b)=>b.ts.localeCompare(a.ts));if(DB.backups.length>30)DB.backups=DB.backups.slice(0,30);}
+function autoBackup(){DB.backups=DB.backups||[];const today=T();if(!DB.backups.some(b=>b.ts.slice(0,10)===today)){DB.backups.push({id:uid(),ts:new Date().toISOString(),data:snapshotData()});pruneBackups();save();}}
+function rBackup(){
+  const list=[...(DB.backups||[])].sort((a,b)=>b.ts.localeCompare(a.ts));
+  main.innerHTML=`<h1 class="page-h">백업</h1><p class="page-sub">앱을 열 때 하루 1회 자동 저장 · 최근 30일 보관</p>
+  <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">저장된 버전</h2><button class="ghostb" onclick="backupNow()">지금 백업</button></div>
+    <div class="mt">${list.length?list.map(b=>`<div class="item"><div class="bd"><div class="t">${fmtDT(b.ts)}</div><div class="meta">${(b.data.length/1024).toFixed(1)} KB</div></div>
+      <button class="ghostb" style="padding:6px 12px" onclick="restoreBackup('${b.id}')">복원</button>
+      <button class="del" onclick="delBackup('${b.id}')">×</button></div>`).join(""):'<div class="empty">백업이 아직 없어요.</div>'}</div></div>`;
+}
+window.backupNow=()=>{DB.backups=DB.backups||[];DB.backups.push({id:uid(),ts:new Date().toISOString(),data:snapshotData()});pruneBackups();save();rBackup();};
+window.delBackup=(id)=>{if(!confirm("이 백업을 삭제할까요?"))return;DB.backups=DB.backups.filter(b=>b.id!==id);save();rBackup();};
+window.restoreBackup=(id)=>{const b=(DB.backups||[]).find(x=>x.id===id);if(!b)return;if(!confirm(fmtDT(b.ts)+" 시점으로 복원할까요? 현재 데이터가 이 버전으로 덮어써져요."))return;const d=JSON.parse(b.data);Object.keys(d).forEach(k=>{DB[k]=d[k];});save();alert("복원됐어요.");location.reload();};
+
+/* ===== 공통 ===== */
+window.tg=(arr,i,f)=>{DB[arr][i][f]=!DB[arr][i][f];save();render();};
+window.rm=(arr,i)=>{DB[arr].splice(i,1);save();render();};
+let rz;window.addEventListener("resize",()=>{if(page==="schedule"){clearTimeout(rz);rz=setTimeout(rSchedule,150);}});
+window.addEventListener("resize",()=>{const L=document.querySelector(".layout");if(window.innerWidth<=760){L.classList.remove("collapsed");}else{const a=document.querySelector("aside");a.classList.remove("open");const bd=document.getElementById("backdrop");if(bd)bd.classList.remove("show");}});
+document.addEventListener("click",e=>{const t=e.target;if(t.tagName==="INPUT"&&(t.type==="date"||t.type==="time")){try{t.showPicker&&t.showPicker();}catch(_){}}});
+
+/* ===== Supabase 로그인 + 데이터 로드 ===== */
+async function boot(pw){
+  const {data,error}=await sb.auth.signInWithPassword({email:USER_EMAIL,password:pw});
+  if(error)return false;
+  currentUser=data.user;
+  const ARR=["schedules","diary","goals","prayers","qt","clients","costs","notes","books","accounts","places","banks","backups"];
+  let loaded=false;
+  try{const r=await sb.from("app_data").select("data").eq("user_id",currentUser.id).maybeSingle();
+    if(r.data&&r.data.data){const d=r.data.data;Object.keys(d).forEach(k=>{DB[k]=d[k];});loaded=true;}}catch(_){}
+  if(!loaded){ARR.forEach(k=>{DB[k]=[];});DB.dayinfo={};DB.monthmemo={};}
+  else{["dayinfo","monthmemo"].forEach(k=>{if(!DB[k])DB[k]={};});ARR.forEach(k=>{if(!DB[k])DB[k]=[];});}
+  document.getElementById("lock").style.display="none";
+  autoBackup();
+  render();
+  if(window.lucide)lucide.createIcons();
+  return true;
+}
+(function(){
+  const inp=document.getElementById("lockpw"),btn=document.getElementById("lockbtn"),msg=document.getElementById("lockmsg");
+  const go=async()=>{btn.disabled=true;msg.textContent="확인 중...";const ok=await boot(inp.value);if(!ok){msg.textContent="비밀번호가 틀렸어요.";inp.value="";btn.disabled=false;inp.focus();}};
+  btn.onclick=go;inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});inp.focus();
+})();
+if(window.lucide)lucide.createIcons();
+</script>
+</body>
+</html>
