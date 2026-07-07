@@ -166,17 +166,12 @@
     .sub-tabs{flex-wrap:wrap}
     .stat{grid-template-columns:1fr 1fr}
     .cal-grid .cell{min-height:60px;font-size:11px}
-    #gsearch{align-self:flex-end;width:62%;max-width:220px;margin:8px 12px 2px}
-    .gsearch-box{padding:5px 9px}
-    .gsearch-box svg{width:15px;height:15px}
-    .gsearch-box input{font-size:14px}
-    .gresults{right:0;left:auto;width:min(84vw,300px)}
   }
   .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
   .tbl.fixed{table-layout:fixed;width:100%}
   .tbl.fixed th,.tbl.fixed td{word-break:break-word;overflow:hidden;text-overflow:ellipsis}
-  .content{flex:1;min-width:0;display:flex;flex-direction:column}
-  #gsearch{position:relative;align-self:flex-end;width:240px;max-width:100%;margin:18px 34px 2px}
+  .content{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+  #gsearch{position:absolute;top:22px;right:34px;width:230px;max-width:calc(100% - 48px);z-index:30}
   .gsearch-box{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
   .gsearch-box svg{width:16px;height:16px;color:var(--muted);flex:0 0 auto}
   .gsearch-box input{flex:1;min-width:0;background:transparent;border:none;color:var(--ink);font-size:14px;outline:none;font-family:inherit}
@@ -187,6 +182,13 @@
   .gres-item .gt{font-size:13.5px;font-weight:500}
   .gres-item .gs{font-size:11.5px;color:var(--muted)}
   .gres-empty{padding:14px;color:var(--muted);font-size:13px;text-align:center}
+  @media(max-width:760px){
+    #gsearch{top:10px;right:12px;width:146px;max-width:50vw}
+    .gsearch-box{padding:5px 8px}
+    .gsearch-box svg{width:14px;height:14px}
+    .gsearch-box input{font-size:13.5px}
+    .gresults{width:min(78vw,280px)}
+  }
 </style>
 </head>
 <body>
