@@ -166,24 +166,21 @@
     .sub-tabs{flex-wrap:wrap}
     .stat{grid-template-columns:1fr 1fr}
     .cal-grid .cell{min-height:60px;font-size:11px}
-    .appbar{padding:8px 12px}
-    .only-mobile{display:inline-flex}
-    #gsearch{margin-left:0;flex:1;width:auto}
-    .gsearch-box input{font-size:16px}
+    #gsearch{align-self:flex-end;width:62%;max-width:220px;margin:8px 12px 2px}
+    .gsearch-box{padding:5px 9px}
+    .gsearch-box svg{width:15px;height:15px}
+    .gsearch-box input{font-size:14px}
+    .gresults{right:0;left:auto;width:min(84vw,300px)}
   }
   .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
   .tbl.fixed{table-layout:fixed;width:100%}
   .tbl.fixed th,.tbl.fixed td{word-break:break-word;overflow:hidden;text-overflow:ellipsis}
   .content{flex:1;min-width:0;display:flex;flex-direction:column}
-  .appbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:10px 34px;background:var(--bg);border-bottom:1px solid var(--line)}
-  .appbar .hamb{background:transparent;border:none;color:var(--ink);padding:4px;cursor:pointer;display:flex}
-  .appbar .hamb svg{width:24px;height:24px}
-  .only-mobile{display:none}
-  #gsearch{position:relative;margin-left:auto;width:300px;max-width:100%}
-  .gsearch-box{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 11px}
+  #gsearch{position:relative;align-self:flex-end;width:240px;max-width:100%;margin:18px 34px 2px}
+  .gsearch-box{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
   .gsearch-box svg{width:16px;height:16px;color:var(--muted);flex:0 0 auto}
   .gsearch-box input{flex:1;min-width:0;background:transparent;border:none;color:var(--ink);font-size:14px;outline:none;font-family:inherit}
-  .gresults{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;max-height:70vh;overflow:auto;box-shadow:0 12px 30px rgba(0,0,0,.45);z-index:90}
+  .gresults{display:none;position:absolute;top:calc(100% + 6px);right:0;left:auto;width:300px;max-width:86vw;background:var(--card);border:1px solid var(--line);border-radius:10px;max-height:70vh;overflow:auto;box-shadow:0 12px 30px rgba(0,0,0,.45);z-index:90}
   .gres-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:transparent;border:none;border-bottom:1px solid var(--line);padding:9px 12px;cursor:pointer;color:var(--ink)}
   .gres-item:last-child{border-bottom:none}
   .gres-item:hover{background:var(--accent-soft)}
@@ -203,6 +200,7 @@
     <div id="lockmsg" class="lock-msg"></div>
   </div>
 </div>
+<header class="topbar"><button class="hamb" onclick="toggleMenu()" aria-label="메뉴"><i data-lucide="menu"></i></button><span class="tb-title">업무관리</span></header>
 <div class="backdrop" id="backdrop" onclick="toggleMenu()"></div>
 <div class="layout">
   <aside>
@@ -231,13 +229,10 @@
     </div>
   </aside>
   <div class="content">
-    <header class="appbar">
-      <button class="hamb only-mobile" onclick="toggleMenu()" aria-label="메뉴"><i data-lucide="menu"></i></button>
-      <div id="gsearch">
-        <div class="gsearch-box"><i data-lucide="search"></i><input id="gq" placeholder="전체 검색..." autocomplete="off"></div>
-        <div id="gresults" class="gresults"></div>
-      </div>
-    </header>
+    <div id="gsearch">
+      <div class="gsearch-box"><i data-lucide="search"></i><input id="gq" placeholder="전체 검색..." autocomplete="off"></div>
+      <div id="gresults" class="gresults"></div>
+    </div>
     <main id="main"></main>
   </div>
 </div>
