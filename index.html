@@ -166,7 +166,23 @@
     .sub-tabs{flex-wrap:wrap}
     .stat{grid-template-columns:1fr 1fr}
     .cal-grid .cell{min-height:60px;font-size:11px}
+    .tb-title{display:none}
+    #gsearch{width:auto;left:56px;right:12px;top:9px}
   }
+  .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
+  .tbl.fixed{table-layout:fixed;width:100%}
+  .tbl.fixed th,.tbl.fixed td{word-break:break-word;overflow:hidden;text-overflow:ellipsis}
+  #gsearch{position:fixed;top:10px;right:16px;z-index:70;width:250px;display:none}
+  .gsearch-box{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+  .gsearch-box svg{width:16px;height:16px;color:var(--muted);flex:0 0 auto}
+  .gsearch-box input{flex:1;min-width:0;background:transparent;border:none;color:var(--ink);font-size:13.5px;outline:none;font-family:inherit}
+  .gresults{display:none;margin-top:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;max-height:62vh;overflow:auto;box-shadow:0 10px 28px rgba(0,0,0,.4)}
+  .gres-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:transparent;border:none;border-bottom:1px solid var(--line);padding:9px 12px;cursor:pointer;color:var(--ink)}
+  .gres-item:last-child{border-bottom:none}
+  .gres-item:hover{background:var(--accent-soft)}
+  .gres-item .gt{font-size:13.5px;font-weight:500}
+  .gres-item .gs{font-size:11.5px;color:var(--muted)}
+  .gres-empty{padding:14px;color:var(--muted);font-size:13px;text-align:center}
 </style>
 </head>
 <body>
@@ -182,6 +198,10 @@
 </div>
 <header class="topbar"><button class="hamb" onclick="toggleMenu()" aria-label="메뉴"><i data-lucide="menu"></i></button><span class="tb-title">업무관리</span></header>
 <div class="backdrop" id="backdrop" onclick="toggleMenu()"></div>
+<div id="gsearch">
+  <div class="gsearch-box"><i data-lucide="search"></i><input id="gq" placeholder="전체 검색..." autocomplete="off"></div>
+  <div id="gresults" class="gresults"></div>
+</div>
 <div class="layout">
   <aside>
     <button class="side-close" onclick="toggleMenu()" aria-label="닫기"><i data-lucide="x"></i></button>
@@ -235,8 +255,8 @@ const DB={
   prayers:[{id:uid(),title:"가족 건강",content:"",answered:false}],
   qt:[{id:uid(),date:T(),title:"시편 23편",content:"여호와는 나의 목자시니 내게 부족함이 없으리로다."}],
   sermons:[{id:uid(),date:T(),title:"예시 설교",ref:"요 3:16",speaker:"목사님"}],
-  clients:[{name:"최재혁",cycle:"월화금",recontract:"",note:"",sheet:""},
-           {name:"임원제",cycle:"수목",recontract:"06.19",note:"수→수",sheet:""}],
+  clients:[{name:"최재혁",field:"블로그",cycle:"월화금",recontract:"",note:"",sheet:""},
+           {name:"임원제",field:"스레드",cycle:"수목",recontract:"06.19",note:"",sheet:""}],
   books:[{id:uid(),year:"2026",status:"완료",genre:"자기계발",title:"예시 책 제목",note:"여기에 독서 노트를 적어요. 목록에서 눌러 들어오면 이 내용이 보여요."}],
   accounts:[{id:uid(),title:"예시 사이트",accId:"myid",pw:"****",etc:""}],
   places:[{id:uid(),title:"집",pw:"****",etc:""}],
@@ -268,6 +288,33 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
 });
 document.getElementById("logout").onclick=async()=>{if(confirm("로그아웃할까요?")){await sb.auth.signOut();location.reload();}};
 function render(){({dashboard:rDashboard,schedule:rSchedule,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();}
+
+/* ===== 전체 검색 ===== */
+let gResults=[];
+function gNav(p){page=p;document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x.dataset.p===p));closeMenu();}
+function gHide(){const el=document.getElementById("gresults");if(el){el.style.display="none";el.innerHTML="";}}
+function gSearch(q){
+  q=(q||"").trim().toLowerCase();
+  const el=document.getElementById("gresults");if(!el)return;
+  if(!q){gHide();return;}
+  const R=[],has=(...xs)=>xs.some(x=>(x||"").toString().toLowerCase().includes(q));
+  (DB.schedules||[]).forEach(s=>{if(has(s.title,s.note,s.time))R.push({t:s.title||"(무제)",g:"일정 · "+fmt(s.date),go:()=>{selDay=s.date;gNav("schedule");rSchedule();}});});
+  (DB.diary||[]).forEach(d=>{if(has(d.title,d.content))R.push({t:d.title||"(무제)",g:"일기 · "+fmt(d.date),go:()=>{gNav("diary");diaryYear=d.date.slice(0,4);diaryOpen(d.id);}});});
+  (DB.goals||[]).forEach(x=>{if(has(x.title,x.desc))R.push({t:x.title,g:"목표",go:()=>{gNav("goals");rGoals();}});});
+  (DB.prayers||[]).forEach(p=>{if(has(p.title,p.content))R.push({t:p.title,g:"신앙 · 기도제목",go:()=>{gNav("faith");faithTab="prayer";rFaith();}});});
+  (DB.qt||[]).forEach(x=>{if(has(x.title,x.content))R.push({t:x.title||"(제목없음)",g:"신앙 · QT · "+fmt(x.date),go:()=>{gNav("faith");faithTab="qt";qtYear=x.date.slice(0,4);qtOpen(x.id);}});});
+  (DB.sermons||[]).forEach(x=>{if(has(x.title,x.ref,x.speaker))R.push({t:x.title||"(제목없음)",g:"신앙 · 설교 · "+fmt(x.date),go:()=>{gNav("faith");faithTab="sermon";sermonYear=x.date.slice(0,4);rFaith();}});});
+  (DB.clients||[]).forEach(c=>{if(has(c.name,c.cycle,c.note,c.field))R.push({t:c.name,g:"클라이언트",go:()=>{gNav("clients");rClients();}});});
+  (DB.costs||[]).forEach(c=>{if(has(c.item,c.comment))R.push({t:c.item,g:"비용관리",go:()=>{gNav("costs");rCosts();}});});
+  (DB.books||[]).forEach(b=>{if(has(b.title,b.genre,b.note))R.push({t:b.title,g:"독서노트 · "+b.year,go:()=>{gNav("books");bookYear=String(b.year);bookStatus="all";bookOpen(b.id);}});});
+  (DB.notes||[]).forEach(n=>{if(has(n.title,n.content))R.push({t:n.title||"(무제)",g:"노트 · "+fmt(n.date),go:()=>{gNav("notes");noteYear=n.date.slice(0,4);noteOpen(n.id);}});});
+  gResults=R.slice(0,40);
+  el.style.display="block";
+  el.innerHTML=gResults.length?gResults.map((r,i)=>`<button class="gres-item" onclick="gPick(${i})"><span class="gt">${esc(r.t)}</span><span class="gs">${esc(r.g)}</span></button>`).join(""):'<div class="gres-empty">결과가 없어요.</div>';
+}
+window.gPick=(i)=>{const r=gResults[i];if(!r)return;const q=document.getElementById("gq");if(q)q.value="";gHide();r.go();};
+(function(){const q=document.getElementById("gq");if(q){q.addEventListener("input",e=>gSearch(e.target.value));q.addEventListener("keydown",e=>{if(e.key==="Escape"){q.value="";gHide();q.blur();}});}
+  document.addEventListener("click",e=>{if(!e.target.closest("#gsearch"))gHide();});})();
 window.goPage=(p)=>{page=p;document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x.dataset.p===p));render();};
 
 /* ===== 0) 대시보드 ===== */
@@ -308,7 +355,7 @@ function rDashboard(){
       <div style="display:flex;align-items:flex-end;gap:8px;margin-top:14px;min-height:112px">${bars}</div></div></div>
   <div class="two-col">
     <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">오늘 일정 <span class="meta" style="font-weight:400">· 시간순</span></h2><button class="linklike" onclick="goPage('schedule')">더보기 ›</button></div>
-      <div class="mt">${todayTasks.length?todayTasks.map(({s,i})=>`<div class="item ${s.done?"done":""}"><button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button><div class="bd"><div class="t">${esc(s.title)}</div><div class="meta">${s.time?`<b>${s.time}</b> · `:""}<span style="color:${PRI[s.priority||4].c}">${PRI[s.priority||4].t}</span></div></div></div>`).join(""):'<div class="empty">오늘 일정이 없어요.</div>'}</div></div>
+      <div class="mt">${todayTasks.length?todayTasks.map(({s,i})=>`<div class="item ${s.done?"done":""}"><button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button><div class="bd"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div><div class="meta"><span style="color:${PRI[s.priority||4].c}">${PRI[s.priority||4].t}</span></div></div></div>`).join(""):'<div class="empty">오늘 일정이 없어요.</div>'}</div></div>
     <div>
       <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">이번 주</h2><button class="linklike" onclick="goPage('schedule')">›</button></div>
         <div class="mt">${wdays.map(d=>{const dt=new Date(d+"T00:00:00");const items=DB.schedules.filter(s=>s.date===d);const done=items.filter(s=>s.done).length;const isT=d===today;
@@ -353,7 +400,10 @@ function rSchedule(){
   <div class="card"><h2>${dayLabel} 주요업무</h2>
     <textarea id="daymain" rows="2" placeholder="이 날의 핵심 일정·업무를 적어두세요 (예: 11시 스터디, 14시 회의)" onchange="setMain(this.value)">${esc((DB.dayinfo[selDay]||{}).main||"")}</textarea></div>
   <details class="acard"><summary>업무 추가</summary><div class="acbody">
-    <div class="row"><input type="date" id="sd" class="n1" value="${selDay}"><input type="time" id="stime" class="n2"><input id="stt" placeholder="업무 내용"></div>
+    <div class="row"><input type="date" id="sd" class="n1" value="${selDay}"><input id="stt" placeholder="업무 내용"></div>
+    <div class="row mt"><input id="stime" class="n2" placeholder="시간 24h (예: 14:00)" inputmode="numeric" style="flex:1 1 120px">
+      <select id="shour" class="n2" onchange="pickTime()" style="flex:0 0 84px"><option value="">시</option>${[...Array(24)].map((_,h)=>`<option value="${String(h).padStart(2,"0")}">${String(h).padStart(2,"0")}시</option>`).join("")}</select>
+      <select id="smin" class="n2" onchange="pickTime()" style="flex:0 0 84px">${[0,5,10,15,20,25,30,35,40,45,50,55].map(m=>`<option value="${String(m).padStart(2,"0")}">${String(m).padStart(2,"0")}분</option>`).join("")}</select></div>
     <div class="row mt"><select id="spri" class="n1">
         <option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4" selected>4순위</option></select>
       <input id="snote" placeholder="비고 (선택)">
@@ -366,11 +416,13 @@ function rSchedule(){
   <div class="card"><h2>${dayLabel} 회고</h2><textarea rows="3" placeholder="오늘 하루를 돌아보며 회고를 적어보세요" onchange="setDayField('retro',this.value)">${esc(di.retro||"")}</textarea></div>`;
   document.getElementById("sadd").onclick=()=>{
     const t=val("stt");if(!t)return alert("업무 내용을 입력하세요.");
-    DB.schedules.push({date:val("sd")||selDay,time:val("stime"),title:t,priority:parseInt(val("spri")),done:false,note:val("snote")});
+    DB.schedules.push({date:val("sd")||selDay,time:normTime(val("stime")),title:t,priority:parseInt(val("spri")),done:false,note:val("snote")});
     save();render();
   };
   drawDay();
 }
+window.pickTime=()=>{const h=document.getElementById("shour").value;if(h==="")return;const m=document.getElementById("smin").value||"00";document.getElementById("stime").value=h+":"+m;};
+function normTime(s){s=(s||"").trim();if(!s)return"";s=s.replace(/[^0-9:]/g,"");let h,m,mm=s.match(/^(\d{1,2}):(\d{1,2})$/);if(mm){h=+mm[1];m=+mm[2];}else if(/^\d{3,4}$/.test(s)){h=+s.slice(0,s.length-2);m=+s.slice(-2);}else if(/^\d{1,2}$/.test(s)){h=+s;m=0;}else return"";if(h>23||m>59)return"";return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
 window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");rSchedule();};
 window.selectDay=(d)=>{selDay=d;rSchedule();};
 window.setMain=(v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay].main=v;save();};
@@ -389,8 +441,8 @@ function taskRows(items){
   return items.length?items.map(({s,i})=>{const p=PRI[s.priority||4];
     return `<div class="item ${s.done?"done":""}">
       <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
-      <div class="bd"><div class="t">${esc(s.title)}</div>
-        <div class="meta">${s.time?`<b>${s.time}</b> · `:""}<span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
+      <div class="bd"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div>
+        <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
       <button class="del" onclick="rm('schedules',${i})">×</button></div>`;}).join(""):'<div class="empty">이 날 업무가 없어요.</div>';
 }
 let todaySort="pri";
@@ -635,13 +687,14 @@ window.sermonDel=(id)=>{if(!confirm("이 기록을 삭제할까요?"))return;DB.
 function rClients(){
   main.innerHTML=`<h1 class="page-h">클라이언트</h1><p class="page-sub">고객 정보를 관리해요.</p>
   <details class="acard"><summary>고객 추가</summary><div class="acbody">
-    <div class="row"><input id="cn" class="n2" placeholder="성함"><input id="cc" class="n2" placeholder="포스팅 주기"><input type="date" id="cr" class="n1" title="재계약일"><input id="ci" placeholder="메모"></div>
+    <div class="row"><input id="cn" class="n2" placeholder="성함"><select id="cf" class="n2"><option value="블로그">블로그</option><option value="스레드">스레드</option></select><input id="cc" class="n2" placeholder="포스팅 주기"></div>
+    <div class="row mt"><input type="date" id="cr" class="n1" title="재계약일"><input id="ci" class="n2" placeholder="분납일"></div>
     <div class="row mt"><input id="cs" placeholder="문의시트 링크 (선택, https://...)"><input id="ck" placeholder="클라이언트 링크 (선택, https://...)"></div>
     <button class="addb mt" id="cadd">+ 고객 추가</button></div></details>
   <div class="card"><h2>고객 목록</h2><div id="clist"></div></div>
   <div class="card"><h2>요약</h2><div id="csummary"></div></div>`;
   document.getElementById("cadd").onclick=()=>{const n=val("cn");if(!n)return alert("성함을 입력하세요.");
-    DB.clients.push({name:n,cycle:val("cc"),recontract:val("cr"),note:val("ci"),sheet:val("cs"),clink:val("ck")});save();drawC();
+    DB.clients.push({name:n,field:document.getElementById("cf").value,cycle:val("cc"),recontract:val("cr"),note:val("ci"),sheet:val("cs"),clink:val("ck")});save();drawC();
     ["cn","cc","cr","ci","cs","ck"].forEach(id=>document.getElementById(id).value="");};
   drawC();
 }
@@ -651,16 +704,17 @@ function drawC(){
   if(isMobile()){
     e.innerHTML=DB.clients.map((c,i)=>`<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px">
       <div style="display:flex;align-items:center"><span style="flex:1;font-weight:600">${esc(c.name)}</span><button class="del" onclick="delClient(${i})">×</button></div>
-      <div class="meta" style="margin-top:6px;line-height:1.9">포스팅 ${esc(c.cycle||"-")} · 재계약 ${esc(recDisp(c.recontract))}${c.note?"<br>"+esc(c.note):""}<br>
-        ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`} &nbsp;
-        ${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">클라이언트 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋클라이언트</button>`}</div></div>`).join("");
+      <div class="meta" style="margin-top:6px;line-height:1.9">${c.field?esc(c.field)+" · ":""}포스팅 ${esc(c.cycle||"-")} · 재계약 ${esc(recDisp(c.recontract))}${c.note?"<br>분납일: "+esc(c.note):""}<br>
+        ${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">클라이언트 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋클라이언트</button>`} &nbsp;
+        ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`}</div></div>`).join("");
     drawSummary();return;
   }
-  e.innerHTML=`<table class="tbl"><tr><th>성함</th><th>문의시트</th><th>클라이언트</th><th>포스팅</th><th>재계약</th><th>메모</th><th></th></tr>
+  e.innerHTML=`<table class="tbl fixed"><tr><th>성함</th><th>대행분야</th><th>클라이언트</th><th>문의시트</th><th>포스팅</th><th>재계약</th><th>분납일</th><th></th></tr>
     ${DB.clients.map((c,i)=>`<tr>
       <td style="font-weight:500">${esc(c.name)}</td>
-      <td>${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">바로가기 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋ 링크추가</button>`}</td>
-      <td>${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">바로가기 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋ 링크추가</button>`}</td>
+      <td>${esc(c.field||"-")}</td>
+      <td>${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">바로가기 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋ 링크</button>`}</td>
+      <td>${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">바로가기 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋ 링크</button>`}</td>
       <td>${esc(c.cycle||"-")}</td><td class="meta">${esc(recDisp(c.recontract))}</td>
       <td class="meta">${esc(c.note||"")}</td>
       <td style="text-align:right"><button class="del" onclick="delClient(${i})">×</button></td></tr>`).join("")}</table>`;
@@ -897,7 +951,7 @@ function rNotes(){
   <div class="card"><div class="row" style="align-items:center">
       <select class="n2" onchange="setNoteYear(this.value)" style="flex:0 0 110px">${years.map(y=>`<option value="${y}" ${y===String(noteYear)?"selected":""}>${y}년</option>`).join("")}</select>
       <span style="flex:1"></span>
-      <button class="addb" style="flex:0 0 120px" onclick="noteNew()">✏️ 노트 쓰기</button></div></div>
+      <button class="addb" style="flex:0 0 120px" onclick="noteNew()">✏️ 노트</button></div></div>
   <div class="card"><h2>지난 노트</h2>${list.length?list.map(d=>`
     <div class="item link" style="cursor:pointer" onclick="noteOpen('${d.id}')">
       <div class="bd"><div class="meta">${fmt(d.date)}</div><div class="t">${esc(d.title)}</div></div>
@@ -909,7 +963,7 @@ window.noteOpen=(id)=>{noteMode="detail";noteSel=id;rNotes();};
 window.noteBack=()=>{noteMode="list";noteSel=null;rNotes();};
 window.noteDel=(id)=>{if(!confirm("이 노트를 삭제할까요?"))return;DB.notes=DB.notes.filter(x=>x.id!==id);save();noteBack();};
 function noteWrite(){
-  main.innerHTML=`<h1 class="page-h">노트 쓰기</h1><p class="page-sub">자유롭게 기록해요.</p>
+  main.innerHTML=`<h1 class="page-h">노트</h1><p class="page-sub">자유롭게 기록해요.</p>
   <div class="card">
     <div class="row"><input type="date" id="nt_d" class="n1" value="${T()}"><input id="nt_t" placeholder="제목"></div>
     <textarea id="nt_c" class="mt" rows="9" placeholder="내용을 적어보세요"></textarea>
@@ -965,6 +1019,7 @@ async function boot(pw){
   if(!loaded){ARR.forEach(k=>{DB[k]=[];});DB.dayinfo={};DB.monthmemo={};}
   else{["dayinfo","monthmemo"].forEach(k=>{if(!DB[k])DB[k]={};});ARR.forEach(k=>{if(!DB[k])DB[k]=[];});}
   document.getElementById("lock").style.display="none";
+  {const gs=document.getElementById("gsearch");if(gs)gs.style.display="block";}
   autoBackup();
   render();
   if(window.lucide)lucide.createIcons();
