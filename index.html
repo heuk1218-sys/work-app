@@ -166,17 +166,24 @@
     .sub-tabs{flex-wrap:wrap}
     .stat{grid-template-columns:1fr 1fr}
     .cal-grid .cell{min-height:60px;font-size:11px}
-    .tb-title{display:none}
-    #gsearch{width:auto;left:56px;right:12px;top:9px}
+    .appbar{padding:8px 12px}
+    .only-mobile{display:inline-flex}
+    #gsearch{margin-left:0;flex:1;width:auto}
+    .gsearch-box input{font-size:16px}
   }
   .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
   .tbl.fixed{table-layout:fixed;width:100%}
   .tbl.fixed th,.tbl.fixed td{word-break:break-word;overflow:hidden;text-overflow:ellipsis}
-  #gsearch{position:fixed;top:10px;right:16px;z-index:70;width:250px;display:none}
-  .gsearch-box{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+  .content{flex:1;min-width:0;display:flex;flex-direction:column}
+  .appbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:10px 34px;background:var(--bg);border-bottom:1px solid var(--line)}
+  .appbar .hamb{background:transparent;border:none;color:var(--ink);padding:4px;cursor:pointer;display:flex}
+  .appbar .hamb svg{width:24px;height:24px}
+  .only-mobile{display:none}
+  #gsearch{position:relative;margin-left:auto;width:300px;max-width:100%}
+  .gsearch-box{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 11px}
   .gsearch-box svg{width:16px;height:16px;color:var(--muted);flex:0 0 auto}
-  .gsearch-box input{flex:1;min-width:0;background:transparent;border:none;color:var(--ink);font-size:13.5px;outline:none;font-family:inherit}
-  .gresults{display:none;margin-top:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;max-height:62vh;overflow:auto;box-shadow:0 10px 28px rgba(0,0,0,.4)}
+  .gsearch-box input{flex:1;min-width:0;background:transparent;border:none;color:var(--ink);font-size:14px;outline:none;font-family:inherit}
+  .gresults{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;max-height:70vh;overflow:auto;box-shadow:0 12px 30px rgba(0,0,0,.45);z-index:90}
   .gres-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:transparent;border:none;border-bottom:1px solid var(--line);padding:9px 12px;cursor:pointer;color:var(--ink)}
   .gres-item:last-child{border-bottom:none}
   .gres-item:hover{background:var(--accent-soft)}
@@ -196,12 +203,7 @@
     <div id="lockmsg" class="lock-msg"></div>
   </div>
 </div>
-<header class="topbar"><button class="hamb" onclick="toggleMenu()" aria-label="메뉴"><i data-lucide="menu"></i></button><span class="tb-title">업무관리</span></header>
 <div class="backdrop" id="backdrop" onclick="toggleMenu()"></div>
-<div id="gsearch">
-  <div class="gsearch-box"><i data-lucide="search"></i><input id="gq" placeholder="전체 검색..." autocomplete="off"></div>
-  <div id="gresults" class="gresults"></div>
-</div>
 <div class="layout">
   <aside>
     <button class="side-close" onclick="toggleMenu()" aria-label="닫기"><i data-lucide="x"></i></button>
@@ -228,7 +230,16 @@
       <div style="padding:0 6px"><button class="del" id="logout" style="font-size:12px;color:#6a7a9a">로그아웃</button></div>
     </div>
   </aside>
-  <main id="main"></main>
+  <div class="content">
+    <header class="appbar">
+      <button class="hamb only-mobile" onclick="toggleMenu()" aria-label="메뉴"><i data-lucide="menu"></i></button>
+      <div id="gsearch">
+        <div class="gsearch-box"><i data-lucide="search"></i><input id="gq" placeholder="전체 검색..." autocomplete="off"></div>
+        <div id="gresults" class="gresults"></div>
+      </div>
+    </header>
+    <main id="main"></main>
+  </div>
 </div>
 <div class="copyright-fixed">© 2026 배재혁</div>
 
@@ -287,27 +298,39 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
   closeMenu();
 });
 document.getElementById("logout").onclick=async()=>{if(confirm("로그아웃할까요?")){await sb.auth.signOut();location.reload();}};
-function render(){({dashboard:rDashboard,schedule:rSchedule,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();}
+function render(){({dashboard:rDashboard,schedule:rSchedule,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();if(typeof setSearchPlaceholder==="function")setSearchPlaceholder();}
 
-/* ===== 전체 검색 ===== */
+/* ===== 전체 검색 (페이지별 범위 · 관련도순) ===== */
 let gResults=[];
-function gNav(p){page=p;document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x.dataset.p===p));closeMenu();}
+function gNav(p){page=p;document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x.dataset.p===p));closeMenu();setSearchPlaceholder();}
 function gHide(){const el=document.getElementById("gresults");if(el){el.style.display="none";el.innerHTML="";}}
+const G_PROV={
+  schedules:()=>(DB.schedules||[]).map(s=>({keys:[s.title,s.note,s.time],t:s.title||"(무제)",g:"일정 · "+fmt(s.date),date:s.date,go:()=>{selDay=s.date;gNav("schedule");rSchedule();}})),
+  diary:()=>(DB.diary||[]).map(d=>({keys:[d.title,d.content],t:d.title||"(무제)",g:"일기 · "+fmt(d.date),date:d.date,go:()=>{gNav("diary");diaryYear=d.date.slice(0,4);diaryOpen(d.id);}})),
+  goals:()=>(DB.goals||[]).map(x=>({keys:[x.title,x.desc],t:x.title,g:"목표",date:"",go:()=>{gNav("goals");rGoals();}})),
+  prayers:()=>(DB.prayers||[]).map(p=>({keys:[p.title,p.content],t:p.title,g:"신앙 · 기도제목",date:"",go:()=>{gNav("faith");faithTab="prayer";rFaith();}})),
+  qt:()=>(DB.qt||[]).map(x=>({keys:[x.title,x.content],t:x.title||"(제목없음)",g:"신앙 · QT · "+fmt(x.date),date:x.date,go:()=>{gNav("faith");faithTab="qt";qtYear=x.date.slice(0,4);qtOpen(x.id);}})),
+  sermons:()=>(DB.sermons||[]).map(x=>({keys:[x.title,x.ref,x.speaker],t:x.title||"(제목없음)",g:"신앙 · 설교 · "+fmt(x.date),date:x.date,go:()=>{gNav("faith");faithTab="sermon";sermonYear=x.date.slice(0,4);rFaith();}})),
+  clients:()=>(DB.clients||[]).map(c=>({keys:[c.name,c.cycle,c.note,c.field],t:c.name,g:"클라이언트"+(c.field?" · "+c.field:""),date:"",go:()=>{gNav("clients");rClients();}})),
+  costs:()=>(DB.costs||[]).map(c=>({keys:[c.item,c.comment],t:c.item,g:"비용관리",date:"",go:()=>{gNav("costs");rCosts();}})),
+  books:()=>(DB.books||[]).map(b=>({keys:[b.title,b.genre,b.note],t:b.title,g:"독서노트 · "+b.year,date:String(b.year||""),go:()=>{gNav("books");bookYear=String(b.year);bookStatus="all";bookOpen(b.id);}})),
+  notes:()=>(DB.notes||[]).map(n=>({keys:[n.title,n.content],t:n.title||"(무제)",g:"노트 · "+fmt(n.date),date:n.date,go:()=>{gNav("notes");noteYear=n.date.slice(0,4);noteOpen(n.id);}})),
+  retro:()=>Object.keys(DB.dayinfo||{}).filter(d=>(DB.dayinfo[d]||{}).retro).map(d=>({keys:[DB.dayinfo[d].retro],t:(DB.dayinfo[d].retro||"").slice(0,40),g:"회고 · "+fmt(d),date:d,go:()=>{gNav("retro");try{retroYear=d.slice(0,4);}catch(e){}rRetro();}})),
+  accounts:()=>{const a=[];(DB.accounts||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 계정",date:"",go:()=>{gNav("accounts");rAccounts();}}));(DB.places||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 장소",date:"",go:()=>{gNav("accounts");rAccounts();}}));(DB.banks||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 은행",date:"",go:()=>{gNav("accounts");rAccounts();}}));return a;}
+};
+const G_ALL=["schedules","diary","goals","prayers","qt","sermons","clients","costs","books","notes","retro","accounts"];
+const G_SCOPE={schedule:["schedules"],calendar:["schedules"],diary:["diary"],goals:["goals"],faith:["prayers","qt","sermons"],clients:["clients"],costs:["costs"],books:["books"],notes:["notes"],retro:["retro"],accounts:["accounts"]};
+const G_NAME={schedule:"일정",calendar:"캘린더",diary:"일기",goals:"목표",faith:"신앙",clients:"클라이언트",costs:"비용관리",books:"독서노트",notes:"노트",retro:"회고",accounts:"계정관리"};
+function setSearchPlaceholder(){const q=document.getElementById("gq");if(!q)return;q.placeholder=(G_SCOPE[page]&&G_NAME[page])?G_NAME[page]+"에서 검색...":"전체 검색...";}
+function gScore(keys,q){let best=0;for(let i=0;i<keys.length;i++){const k=keys[i];if(!k)continue;const idx=k.toString().toLowerCase().indexOf(q);if(idx<0)continue;const sc=i===0?(idx===0?100:70):40;if(sc>best)best=sc;}return best;}
 function gSearch(q){
   q=(q||"").trim().toLowerCase();
   const el=document.getElementById("gresults");if(!el)return;
   if(!q){gHide();return;}
-  const R=[],has=(...xs)=>xs.some(x=>(x||"").toString().toLowerCase().includes(q));
-  (DB.schedules||[]).forEach(s=>{if(has(s.title,s.note,s.time))R.push({t:s.title||"(무제)",g:"일정 · "+fmt(s.date),go:()=>{selDay=s.date;gNav("schedule");rSchedule();}});});
-  (DB.diary||[]).forEach(d=>{if(has(d.title,d.content))R.push({t:d.title||"(무제)",g:"일기 · "+fmt(d.date),go:()=>{gNav("diary");diaryYear=d.date.slice(0,4);diaryOpen(d.id);}});});
-  (DB.goals||[]).forEach(x=>{if(has(x.title,x.desc))R.push({t:x.title,g:"목표",go:()=>{gNav("goals");rGoals();}});});
-  (DB.prayers||[]).forEach(p=>{if(has(p.title,p.content))R.push({t:p.title,g:"신앙 · 기도제목",go:()=>{gNav("faith");faithTab="prayer";rFaith();}});});
-  (DB.qt||[]).forEach(x=>{if(has(x.title,x.content))R.push({t:x.title||"(제목없음)",g:"신앙 · QT · "+fmt(x.date),go:()=>{gNav("faith");faithTab="qt";qtYear=x.date.slice(0,4);qtOpen(x.id);}});});
-  (DB.sermons||[]).forEach(x=>{if(has(x.title,x.ref,x.speaker))R.push({t:x.title||"(제목없음)",g:"신앙 · 설교 · "+fmt(x.date),go:()=>{gNav("faith");faithTab="sermon";sermonYear=x.date.slice(0,4);rFaith();}});});
-  (DB.clients||[]).forEach(c=>{if(has(c.name,c.cycle,c.note,c.field))R.push({t:c.name,g:"클라이언트",go:()=>{gNav("clients");rClients();}});});
-  (DB.costs||[]).forEach(c=>{if(has(c.item,c.comment))R.push({t:c.item,g:"비용관리",go:()=>{gNav("costs");rCosts();}});});
-  (DB.books||[]).forEach(b=>{if(has(b.title,b.genre,b.note))R.push({t:b.title,g:"독서노트 · "+b.year,go:()=>{gNav("books");bookYear=String(b.year);bookStatus="all";bookOpen(b.id);}});});
-  (DB.notes||[]).forEach(n=>{if(has(n.title,n.content))R.push({t:n.title||"(무제)",g:"노트 · "+fmt(n.date),go:()=>{gNav("notes");noteYear=n.date.slice(0,4);noteOpen(n.id);}});});
+  const cols=G_SCOPE[page]||G_ALL;
+  const R=[];
+  cols.forEach(c=>{const gen=G_PROV[c];if(!gen)return;gen().forEach(it=>{const sc=gScore(it.keys,q);if(sc>0)R.push({t:it.t,g:it.g,go:it.go,score:sc,date:it.date||""});});});
+  R.sort((a,b)=>(b.score-a.score)||b.date.localeCompare(a.date));
   gResults=R.slice(0,40);
   el.style.display="block";
   el.innerHTML=gResults.length?gResults.map((r,i)=>`<button class="gres-item" onclick="gPick(${i})"><span class="gt">${esc(r.t)}</span><span class="gs">${esc(r.g)}</span></button>`).join(""):'<div class="gres-empty">결과가 없어요.</div>';
