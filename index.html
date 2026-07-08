@@ -474,9 +474,8 @@ function taskRows(items){
     }
     return `<div class="item ${s.done?"done":""}">
       <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
-      <div class="bd"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div>
+      <div class="bd" style="cursor:pointer" onclick="schedEdit(${i})" title="클릭해서 수정"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div>
         <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
-      <button class="editb" onclick="schedEdit(${i})">수정</button>
       <button class="del" onclick="rm('schedules',${i})">×</button></div>`;}).join(""):'<div class="empty">이 날 업무가 없어요.</div>';
 }
 let todaySort="time",editSchedIdx=null;
