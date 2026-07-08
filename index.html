@@ -147,6 +147,7 @@
   .wtask.done{opacity:.5;text-decoration:line-through}
   .pdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:4px}
   .wempty{color:#566688;font-size:11px;text-align:center;padding:4px 0}
+  .wmain{font-size:10.5px;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:3px 6px;margin-bottom:5px;white-space:normal;line-height:1.35;word-break:break-word}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:760px){
     .two-col{grid-template-columns:1fr}
@@ -417,9 +418,8 @@ function rSchedule(){
   main.innerHTML=`<h1 class="page-h">일정</h1><p class="page-sub">${mob?"하루씩 넘겨보며 정리해요.":"이번 주 업무를 한눈에 보고 정리해요."}</p>
   <div class="card"><div class="cal-head">
       <button onclick="weekMove(${-step})">${mob?"‹ 이전날":"‹ 이전주"}</button>
-      <h2 style="margin:0">${label}</h2>
+      <div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0">${label}</h2><button class="ghostb" onclick="goToday()" style="padding:4px 13px;font-size:12.5px">오늘</button></div>
       <button onclick="weekMove(${step})">${mob?"다음날 ›":"다음주 ›"}</button></div>
-    <div style="text-align:center;margin-top:8px"><button class="ghostb" onclick="goToday()" style="padding:6px 20px">오늘로</button></div>
     <div class="week-scroll"><div class="week-grid" style="grid-template-columns:repeat(${days.length},minmax(${mob?"100%":"130px"},1fr))">${days.map(weekCol).join("")}</div></div>
     <div style="display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:var(--muted)"><span>이번주 달성률 <b style="color:var(--accent)">${weekRate}%</b></span><span>${dayLabel} 달성률 <b style="color:var(--accent)">${dayRate}%</b></span></div></div>
   <div class="card"><h2>${dayLabel} 주요업무</h2>
@@ -456,8 +456,10 @@ function weekCol(d){
   const isT=d===T();const isSel=d===selDay;const dt=new Date(d+"T00:00:00");
   const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===d).sort(byPri);
   const r=items.length?Math.round(items.filter(o=>o.s.done).length/items.length*100):null;
+  const mn=(DB.dayinfo[d]||{}).main;
   return `<div class="wcol ${isT?"today":""} ${isSel?"sel":""}" onclick="selectDay('${d}')">
     <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${r!==null?` · <span style="color:var(--accent)">${r}%</span>`:""}</div>
+    ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
     ${items.length?items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${PRI[s.priority||4].c}"></span>${s.time?`<b style="font-weight:500;color:var(--muted)">${s.time}</b> `:""}${esc(s.title)}</div>`).join(""):'<div class="wempty">—</div>'}</div>`;
 }
 const byPri=(a,b)=>(a.s.done-b.s.done)||((a.s.priority||4)-(b.s.priority||4));
