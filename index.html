@@ -779,28 +779,45 @@ function rClients(){
   document.getElementById("cadd").onclick=()=>{const n=val("cn");if(!n)return alert("성함을 입력하세요.");
     DB.clients.push({name:n,field:document.getElementById("cf").value,cycle:val("cc"),recontract:val("cr"),note:val("ci"),sheet:val("cs"),clink:val("ck")});save();drawC();
     ["cn","cc","cr","ci","cs","ck"].forEach(id=>document.getElementById(id).value="");};
+  editClientIdx=null;
   drawC();
+}
+let editClientIdx=null;
+function cliForm(c,i){
+  const rec=/^\d{4}-\d{2}-\d{2}/.test(c.recontract||"")?c.recontract.slice(0,10):"";
+  return `<div class="row"><input id="ecn" class="n2" value="${esc(c.name||"")}" placeholder="성함">
+      <select id="ecf" class="n2"><option value="블로그"${c.field==="블로그"?" selected":""}>블로그</option><option value="스레드"${c.field==="스레드"?" selected":""}>스레드</option></select>
+      <input id="ecc" class="n2" value="${esc(c.cycle||"")}" placeholder="포스팅 주기"></div>
+    <div class="row mt"><input type="date" id="ecr" class="n1" value="${rec}" title="재계약일"><input id="eci" class="n2" value="${esc(c.note||"")}" placeholder="분납일"></div>
+    <div class="row mt"><input id="ecs" value="${esc(c.sheet||"")}" placeholder="문의시트 링크 (https://...)"><input id="eck" value="${esc(c.clink||"")}" placeholder="클라이언트 링크 (https://...)"></div>
+    <div class="row mt"><button class="addb" onclick="cliSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="cliEditCancel()">취소</button></div>`;
 }
 function drawC(){
   const e=document.getElementById("clist");
   if(!DB.clients.length){e.innerHTML='<div class="empty">등록된 고객이 없어요.</div>';drawSummary();return;}
   if(isMobile()){
-    e.innerHTML=DB.clients.map((c,i)=>`<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px">
-      <div style="display:flex;align-items:center"><span style="flex:1;font-weight:600">${esc(c.name)}</span><button class="del" onclick="delClient(${i})">×</button></div>
-      <div class="meta" style="margin-top:6px;line-height:1.9">${c.field?esc(c.field)+" · ":""}포스팅 ${esc(c.cycle||"-")} · 재계약 ${esc(recDisp(c.recontract))}${c.note?"<br>분납일: "+esc(c.note):""}<br>
+    e.innerHTML=DB.clients.map((c,i)=>{
+      if(i===editClientIdx)return `<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px">${cliForm(c,i)}</div>`;
+      return `<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:2px"><span style="flex:1;font-weight:600;cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(c.name)}</span><button class="linklike" onclick="cliMove(${i},-1)" title="위로" ${i===0?"disabled":""}>▲</button><button class="linklike" onclick="cliMove(${i},1)" title="아래로" ${i===DB.clients.length-1?"disabled":""}>▼</button><button class="del" onclick="delClient(${i})">×</button></div>
+      <div class="meta" style="margin-top:6px;line-height:1.9;cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${c.field?esc(c.field)+" · ":""}포스팅 ${esc(c.cycle||"-")} · 재계약 ${esc(recDisp(c.recontract))}${c.note?"<br>분납일: "+esc(c.note):""}</div>
+      <div class="meta" style="line-height:1.9">
         ${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">클라이언트 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋클라이언트</button>`} &nbsp;
-        ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`}</div></div>`).join("");
+        ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`}</div></div>`;}).join("");
     drawSummary();return;
   }
   e.innerHTML=`<table class="tbl fixed"><tr><th>성함</th><th>대행분야</th><th>클라이언트</th><th>문의시트</th><th>포스팅</th><th>재계약</th><th>분납일</th><th></th></tr>
-    ${DB.clients.map((c,i)=>`<tr>
-      <td style="font-weight:500">${esc(c.name)}</td>
-      <td>${esc(c.field||"-")}</td>
+    ${DB.clients.map((c,i)=>{
+      if(i===editClientIdx)return `<tr><td colspan="8">${cliForm(c,i)}</td></tr>`;
+      return `<tr draggable="true" ondragstart="cliDragStart(event,${i})" ondragover="cliDragOver(event)" ondrop="cliDrop(event,${i})" ondragend="cliDragEnd()">
+      <td style="font-weight:500;cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정 · 드래그해서 순서 변경"><span style="color:var(--muted);cursor:grab;margin-right:6px">⠿</span>${esc(c.name)}</td>
+      <td style="cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(c.field||"-")}</td>
       <td>${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">바로가기 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋ 링크</button>`}</td>
       <td>${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">바로가기 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋ 링크</button>`}</td>
-      <td>${esc(c.cycle||"-")}</td><td class="meta">${esc(recDisp(c.recontract))}</td>
-      <td class="meta">${esc(c.note||"")}</td>
-      <td style="text-align:right"><button class="del" onclick="delClient(${i})">×</button></td></tr>`).join("")}</table>`;
+      <td style="cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(c.cycle||"-")}</td>
+      <td class="meta" style="cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(recDisp(c.recontract))}</td>
+      <td class="meta" style="cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(c.note||"")}</td>
+      <td style="text-align:right"><button class="del" onclick="delClient(${i})">×</button></td></tr>`;}).join("")}</table>`;
   drawSummary();
 }
 function weeklyPosts(cycle){
@@ -840,7 +857,27 @@ function drawSummary(){
 }
 window.setSheet=(i)=>{const u=prompt("문의시트 링크를 붙여넣으세요 (https://...)",DB.clients[i].sheet||"");if(u!==null){DB.clients[i].sheet=u.trim();save();drawC();}};
 window.setClink=(i)=>{const u=prompt("클라이언트 링크를 붙여넣으세요 (https://...)",DB.clients[i].clink||"");if(u!==null){DB.clients[i].clink=u.trim();save();drawC();}};
-window.delClient=(i)=>{DB.clients.splice(i,1);save();drawC();};
+window.delClient=(i)=>{DB.clients.splice(i,1);editClientIdx=null;save();drawC();};
+window.cliEdit=(i)=>{editClientIdx=i;drawC();};
+window.cliEditCancel=()=>{editClientIdx=null;drawC();};
+window.cliSave=(i)=>{
+  const c=DB.clients[i];if(!c)return;
+  const gv=id=>{const el=document.getElementById(id);return el?el.value.trim():"";};
+  const n=gv("ecn");if(!n)return alert("성함을 입력하세요.");
+  const f=document.getElementById("ecf");
+  c.name=n;if(f)c.field=f.value;
+  c.cycle=gv("ecc");c.recontract=gv("ecr");c.note=gv("eci");c.sheet=gv("ecs");c.clink=gv("eck");
+  editClientIdx=null;save();drawC();
+};
+/* 순서 변경: PC는 드래그, 모바일은 ▲▼ */
+let dragCliIdx=null;
+window.cliDragStart=(e,i)=>{dragCliIdx=i;if(e.dataTransfer){e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",String(i));}catch(_){}}};
+window.cliDragOver=(e)=>{e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect="move";};
+window.cliDrop=(e,i)=>{e.preventDefault();if(dragCliIdx===null||dragCliIdx===i){dragCliIdx=null;return;}
+  const a=DB.clients,m=a.splice(dragCliIdx,1)[0];a.splice(i,0,m);dragCliIdx=null;editClientIdx=null;save();drawC();};
+window.cliDragEnd=()=>{dragCliIdx=null;};
+window.cliMove=(i,d)=>{const j=i+d;if(j<0||j>=DB.clients.length)return;
+  const a=DB.clients;[a[i],a[j]]=[a[j],a[i]];editClientIdx=null;save();drawC();};
 
 /* ===== 7) 회고 (연도별) ===== */
 let retroYear=null;
