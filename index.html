@@ -30,6 +30,13 @@
   button{font-family:inherit;cursor:pointer;border:none;border-radius:9px;transition:.12s}
   input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--input);color:var(--ink);width:100%}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  /* 게시판(노트·일기·QT·설교·독서) 본문이 화면을 꽉 채우도록 */
+  .ta-fill{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px);resize:vertical}
+  .detail-body{white-space:pre-wrap;line-height:1.8;min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px)}
+  @media(max-width:760px){
+    .ta-fill{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
+    .detail-body{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
+  }
   input[type=range]{accent-color:var(--accent);padding:0}
   input[type=date],input[type=time]{cursor:pointer}
   input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(0.85);cursor:pointer;opacity:.85;font-size:16px}
@@ -580,7 +587,7 @@ function diaryWrite(){
   main.innerHTML=`<h1 class="page-h">일기 ${ed?"수정":"쓰기"}</h1><p class="page-sub">오늘 하루를 기록해요.</p>
   <div class="card">
     <div class="row"><input type="date" id="dd" class="n1" value="${ed?ed.date:T()}"><input id="dt" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
-    <textarea id="dc" class="mt" rows="9" placeholder="오늘 하루는 어땠나요?">${ed?esc(ed.content):""}</textarea>
+    <textarea id="dc" class="mt ta-fill" rows="9" placeholder="오늘 하루는 어땠나요?">${ed?esc(ed.content):""}</textarea>
     <div class="row mt"><button class="addb" id="dsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="diaryBack()">취소</button></div></div>`;
   document.getElementById("dsave").onclick=()=>{
     const c=val("dc");if(!c)return alert("내용을 입력하세요.");
@@ -599,7 +606,7 @@ function diaryDetail(){
       <button class="ghostb danger" onclick="diaryDel('${d.id}')">삭제</button></div>
     <div class="meta">${fmt(d.date)}</div>
     <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
-    <div style="white-space:pre-wrap;line-height:1.8">${esc(d.content)}</div></div>`;
+    <div class="detail-body">${esc(d.content)}</div></div>`;
 }
 window.diaryDel=(id)=>{if(!confirm("이 일기를 삭제할까요?"))return;DB.diary=DB.diary.filter(x=>x.id!==id);save();diaryBack();};
 
@@ -683,7 +690,7 @@ function renderQT(){
     const ed=qtSel?DB.qt.find(x=>x.id===qtSel):null;
     fb.innerHTML=`<div class="card"><h2>말씀 기록 ${ed?"수정":"쓰기"}</h2>
       <div class="row"><input type="date" id="qd" class="n1" value="${ed?ed.date:T()}"><input id="qv" placeholder="말씀 (예: 시편 23편)" value="${ed?esc(ed.title):""}"></div>
-      <textarea id="qn" class="mt" rows="7" placeholder="묵상 내용">${ed?esc(ed.content):""}</textarea>
+      <textarea id="qn" class="mt ta-fill" rows="7" placeholder="묵상 내용">${ed?esc(ed.content):""}</textarea>
       <div class="row mt"><button class="addb" id="qsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="qtBack()">취소</button></div></div>`;
     document.getElementById("qsave").onclick=()=>{const v=val("qv"),n=val("qn");if(!v&&!n)return alert("내용을 입력하세요.");
       if(ed){ed.date=val("qd")||ed.date;ed.title=v||"말씀";ed.content=n;}
@@ -700,7 +707,7 @@ function renderQT(){
         <button class="ghostb danger" onclick="qtDel('${q.id}')">삭제</button></div>
       <div class="meta">${fmt(q.date)}</div>
       <h2 style="font-size:20px;margin:4px 0 12px">${esc(q.title)}</h2>
-      <div style="white-space:pre-wrap;line-height:1.8">${esc(q.content)}</div></div>`;
+      <div class="detail-body">${esc(q.content)}</div></div>`;
     return;
   }
   if(qtYear===null)qtYear=String(new Date().getFullYear());
@@ -734,7 +741,7 @@ function renderSermon(){
     fb.innerHTML=`<div class="card"><h2>설교말씀 ${ed?"수정":"쓰기"}</h2>
       <div class="row"><input type="date" id="sd" class="n1" value="${ed?ed.date:T()}"><input id="stt" placeholder="설교 제목" value="${ed?esc(ed.title):""}"></div>
       <div class="row mt"><input id="sref" placeholder="본문 (예: 출 25:31-40)" value="${ed?esc(ed.ref||""):""}"><input id="ssp" placeholder="인도자 (예: 이원규 목사님)" value="${ed?esc(ed.speaker||""):""}"></div>
-      <textarea id="scont" class="mt" rows="7" placeholder="설교 내용·은혜 받은 점 (선택)">${ed?esc(ed.content||""):""}</textarea>
+      <textarea id="scont" class="mt ta-fill" rows="7" placeholder="설교 내용·은혜 받은 점 (선택)">${ed?esc(ed.content||""):""}</textarea>
       <div class="row mt"><button class="addb" id="ssave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="sermonBack()">취소</button></div></div>`;
     document.getElementById("ssave").onclick=()=>{const t=val("stt");if(!t)return alert("설교 제목을 입력하세요.");
       if(ed){ed.date=val("sd")||ed.date;ed.title=t;ed.ref=val("sref");ed.speaker=val("ssp");ed.content=val("scont");}
@@ -752,7 +759,7 @@ function renderSermon(){
       <div class="meta">${fmt(s.date)}${s.speaker?" · "+esc(s.speaker):""}</div>
       <h2 style="font-size:20px;margin:4px 0 6px">${esc(s.title)}</h2>
       ${s.ref?`<div class="meta" style="margin-bottom:10px">본문: ${esc(s.ref)}</div>`:""}
-      <div style="white-space:pre-wrap;line-height:1.8">${esc(s.content||"")}</div></div>`;
+      <div class="detail-body">${esc(s.content||"")}</div></div>`;
     return;
   }
   const years=[...new Set(DB.sermons.map(s=>s.date.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
@@ -1022,7 +1029,7 @@ function bookWrite(){
       <select id="bStatus" class="n2"><option ${b&&b.status==="읽는중"?"selected":""}>읽는중</option><option ${b&&b.status==="완료"?"selected":""}>완료</option></select>
       <input id="bGenre" class="n2" placeholder="장르" value="${b?esc(b.genre):""}"></div>
     <input id="bTitle" class="mt" placeholder="책 제목" value="${b?esc(b.title):""}">
-    <textarea id="bNote" class="mt" rows="8" placeholder="노트 내용">${b?esc(b.note):""}</textarea>
+    <textarea id="bNote" class="mt ta-fill" rows="8" placeholder="노트 내용">${b?esc(b.note):""}</textarea>
     <div class="row mt"><button class="addb" id="bSave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="bookBack()">취소</button></div></div>`;
   document.getElementById("bSave").onclick=()=>{
     const t=val("bTitle");if(!t)return alert("책 제목을 입력하세요.");
@@ -1041,7 +1048,7 @@ function bookDetail(){
       <button class="ghostb danger" onclick="bookDel('${b.id}')">삭제</button></div>
     <div class="meta">${esc(String(b.year))}년 · <span class="pill">${esc(b.status)}</span> ${b.genre?esc(b.genre):""}</div>
     <h2 style="font-size:21px;margin:6px 0 12px">${esc(b.title)}</h2>
-    <div style="white-space:pre-wrap;line-height:1.8">${esc(b.note||"")}</div></div>`;
+    <div class="detail-body">${esc(b.note||"")}</div></div>`;
 }
 
 /* ===== 비용관리 (고정 비용) ===== */
@@ -1098,7 +1105,7 @@ function noteWrite(){
   main.innerHTML=`<h1 class="page-h">노트 ${ed?"수정":""}</h1><p class="page-sub">자유롭게 기록해요.</p>
   <div class="card">
     <div class="row"><input type="date" id="nt_d" class="n1" value="${ed?ed.date:T()}"><input id="nt_t" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
-    <textarea id="nt_c" class="mt" rows="9" placeholder="내용을 적어보세요">${ed?esc(ed.content):""}</textarea>
+    <textarea id="nt_c" class="mt ta-fill" rows="9" placeholder="내용을 적어보세요">${ed?esc(ed.content):""}</textarea>
     <div class="row mt"><button class="addb" id="nt_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="noteBack()">취소</button></div></div>`;
   document.getElementById("nt_save").onclick=()=>{const c=val("nt_c");if(!c)return alert("내용을 입력하세요.");
     if(ed){ed.date=val("nt_d")||ed.date;ed.title=val("nt_t")||"무제";ed.content=c;}
@@ -1115,7 +1122,7 @@ function noteDetail(){
       <button class="ghostb danger" onclick="noteDel('${d.id}')">삭제</button></div>
     <div class="meta">${fmt(d.date)}</div>
     <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
-    <div style="white-space:pre-wrap;line-height:1.8">${esc(d.content)}</div></div>`;
+    <div class="detail-body">${esc(d.content)}</div></div>`;
 }
 
 /* ===== 백업 (하루 1회 자동 · 30일 보관) ===== */
