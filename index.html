@@ -1145,7 +1145,7 @@ window.restoreBackup=(id)=>{const b=(DB.backups||[]).find(x=>x.id===id);if(!b)re
 /* ===== 공통 ===== */
 window.tg=(arr,i,f)=>{DB[arr][i][f]=!DB[arr][i][f];save();render();};
 window.rm=(arr,i)=>{DB[arr].splice(i,1);save();render();};
-let rz;window.addEventListener("resize",()=>{if(page==="schedule"){clearTimeout(rz);rz=setTimeout(rSchedule,150);}});
+let rz,lastW=window.innerWidth;window.addEventListener("resize",()=>{if(window.innerWidth===lastW)return;lastW=window.innerWidth;if(page==="schedule"){clearTimeout(rz);rz=setTimeout(rSchedule,150);}});
 window.addEventListener("resize",()=>{const L=document.querySelector(".layout");if(window.innerWidth<=760){L.classList.remove("collapsed");}else{const a=document.querySelector("aside");a.classList.remove("open");const bd=document.getElementById("backdrop");if(bd)bd.classList.remove("show");}});
 document.addEventListener("click",e=>{const t=e.target;if(t.tagName==="INPUT"&&(t.type==="date"||t.type==="time")){try{t.showPicker&&t.showPicker();}catch(_){}}});
 
