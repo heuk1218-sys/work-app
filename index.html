@@ -19,9 +19,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#1c1c1c; --side:#111111; --side-ink:#c8c8c8; --side-hover:#2b2b2b;
-    --card:#242424; --ink:#e8e8e8; --muted:#9a9a9a; --line:#383838;
-    --accent:#cfcfcf; --accent-soft:#333333; --on-accent:#141414; --good:#a9a9a9; --bad:#cf7f7f;
+    --bg:#1c1c1c; --side:#111111; --side-ink:#ededed; --side-hover:#2b2b2b;
+    --card:#242424; --ink:#ffffff; --muted:#cccccc; --line:#404040;
+    --accent:#f2f2f2; --accent-soft:#3a3a3a; --on-accent:#141414; --good:#d2d2d2; --bad:#eaa5a5;
     --shadow:0 4px 18px rgba(0,0,0,.5); --input:#1e1e1e;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -30,8 +30,8 @@
   button{font-family:inherit;cursor:pointer;border:none;border-radius:9px;transition:.12s}
   input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--input);color:var(--ink);width:100%}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
-  /* 게시판(노트·일기·QT·설교·독서) 본문이 화면을 꽉 채우도록 */
-  .ta-fill{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px);resize:vertical}
+  /* 게시판(노트·일기·QT·설교·독서) 본문이 화면을 꽉 채우고, 내용에 맞춰 늘어나며 페이지 전체가 스크롤되도록 */
+  .ta-fill{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px);resize:none;overflow:hidden}
   .detail-body{white-space:pre-wrap;line-height:1.8;min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px)}
   @media(max-width:760px){
     .ta-fill{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
@@ -82,7 +82,7 @@
   aside nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;color:var(--side-ink);padding:10px 12px;font-size:14.5px;border-radius:9px;margin-bottom:2px}
   aside nav button:hover{background:var(--side-hover)}
   aside nav button.on{background:var(--accent);color:var(--on-accent);font-weight:500}
-  aside .nav-sec{font-size:10.5px;color:#6a6a6a;padding:14px 12px 5px;letter-spacing:.03em}
+  aside .nav-sec{font-size:10.5px;color:#9c9c9c;padding:14px 12px 5px;letter-spacing:.03em}
   aside .ico{width:20px;text-align:center}
   aside nav button svg,aside .brand svg{width:18px;height:18px}
   aside nav button svg{color:var(--side-ink)}
@@ -162,7 +162,7 @@
   .wtask{font-size:12px;line-height:1.35;display:flex;align-items:flex-start;gap:5px;padding:4px 6px;border-radius:6px;margin-bottom:3px;background:var(--card);border:1px solid var(--line);word-break:keep-all}
   .wtask.done{opacity:.5;text-decoration:line-through}
   .pdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:4px}
-  .wempty{color:#666;font-size:11px;text-align:center;padding:4px 0}
+  .wempty{color:#8f8f8f;font-size:11px;text-align:center;padding:4px 0}
   .wmain{font-size:10.5px;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:3px 6px;margin-bottom:5px;white-space:normal;line-height:1.35;word-break:break-word}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:760px){
