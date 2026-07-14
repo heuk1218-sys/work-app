@@ -6,23 +6,23 @@
 <title>업무관리</title>
 <!-- PWA (설치형 웹앱) -->
 <link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#12192b" />
+<meta name="theme-color" content="#111111" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="application-name" content="업무관리" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="업무관리" />
 <link rel="apple-touch-icon" href="/icon-192.png" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'7'%20fill%3D'%2312192b'%2F%3E%3Cg%20transform%3D'translate(4%2C4)'%20stroke%3D'%238fb3e2'%20stroke-width%3D'2'%20fill%3D'none'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M7%2020h10'%2F%3E%3Cpath%20d%3D'M10%2020c5.5-2.5.8-6.4%203-10'%2F%3E%3Cpath%20d%3D'M9.5%209.4c1.1.8%201.8%202.2%202.3%203.7-2%20.4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2%202.8-.5%204.4%200%205.5.8z'%2F%3E%3Cpath%20d%3D'M14.1%206a7%207%200%200%200-1.1%204c1.9-.1%203.3-.6%204.3-1.4%201-1%201.6-2.3%201.7-4.6-2.7.1-4%201-4.9%202z'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'7'%20fill%3D'%23161616'%2F%3E%3Cg%20transform%3D'translate(4%2C4)'%20stroke%3D'%23cfcfcf'%20stroke-width%3D'2'%20fill%3D'none'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M7%2020h10'%2F%3E%3Cpath%20d%3D'M10%2020c5.5-2.5.8-6.4%203-10'%2F%3E%3Cpath%20d%3D'M9.5%209.4c1.1.8%201.8%202.2%202.3%203.7-2%20.4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2%202.8-.5%204.4%200%205.5.8z'%2F%3E%3Cpath%20d%3D'M14.1%206a7%207%200%200%200-1.1%204c1.9-.1%203.3-.6%204.3-1.4%201-1%201.6-2.3%201.7-4.6-2.7.1-4%201-4.9%202z'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#192338; --side:#12192b; --side-ink:#aebdd8; --side-hover:#22304f;
-    --card:#1e2e4f; --ink:#d9e1f1; --muted:#8ba0c4; --line:#2c3f66;
-    --accent:#8fb3e2; --accent-soft:#223357; --on-accent:#16233f; --good:#6a9a88; --bad:#cf7f7f;
-    --shadow:0 4px 18px rgba(0,0,0,.45); --input:#172642;
+    --bg:#1c1c1c; --side:#111111; --side-ink:#c8c8c8; --side-hover:#2b2b2b;
+    --card:#242424; --ink:#e8e8e8; --muted:#9a9a9a; --line:#383838;
+    --accent:#cfcfcf; --accent-soft:#333333; --on-accent:#141414; --good:#a9a9a9; --bad:#cf7f7f;
+    --shadow:0 4px 18px rgba(0,0,0,.5); --input:#1e1e1e;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
@@ -42,7 +42,7 @@
   input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(0.85);cursor:pointer;opacity:.85;font-size:16px}
   .hidden{display:none!important}
 
-  .demo-banner{background:#1a2947;color:#8fb3e2;text-align:center;font-size:12.5px;padding:7px}
+  .demo-banner{background:#262626;color:#cfcfcf;text-align:center;font-size:12.5px;padding:7px}
 
   .layout{display:flex;min-height:100vh}
   .topbar{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--side);position:sticky;top:0;z-index:40;border-bottom:1px solid var(--line)}
@@ -50,10 +50,10 @@
   .topbar .hamb svg{width:24px;height:24px}
   .topbar .tb-title{font-family:'Gowun Dodum',sans-serif;font-weight:500;font-size:17px;margin-left:auto}
   .side-close{display:none}
-  .side-collapse{margin-left:auto;background:transparent;border:none;color:#5b6a8a;padding:4px;cursor:pointer;border-radius:6px}
+  .side-collapse{margin-left:auto;background:transparent;border:none;color:#6a6a6a;padding:4px;cursor:pointer;border-radius:6px}
   .side-collapse svg{width:18px;height:18px}
   .side-collapse:hover{color:var(--accent);background:var(--side-hover)}
-  .copyright-fixed{position:fixed;right:14px;bottom:9px;font-size:11px;color:#46567a;z-index:20;pointer-events:none}
+  .copyright-fixed{position:fixed;right:14px;bottom:9px;font-size:11px;color:#555;z-index:20;pointer-events:none}
   .lock{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
   .lock-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:36px 28px;width:100%;max-width:320px;text-align:center;box-shadow:var(--shadow)}
   .lock-logo{color:var(--accent);margin-bottom:12px}
@@ -82,7 +82,7 @@
   aside nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;color:var(--side-ink);padding:10px 12px;font-size:14.5px;border-radius:9px;margin-bottom:2px}
   aside nav button:hover{background:var(--side-hover)}
   aside nav button.on{background:var(--accent);color:var(--on-accent);font-weight:500}
-  aside .nav-sec{font-size:10.5px;color:#5b6a8a;padding:14px 12px 5px;letter-spacing:.03em}
+  aside .nav-sec{font-size:10.5px;color:#6a6a6a;padding:14px 12px 5px;letter-spacing:.03em}
   aside .ico{width:20px;text-align:center}
   aside nav button svg,aside .brand svg{width:18px;height:18px}
   aside nav button svg{color:var(--side-ink)}
@@ -115,10 +115,10 @@
   .item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
   .item:last-child{border-bottom:none}
   .chk{width:20px;height:20px;flex:0 0 20px;border:2px solid var(--line);border-radius:6px;background:none;margin-top:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
-  .chk.on{background:#3f5578;border-color:#3f5578}
+  .chk.on{background:#555;border-color:#555}
   .item .bd{flex:1;min-width:0}.item .bd .t{font-weight:500}
   .item.done .bd .t{text-decoration:line-through;color:var(--muted)}
-  .item.link:hover{background:#22304f;border-radius:8px}
+  .item.link:hover{background:#2b2b2b;border-radius:8px}
   .meta{font-size:12px;color:var(--muted)}
   .del{background:none;color:var(--muted);font-size:17px;line-height:1;padding:0 3px}
   .del:hover{color:var(--bad)}
@@ -138,22 +138,22 @@
   .stat .s .val{font-size:22px;font-weight:700;margin-top:3px;color:var(--accent)}
 
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .cal-head button{background:#22314f;border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;color:var(--ink)}
+  .cal-head button{background:#2b2b2b;border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;color:var(--ink)}
   .cal-head button:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .cal-grid .dow{background:#17233d;text-align:center;font-size:12px;color:var(--muted);padding:7px 0}
+  .cal-grid .dow{background:#1a1a1a;text-align:center;font-size:12px;color:var(--muted);padding:7px 0}
   .cal-grid .cell{background:var(--card);min-height:82px;padding:5px 6px;font-size:12px}
   .cal-grid .cell .dn{color:var(--muted);display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:12px}
   .cal-grid .cell.today .dn{background:var(--accent);color:var(--on-accent)}
-  .cal-grid .cell.out{background:#15203a}
-  .cal-grid .ev{background:#2b4068;color:#dbe6f7;border-radius:5px;padding:2px 5px;margin-top:3px;font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cal-grid .cell.out{background:#171717}
+  .cal-grid .ev{background:#3a3a3a;color:#e0e0e0;border-radius:5px;padding:2px 5px;margin-top:3px;font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sort-toggle{display:flex;gap:4px}
   .sort-toggle button{background:var(--input);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 11px;border-radius:7px}
   .sort-toggle button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 
   .week-scroll{overflow-x:auto;margin:0 -2px}
   .week-grid{display:grid;gap:7px}
-  .wcol{background:#172642;border:1px solid var(--line);border-radius:10px;padding:7px;min-height:104px;cursor:pointer}
+  .wcol{background:#1e1e1e;border:1px solid var(--line);border-radius:10px;padding:7px;min-height:104px;cursor:pointer}
   .wcol:hover{border-color:var(--accent)}
   .wcol.today{border-color:var(--accent);background:var(--card)}
   .wcol.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
@@ -162,7 +162,7 @@
   .wtask{font-size:12px;line-height:1.35;display:flex;align-items:flex-start;gap:5px;padding:4px 6px;border-radius:6px;margin-bottom:3px;background:var(--card);border:1px solid var(--line);word-break:keep-all}
   .wtask.done{opacity:.5;text-decoration:line-through}
   .pdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:4px}
-  .wempty{color:#566688;font-size:11px;text-align:center;padding:4px 0}
+  .wempty{color:#666;font-size:11px;text-align:center;padding:4px 0}
   .wmain{font-size:10.5px;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:3px 6px;margin-bottom:5px;white-space:normal;line-height:1.35;word-break:break-word}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:760px){
@@ -248,7 +248,7 @@
       <button data-p="backup"><i class="ico" data-lucide="database-backup"></i><span class="lab">백업</span></button>
     </nav>
     <div class="side-foot">
-      <div style="padding:0 6px"><button class="del" id="logout" style="font-size:12px;color:#6a7a9a">로그아웃</button></div>
+      <div style="padding:0 6px"><button class="del" id="logout" style="font-size:12px;color:#8a8a8a">로그아웃</button></div>
     </div>
   </aside>
   <div class="content">
@@ -378,7 +378,7 @@ function rDashboard(){
   const bars=wdays.map(d=>{const items=DB.schedules.filter(s=>s.date===d);const done=items.filter(s=>s.done).length;const r=items.length?Math.round(done/items.length*100):0;const isT=d===today;const dt=new Date(d+"T00:00:00");
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end">
       <div class="meta" style="font-size:10px;color:${isT?"var(--accent)":"var(--muted)"}">${r}%</div>
-      <div style="width:60%;height:${Math.max(r,3)}px;background:${isT?"var(--accent)":"#2c3f66"};border-radius:5px 5px 0 0"></div>
+      <div style="width:60%;height:${Math.max(r,3)}px;background:${isT?"var(--accent)":"#3a3a3a"};border-radius:5px 5px 0 0"></div>
       <div class="meta" style="font-size:10px;color:${isT?"var(--accent)":"var(--muted)"}">${DOW[dt.getDay()]}</div></div>`;}).join("");
   main.innerHTML=`<h1 class="page-h">대시보드</h1><p class="page-sub">${new Date().getMonth()+1}월 ${new Date().getDate()}일 (${wname})</p>
   <div style="border-left:3px solid var(--accent);padding:9px 0 9px 16px;margin-bottom:20px;color:var(--ink);font-size:14px;line-height:1.8;font-family:'Gowun Dodum',sans-serif">
@@ -411,7 +411,7 @@ function rDashboard(){
 }
 
 /* ===== 1) 일정 (주간 보기 · 날짜 선택 · 반응형) ===== */
-const PRI={1:{t:"1순위",c:"#c47b71"},2:{t:"2순위",c:"#c99a66"},3:{t:"3순위",c:"#6b9fc0"},4:{t:"4순위",c:"#8090ad"}};
+const PRI={1:{t:"1순위",c:"#e0e0e0"},2:{t:"2순위",c:"#b6b6b6"},3:{t:"3순위",c:"#8f8f8f"},4:{t:"4순위",c:"#6f6f6f"}};
 let selDay=null;
 function isMobile(){return window.innerWidth<=760;}
 function weekStart(ds){const d=new Date(ds+"T00:00:00");const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return d;}
@@ -1011,7 +1011,7 @@ function rBooks(){
   <div class="card"><h2>${bookYear}년 독서 목록</h2>${list.length?list.map(b=>`
     <div class="item link" style="cursor:pointer" onclick="bookOpen('${b.id}')">
       <div class="bd"><div class="t">${esc(b.title)}</div>
-        <div class="meta"><span class="pill" style="background:${b.status==="완료"?"#2c3a2c":"var(--accent-soft)"};color:${b.status==="완료"?"var(--good)":"var(--accent)"}">${esc(b.status)}</span> ${b.genre?esc(b.genre):""}</div></div>
+        <div class="meta"><span class="pill" style="background:${b.status==="완료"?"#2e2e2e":"var(--accent-soft)"};color:${b.status==="완료"?"var(--good)":"var(--accent)"}">${esc(b.status)}</span> ${b.genre?esc(b.genre):""}</div></div>
       <span class="meta" style="align-self:center">›</span></div>`).join(""):'<div class="empty">이 조건에 책이 없어요.</div>'}</div>`;
 }
 window.setBookYear=(v)=>{bookYear=v;rBooks();};
