@@ -16,23 +16,24 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'7'%20fill%3D'%23161616'%2F%3E%3Ctext%20x%3D'16'%20y%3D'22'%20text-anchor%3D'middle'%20font-family%3D'Arial%2CHelvetica%2Csans-serif'%20font-weight%3D'800'%20font-size%3D'20'%20letter-spacing%3D'-1'%20fill%3D'%230A84FF'%3EB%3C%2Ftext%3E%3Crect%20x%3D'10.5'%20y%3D'24'%20width%3D'11'%20height%3D'2.4'%20rx%3D'1.2'%20fill%3D'%230A84FF'%2F%3E%3C%2Fsvg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
   :root{
     /* Apple HIG 다크 모드 시스템 색 기반 */
     --bg:#1c1c1e; --side:#000000; --side-ink:#f2f2f7; --side-hover:#2c2c2e;
     --card:#2c2c2e; --ink:#ffffff; --muted:#98989e; --line:#38383a;
-    --accent:#0a84ff; --accent-soft:#0e2a45; --on-accent:#ffffff; --good:#30d158; --bad:#ff453a;
+    --accent:#0a84ff; --accent-2:#6cb6ff; --accent-soft:#0e2a45; --on-accent:#ffffff; --good:#30d158; --bad:#ff453a;
     --shadow:0 4px 18px rgba(0,0,0,.5); --input:#2c2c2e;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
-  h1,h2,h3,.brand{font-family:'Gowun Dodum',sans-serif}
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+  h1,h2,h3,.brand{font-weight:700}
   button{font-family:inherit;cursor:pointer;border:none;border-radius:9px;transition:.12s}
   input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--input);color:var(--ink);width:100%}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
   /* 게시판(노트·일기·QT·설교·독서) 본문이 화면을 꽉 채우고, 내용에 맞춰 늘어나며 페이지 전체가 스크롤되도록 */
   .ta-fill{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px);resize:none;overflow:hidden}
+  .ta-grow{resize:none;overflow:hidden;min-height:62px}
   .detail-body{white-space:pre-wrap;line-height:1.8;min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px)}
   @media(max-width:760px){
     .ta-fill{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
@@ -49,7 +50,7 @@
   .topbar{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--side);position:sticky;top:0;z-index:40;border-bottom:1px solid var(--line)}
   .topbar .hamb{background:transparent;border:none;color:var(--ink);padding:4px;cursor:pointer}
   .topbar .hamb svg{width:24px;height:24px}
-  .topbar .tb-title{font-family:'Gowun Dodum',sans-serif;font-weight:500;font-size:17px;margin-left:auto}
+  .topbar .tb-title{font-weight:600;font-size:17px;margin-left:auto}
   .side-close{display:none}
   .side-collapse{margin-left:auto;background:transparent;border:none;color:#6a6a6a;padding:4px;cursor:pointer;border-radius:6px}
   .side-collapse svg{width:18px;height:18px}
@@ -79,7 +80,9 @@
   aside{width:210px;flex:0 0 210px;background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column}
   aside nav{flex:1;overflow-y:auto;min-height:0}
   .side-foot{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
-  aside .brand{font-size:20px;color:#fff;padding:6px 10px 16px;display:flex;align-items:center;gap:8px}
+  aside .brand{font-size:20px;color:#fff;padding:6px 10px 16px;display:flex;align-items:center;gap:10px;font-weight:700}
+  .brand-bar{flex:0 0 auto;width:4px;height:22px;border-radius:2px;background:var(--accent)}
+  .layout.collapsed .brand .brand-bar{display:none}
   aside nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;color:var(--side-ink);padding:10px 12px;font-size:14.5px;border-radius:9px;margin-bottom:2px}
   aside nav button:hover{background:var(--side-hover)}
   aside nav button.on{background:var(--accent);color:var(--on-accent);font-weight:500}
@@ -97,21 +100,21 @@
   details.acard .acbody{padding:0 20px 18px}
 
   main{flex:1;padding:26px 34px 70px;max-width:none}
-  .page-h{font-size:23px;font-weight:600;letter-spacing:-.01em;margin-bottom:5px;color:var(--ink)}
-  .page-sub{color:var(--muted);font-size:13.5px;margin-bottom:22px}
+  .page-h{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;color:var(--ink)}
+  .page-sub{color:var(--muted);font-size:15px;margin-bottom:22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.22);padding:18px 20px;margin-bottom:14px}
-  .card h2{font-size:15px;font-weight:600;letter-spacing:-.005em;margin-bottom:14px;color:var(--ink)}
+  .card h2{font-size:17px;font-weight:600;letter-spacing:-.01em;margin-bottom:14px;color:var(--ink)}
   .row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:0}
   .row .n1{flex:0 0 130px}.row .n2{flex:0 0 100px}
   .mt{margin-top:9px}
-  .addb{background:var(--accent-soft);color:var(--accent);font-weight:700;padding:10px;width:100%}
+  .addb{background:var(--accent-soft);color:var(--accent-2);font-weight:700;padding:10px;width:100%}
   .addb:hover{background:var(--accent);color:var(--on-accent)}
   .ghostb{background:var(--input);border:1px solid var(--line);color:var(--ink);padding:10px 14px;border-radius:9px}
   .ghostb:hover{border-color:var(--accent)}
   .ghostb.danger{color:var(--bad)}
   .linklike{background:none;border:none;color:var(--accent);font-size:12.5px;cursor:pointer;padding:2px 4px}
   .empty{color:var(--muted);text-align:center;padding:22px 0;font-size:13.5px}
-  .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent)}
+  .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent-2)}
 
   .item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
   .item:last-child{border-bottom:none}
@@ -120,7 +123,7 @@
   .item .bd{flex:1;min-width:0}.item .bd .t{font-weight:500}
   .item.done .bd .t{text-decoration:line-through;color:var(--muted)}
   .item.link:hover{background:#2c2c2e;border-radius:8px}
-  .meta{font-size:12px;color:var(--muted)}
+  .meta{font-size:13px;color:var(--muted)}
   .del{background:none;color:var(--muted);font-size:17px;line-height:1;padding:0 3px}
   .del:hover{color:var(--bad)}
   .sub-tabs{display:flex;gap:6px;margin-bottom:14px}
@@ -164,7 +167,7 @@
   .wtask.done{opacity:.5;text-decoration:line-through}
   .pdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:4px}
   .wempty{color:#8f8f8f;font-size:11px;text-align:center;padding:4px 0}
-  .wmain{font-size:10.5px;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:3px 6px;margin-bottom:5px;white-space:normal;line-height:1.35;word-break:break-word}
+  .wmain{font-size:11.5px;font-weight:600;color:var(--accent-2);background:var(--accent-soft);border-radius:5px;padding:4px 7px;margin-bottom:5px;white-space:normal;line-height:1.4;word-break:break-word}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:760px){
     .two-col{grid-template-columns:1fr}
@@ -179,7 +182,7 @@
     aside nav>button:first-of-type{grid-column:1/-1}
     aside nav button{padding:12px 12px;font-size:15.5px}
     main{padding:14px 14px 60px;max-width:100%}
-    .page-h{font-size:20px}
+    .page-h{font-size:25px}
     .card{padding:15px 16px}
     .row .n1,.row .n2{flex:1 1 46%}
     .sub-tabs{flex-wrap:wrap}
@@ -229,7 +232,7 @@
 <div class="layout">
   <aside>
     <button class="side-close" onclick="toggleMenu()" aria-label="닫기"><i data-lucide="x"></i></button>
-    <div class="brand"><i data-lucide="sprout"></i> <span>업무관리</span><button class="side-collapse" onclick="toggleMenu()" aria-label="메뉴 접기/펼치기"><i data-lucide="panel-left"></i></button></div>
+    <div class="brand"><span class="brand-bar"></span><span>업무관리</span><button class="side-collapse" onclick="toggleMenu()" aria-label="메뉴 접기/펼치기"><i data-lucide="panel-left"></i></button></div>
     <nav id="nav">
       <button data-p="dashboard" class="on"><i class="ico" data-lucide="layout-dashboard"></i><span class="lab">대시보드</span></button>
       <div class="nav-sec">개인</div>
@@ -317,7 +320,11 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
   closeMenu();
 });
 document.getElementById("logout").onclick=async()=>{if(confirm("로그아웃할까요?")){await sb.auth.signOut();location.reload();}};
-function render(){({dashboard:rDashboard,schedule:rSchedule,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();if(typeof setSearchPlaceholder==="function")setSearchPlaceholder();}
+function render(){({dashboard:rDashboard,schedule:rSchedule,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();if(typeof setSearchPlaceholder==="function")setSearchPlaceholder();sizeGrow();}
+/* 텍스트영역 자동 늘어남: 내용에 맞춰 커지고 페이지가 통째로 스크롤됨 */
+function autoGrow(ta){if(!ta)return;ta.style.height="auto";ta.style.height=(ta.scrollHeight+2)+"px";}
+function sizeGrow(root){(root||document).querySelectorAll("textarea.ta-fill,textarea.ta-grow").forEach(autoGrow);}
+document.addEventListener("input",e=>{if(e.target&&e.target.matches&&e.target.matches("textarea.ta-fill,textarea.ta-grow"))autoGrow(e.target);});
 
 /* ===== 전체 검색 (페이지별 범위 · 관련도순) ===== */
 let gResults=[];
@@ -382,7 +389,7 @@ function rDashboard(){
       <div style="width:60%;height:${Math.max(r,3)}px;background:${isT?"var(--accent)":"#3a3a3a"};border-radius:5px 5px 0 0"></div>
       <div class="meta" style="font-size:10px;color:${isT?"var(--accent)":"var(--muted)"}">${DOW[dt.getDay()]}</div></div>`;}).join("");
   main.innerHTML=`<h1 class="page-h">대시보드</h1><p class="page-sub">${new Date().getMonth()+1}월 ${new Date().getDate()}일 (${wname})</p>
-  <div style="border-left:3px solid var(--accent);padding:9px 0 9px 16px;margin-bottom:20px;color:var(--ink);font-size:14px;line-height:1.8;font-family:'Gowun Dodum',sans-serif">
+  <div style="border-left:3px solid var(--accent);padding:9px 0 9px 16px;margin-bottom:20px;color:var(--ink);font-size:14px;line-height:1.8">
     휴식은 아기들을 위한 것이고 여유는 은퇴자를 위한 것이다<br>부족한 건 시간이 아니라 강력한 비전이다<br><span style="color:var(--accent);font-size:13px">— 아놀드 슈워제네거</span></div>
   <div class="two-col">
     <div class="card" style="display:flex;align-items:center;gap:18px">
@@ -641,8 +648,9 @@ function drawG(){
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
         <input type="range" min="0" max="100" value="${g.progress}" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="setProg('${g.id}',this.value)" style="flex:1">
         <span class="meta" style="width:42px;text-align:right">${g.progress}%</span></div>
-      ${goalOpen[g.id]?`<textarea class="mt" rows="3" placeholder="목표에 대한 설명·계획을 적어보세요" onchange="setGoalDesc('${g.id}',this.value)">${esc(g.desc||"")}</textarea>`:""}
+      ${goalOpen[g.id]?`<textarea class="mt ta-grow" rows="2" placeholder="목표에 대한 설명·계획을 적어보세요" onchange="setGoalDesc('${g.id}',this.value)">${esc(g.desc||"")}</textarea>`:""}
     </div>`).join(""):'<div class="empty">이 해에 등록된 목표가 없어요.</div>';
+  sizeGrow(e);
 }
 window.toggleGoalDesc=(id)=>{goalOpen[id]=!goalOpen[id];drawG();};
 window.setGoalDesc=(id,v)=>{const g=DB.goals.find(x=>x.id===id);if(g){g.desc=v;save();}};
