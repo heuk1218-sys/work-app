@@ -1191,6 +1191,209 @@ async function boot(pw){
   btn.onclick=go;inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});inp.focus();
 })();
 if(window.lucide)lucide.createIcons();
+
+/* ================================================================
+   [안전 패치] 데이터 손실 방지 — 병합 저장 · 백업 강화 · 휴지통
+   기존 save()/autoBackup()/pruneBackups() 를 안전 버전으로 교체.
+   (2026-07 heuk1218 업무관리 앱 / 통짜-blob 덮어쓰기 사고 대응)
+   ================================================================ */
+(function(){
+  "use strict";
+  /* ---- 3-way 병합 코어 ---- */
+  function hashStr(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return (h>>>0).toString(36); }
+  function eqv(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+  function tstamp(r){ return (r && (r.updatedAt||r.mtime||r._u||r.ts)) || null; }
+  function recId(rec, seen){
+    if(rec && rec.id!=null) return String(rec.id);
+    const c=Object.assign({},rec); delete c.id;
+    let base='h'+hashStr(JSON.stringify(c));
+    if(seen){ let n=(seen.get(base)||0)+1; seen.set(base,n); if(n>1) base+='#'+n; }
+    return base;
+  }
+  function ensureIds(D, cols){
+    for(const col of cols){ const arr=D[col]; if(!Array.isArray(arr)) continue;
+      const seen=new Map();
+      for(const rec of arr){ if(rec && typeof rec==='object' && rec.id==null){ rec.id=recId(rec,seen); } }
+    }
+  }
+  function indexById(arr){ const m=new Map(); (arr||[]).forEach(rec=>{ const id=(rec&&rec.id!=null)?String(rec.id):recId(rec); m.set(id,rec); }); return m; }
+  function pickNewer(m,s,b){
+    const tm=tstamp(m), tsv=tstamp(s);
+    if(tm&&tsv) return (tm>=tsv)?m:s;
+    if(b!=null){ if(eqv(m,b)&&!eqv(s,b)) return s; if(eqv(s,b)&&!eqv(m,b)) return m; }
+    return m;
+  }
+  function mergeArray(baseMap, mineArr, serverArr){
+    const mine=indexById(mineArr), server=indexById(serverArr), ids=new Set();
+    if(baseMap) for(const k of baseMap.keys()) ids.add(k);
+    for(const k of mine.keys()) ids.add(k);
+    for(const k of server.keys()) ids.add(k);
+    const out=[], deleted=[];
+    for(const id of ids){
+      const inB=baseMap?baseMap.has(id):false, inM=mine.has(id), inS=server.has(id);
+      if(inB&&!inM&&inS){ deleted.push(server.get(id)); continue; }
+      if(inB&&inM&&!inS){ continue; }
+      if(inB&&!inM&&!inS){ continue; }
+      if(inM&&inS){ out.push(pickNewer(mine.get(id),server.get(id),baseMap?baseMap.get(id):null)); continue; }
+      if(inM){ out.push(mine.get(id)); continue; }
+      if(inS){ out.push(server.get(id)); continue; }
+    }
+    return {arr:out, deleted};
+  }
+  function pickNewerVal(m,s,b){ if(b!==null&&b!==undefined){ if(eqv(m,b)&&!eqv(s,b)) return s; if(eqv(s,b)&&!eqv(m,b)) return m; } return m; }
+  function mergeMap(baseObj, mineObj, serverObj){
+    const base=baseObj||{}, mine=mineObj||{}, server=serverObj||{};
+    const keys=new Set([...Object.keys(base),...Object.keys(mine),...Object.keys(server)]), out={};
+    for(const k of keys){
+      const inB=k in base, inM=k in mine, inS=k in server;
+      if(inB&&!inM&&inS) continue;
+      if(inB&&inM&&!inS) continue;
+      if(inB&&!inM&&!inS) continue;
+      if(inM&&inS){ out[k]=pickNewerVal(mine[k],server[k],inB?base[k]:null); continue; }
+      if(inM){ out[k]=mine[k]; } else if(inS){ out[k]=server[k]; }
+    }
+    return out;
+  }
+  function snapForBase(D, aCols, mCols){
+    const arrays={}, maps={};
+    for(const col of aCols){ arrays[col]=indexById((D[col]||[]).map(r=>JSON.parse(JSON.stringify(r)))); }
+    for(const col of mCols){ maps[col]=JSON.parse(JSON.stringify(D[col]||{})); }
+    return {arrays, maps};
+  }
+
+  /* ---- 컬럼 구성 ---- */
+  const ARRAY_COLS=["schedules","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups","trash"];
+  const MAP_COLS=["dayinfo","monthmemo"];
+
+  let baseState=null, baseVersion=null, _mt=null, _busy=false, _pending=false;
+  function nowISO(){ return new Date().toISOString(); }
+
+  /* ---- 로드 직후 base 확정(삭제 오인 방지) ---- */
+  function tryInitBase(){
+    if(baseState) return;
+    if(!(typeof sb!=='undefined' && sb && currentUser && dataReady && DB)) return;
+    ensureIds(DB, ARRAY_COLS);
+    if(!Array.isArray(DB.trash)) DB.trash=[];
+    sb.from("app_data").select("updated_at").eq("user_id",currentUser.id).maybeSingle()
+      .then(r=>{ baseVersion=(r&&r.data&&r.data.updated_at)||null; baseState=snapForBase(DB,ARRAY_COLS,MAP_COLS); })
+      .catch(()=>{ baseState=snapForBase(DB,ARRAY_COLS,MAP_COLS); });
+  }
+  const _bt=setInterval(()=>{ tryInitBase(); if(baseState) clearInterval(_bt); }, 300);
+
+  function toTrash(recs){
+    if(!recs||!recs.length) return;
+    if(!Array.isArray(DB.trash)) DB.trash=[];
+    const t=nowISO();
+    for(const r of recs){ if(r&&typeof r==='object'){ DB.trash.push(Object.assign({},r,{_deletedAt:t})); } }
+    const cutoff=Date.now()-30*864e5;
+    DB.trash=DB.trash.filter(x=> !x._deletedAt || new Date(x._deletedAt).getTime()>=cutoff);
+  }
+
+  function keyOf(r){ return (r&&r.id!=null)?String(r.id):recId(r); }
+  /* 전체 컬렉션 3-way 병합 + 대량삭제 차단기 */
+  function mergeAll(bState, D, sData, aCols, mCols){
+    const MAXDEL=8, FRAC=0.4; const per={}; let totalDel=0;
+    for(const col of aCols){
+      if(col==="trash"){ per[col]={arr:mergeArray(null, D[col]||[], sData[col]||[]).arr, deleted:[]}; continue; }
+      const m=mergeArray(bState?bState.arrays[col]:null, D[col]||[], sData[col]||[]);
+      per[col]=m; totalDel+=m.deleted.length;
+    }
+    let suspicious=totalDel>MAXDEL;
+    for(const col of aCols){ if(col==="trash") continue; const m=per[col]; const sl=Array.isArray(sData[col])?sData[col].length:0; if(sl>=5 && m.deleted.length>sl*FRAC) suspicious=true; }
+    const deletedOut=[];
+    for(const col of aCols){ const m=per[col];
+      if(col!=="trash" && suspicious && m.deleted.length){ const ids=new Set(m.arr.map(keyOf)); for(const d of m.deleted){ const k=keyOf(d); if(!ids.has(k)){ m.arr.push(d); ids.add(k);} } m.deleted=[]; }
+      D[col]=m.arr; if(col!=="trash") for(const d of m.deleted) deletedOut.push(d);
+    }
+    for(const col of mCols){ D[col]=mergeMap(bState?bState.maps[col]:null, D[col]||{}, sData[col]||{}); }
+    return {suspicious, deleted:deletedOut};
+  }
+  function mergeServerIntoDB(sData){
+    const res=mergeAll(baseState, DB, sData, ARRAY_COLS, MAP_COLS);
+    toTrash(res.deleted);
+    if(res.suspicious){
+      console.warn("[safe] 대량삭제 차단기 작동 → 서버 데이터 보존");
+      try{ DB.backups=DB.backups||[]; const sd=Object.assign({},sData); delete sd.backups; delete sd.trash; DB.backups.push({id:uid(), ts:nowISO(), data:JSON.stringify(sd), _guard:true}); pruneBackups(); }catch(e){}
+    }
+  }
+
+  async function doSave(){
+    if(!(typeof sb!=='undefined' && sb && currentUser && dataReady)) return;
+    if(_busy){ _pending=true; return; }
+    _busy=true;
+    try{
+      ensureIds(DB, ARRAY_COLS);
+      if(!Array.isArray(DB.trash)) DB.trash=[];
+      const r=await sb.from("app_data").select("data,updated_at").eq("user_id",currentUser.id).maybeSingle();
+      if(r.error){ console.warn("[safe] read fail; skip write", r.error); return; }
+      const sData=r.data&&r.data.data;
+      if(sData){ mergeServerIntoDB(sData); }
+      const t=nowISO();
+      const up=await sb.from("app_data").upsert({user_id:currentUser.id, data:DB, updated_at:t});
+      if(up.error){ console.warn("[safe] write fail", up.error); return; }
+      baseVersion=t; baseState=snapForBase(DB,ARRAY_COLS,MAP_COLS);
+    } finally {
+      _busy=false;
+      if(_pending){ _pending=false; setTimeout(doSave,50); }
+    }
+  }
+
+  /* ---- 기존 save()를 병합형으로 교체 (700ms 디바용스 유지) ---- */
+  save = function(){ clearTimeout(_mt); _mt=setTimeout(doSave,700); };
+
+  /* ---- 백업 강댔: 보전 60개 + 6시간 간격 스냅샷 ---- */
+  pruneBackups = function(){ DB.backups=DB.backups||[]; DB.backups.sort((a,b)=>b.ts.localeCompare(a.ts)); if(DB.backups.length>60) DB.backups=DB.backups.slice(0,60); };
+  autoBackup = function(){
+    DB.backups=DB.backups||[];
+    const last=DB.backups.reduce((m,b)=>Math.max(m, b.ts?new Date(b.ts).getTime():0), 0);
+    if(Date.now()-last >= 6*3600*1000){
+      DB.backups.push({id:uid(), ts:nowISO(), data:snapshotData()});
+      pruneBackups(); save();
+    }
+  };
+
+  /* ---- 백업 파일 내보내기 / 가져오기(병합) ---- */
+  window.exportBackupFile=function(){
+    try{
+      const blob=new Blob([JSON.stringify(DB)],{type:"application/json"});
+      const url=URL.createObjectURL(blob), a=document.createElement("a");
+      a.href=url; a.download="업무관리_백업_"+T()+".json"; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },1000);
+    }catch(e){ alert("내보내기 실패: "+e.message); }
+  };
+  window.importBackupFile=function(file){
+    const rd=new FileReader();
+    rd.onload=()=>{ try{
+      const inc=JSON.parse(rd.result); ensureIds(inc,ARRAY_COLS);
+      for(const col of ARRAY_COLS){ DB[col]=mergeArray(null, DB[col]||[], inc[col]||[]).arr; }
+      for(const col of MAP_COLS){ DB[col]=mergeMap(null, DB[col]||{}, inc[col]||{}); }
+      save(); if(typeof render==="function") render(); alert("백업 파일 병합 완료");
+    }catch(e){ alert("가져오기 실패: "+e.message); } };
+    rd.readAsText(file);
+  };
+
+  /* ---- 작은 백업 버튼(우하단, 눈에 거슬리지 않게) ---- */
+  function addBackupBtn(){
+    if(document.getElementById("safeBkBtn")) return;
+    const wrap=document.createElement("div");
+    wrap.id="safeBkBtn";
+    wrap.style.cssText="position:fixed;left:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:99999;display:flex;gap:6px;opacity:.45";
+    wrap.onmouseover=()=>wrap.style.opacity=".95"; wrap.onmouseout=()=>wrap.style.opacity=".45";
+    const mk=(t)=>{ const b=document.createElement("button"); b.textContent=t;
+      b.style.cssText="font-size:11px;padding:4px 7px;border-radius:8px;border:1px solid #333;background:#1a1a1a;color:#aaa"; return b; };
+    const be=mk("⬇︎백업"), bi=mk("⬆︎복원");
+    const fi=document.createElement("input"); fi.type="file"; fi.accept="application/json"; fi.style.display="none";
+    be.onclick=()=>window.exportBackupFile();
+    bi.onclick=()=>fi.click();
+    fi.onchange=()=>{ if(fi.files&&fi.files[0]) window.importBackupFile(fi.files[0]); fi.value=""; };
+    wrap.appendChild(be); wrap.appendChild(bi); wrap.appendChild(fi);
+    document.body.appendChild(wrap);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",addBackupBtn); else addBackupBtn();
+
+  console.log("[안전패치] 병합 저장·백업 강화·휴지텵 활성화됨");
+})();
+
 </script>
 </body>
 </html>
