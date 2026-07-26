@@ -1391,7 +1391,36 @@ if(window.lucide)lucide.createIcons();
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",addBackupBtn); else addBackupBtn();
 
-  console.log("[안전패치] 병합 저장·백업 강화·휴지텵 활성화됨");
+  /* ================= [2단계] Supabase Realtime 실시간 동기화 ================= */
+  let _rtChan=null, _rtT=null;
+  function isEditingNow(){ const a=document.activeElement; return !!(a && (a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.isContentEditable)); }
+  function reloadAndMerge(){
+    if(!(typeof sb!=="undefined" && sb && currentUser && dataReady)) return;
+    if(isEditingNow()){ clearTimeout(_rtT); _rtT=setTimeout(reloadAndMerge,1500); return; } // 입력 중이면 갱신 보류
+    sb.from("app_data").select("data,updated_at").eq("user_id",currentUser.id).maybeSingle().then(function(r){
+      if(!r || r.error || !r.data) return;
+      if(r.data.updated_at && r.data.updated_at===baseVersion) return; // 내 저장(에코) 무시
+      const sData=r.data.data; if(!sData) return;
+      mergeServerIntoDB(sData);
+      baseVersion=r.data.updated_at; baseState=snapForBase(DB,ARRAY_COLS,MAP_COLS);
+      if(typeof render==="function"){ try{ render(); }catch(e){} }
+    }, function(){});
+  }
+  function scheduleReload(){ clearTimeout(_rtT); _rtT=setTimeout(reloadAndMerge, 400); }
+  function initRealtime(){
+    if(_rtChan) return;
+    if(!(typeof sb!=="undefined" && sb && currentUser && dataReady && typeof sb.channel==="function")) return;
+    try{
+      _rtChan = sb.channel("app_data_rt_"+currentUser.id)
+        .on("postgres_changes", {event:"*", schema:"public", table:"app_data"}, scheduleReload)
+        .subscribe();
+      console.log("[실시간] Realtime 구독 시작");
+    }catch(e){ console.warn("[실시간] init 실패", e); }
+  }
+  const _rtInit=setInterval(function(){ if(typeof sb!=="undefined" && sb && currentUser && dataReady){ initRealtime(); if(_rtChan) clearInterval(_rtInit); } }, 500);
+  document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="visible") scheduleReload(); }); // 탭 복귀 시 동기화
+
+  console.log("[안전패치] 병합 저장·백업 강화·휴지통·실시간 활성화됨");
 })();
 
 </script>
