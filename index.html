@@ -1212,8 +1212,14 @@ if(window.lucide)lucide.createIcons();
   }
   function ensureIds(D, cols){
     for(const col of cols){ const arr=D[col]; if(!Array.isArray(arr)) continue;
-      const seen=new Map();
-      for(const rec of arr){ if(rec && typeof rec==='object' && rec.id==null){ rec.id=recId(rec,seen); } }
+      const used=new Set();
+      for(const rec of arr){ if(rec && typeof rec==='object' && rec.id!=null) used.add(String(rec.id)); }
+      for(const rec of arr){ if(rec && typeof rec==='object' && rec.id==null){
+        const c=Object.assign({},rec); delete c.id;
+        let base='h'+hashStr(JSON.stringify(c)), id=base, n=1;
+        while(used.has(id)){ n++; id=base+'#'+n; }
+        rec.id=id; used.add(id);
+      } }
     }
   }
   function indexById(arr){ const m=new Map(); (arr||[]).forEach(rec=>{ const id=(rec&&rec.id!=null)?String(rec.id):recId(rec); m.set(id,rec); }); return m; }
@@ -1402,7 +1408,7 @@ if(window.lucide)lucide.createIcons();
       if(r.data.updated_at && r.data.updated_at===baseVersion) return; // 내 저장(에코) 무시
       const sData=r.data.data; if(!sData) return;
       mergeServerIntoDB(sData);
-      baseVersion=r.data.updated_at; baseState=snapForBase(DB,ARRAY_COLS,MAP_COLS);
+      baseVersion=r.data.updated_at; baseState=snapForBase(sData,ARRAY_COLS,MAP_COLS);
       if(typeof render==="function"){ try{ render(); }catch(e){} }
     }, function(){});
   }
