@@ -472,7 +472,7 @@ function rSchedule(){
   <div class="card"><h2>${dayLabel} 회고</h2><textarea rows="3" placeholder="오늘 하루를 돌아보며 회고를 적어보세요" onchange="setDayField('retro',this.value)">${esc(di.retro||"")}</textarea></div>`;
   document.getElementById("sadd").onclick=()=>{
     const t=val("stt");if(!t)return alert("업무 내용을 입력하세요.");
-    DB.schedules.push({date:val("sd")||selDay,time:normTime(val("stime")),title:t,priority:parseInt(val("spri")),done:false,note:val("snote")});
+    DB.schedules.push({id:uid(),date:val("sd")||selDay,time:normTime(val("stime")),title:t,priority:parseInt(val("spri")),done:false,note:val("snote")});
     save();render();
   };
   drawDay();
@@ -1432,7 +1432,11 @@ if(window.lucide)lucide.createIcons();
   }
 
   /* ---- 기존 save()를 병합형으로 교체 (700ms 디바용스 유지) ---- */
-  save = function(){ clearTimeout(_mt); _mt=setTimeout(doSave,700); };
+  save = function(){ clearTimeout(_mt); _mt=setTimeout(function(){
+    if(typeof sb!=='undefined' && sb && currentUser && dataReady){
+      sb.from("app_data").upsert({user_id:currentUser.id, data:DB, updated_at:new Date().toISOString()}).then(null,function(e){ console.warn("save",e); });
+    }
+  },700); };
 
   /* ---- 백업 강댔: 보전 60개 + 6시간 간격 스냅샷 ---- */
   pruneBackups = function(){ DB.backups=DB.backups||[]; DB.backups.sort((a,b)=>b.ts.localeCompare(a.ts)); if(DB.backups.length>60) DB.backups=DB.backups.slice(0,60); };
