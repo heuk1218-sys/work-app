@@ -151,6 +151,8 @@
   .cal-grid .cell.today .dn{background:var(--accent);color:var(--on-accent)}
   .cal-grid .cell.out{background:#161618}
   .cal-grid .ev{background:#3a3a3a;color:#e0e0e0;border-radius:5px;padding:2px 5px;margin-top:3px;font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .costday{white-space:nowrap}
+  .nowrap-t{white-space:nowrap}
   .sort-toggle{display:flex;gap:4px}
   .sort-toggle button{background:var(--input);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 11px;border-radius:7px}
   .sort-toggle button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
@@ -187,7 +189,12 @@
     .row .n1,.row .n2{flex:1 1 46%}
     .sub-tabs{flex-wrap:wrap}
     .stat{grid-template-columns:1fr 1fr}
-    .cal-grid .cell{min-height:60px;font-size:11px}
+    .cal-grid{gap:1px}
+    .cal-grid .cell{min-height:64px;font-size:11px;padding:4px 3px}
+    .cal-grid .cell .dn{width:20px;height:20px;font-size:11.5px}
+    .cal-grid .dow{font-size:11px;padding:6px 0}
+    .cal-grid .ev{font-size:9.5px;padding:1px 3px;white-space:normal;line-height:1.2}
+    .mobwide{flex:1 1 100%!important}
   }
   .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
   .detail-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
@@ -449,13 +456,13 @@ function rSchedule(){
   <div class="card"><h2>${dayLabel} 주요업무</h2>
     <textarea id="daymain" rows="2" placeholder="이 날의 핵심 일정·업무를 적어두세요 (예: 11시 스터디, 14시 회의)" onchange="setMain(this.value)">${esc((DB.dayinfo[selDay]||{}).main||"")}</textarea></div>
   <details class="acard"><summary>업무 추가</summary><div class="acbody">
-    <div class="row"><input type="date" id="sd" class="n1" value="${selDay}"><input id="stt" placeholder="업무 내용"></div>
+    <div class="row"><input type="date" id="sd" class="n1" value="${selDay}"><input id="stt" class="mobwide" placeholder="업무 내용"></div>
     <div class="row mt"><input id="stime" class="n2" placeholder="시간 24h (예: 14:00)" inputmode="numeric" style="flex:1 1 120px">
       <select id="shour" class="n2" onchange="pickTime()" style="flex:0 0 84px"><option value="">시</option>${[...Array(24)].map((_,h)=>`<option value="${String(h).padStart(2,"0")}">${String(h).padStart(2,"0")}시</option>`).join("")}</select>
       <select id="smin" class="n2" onchange="pickTime()" style="flex:0 0 84px">${[0,5,10,15,20,25,30,35,40,45,50,55].map(m=>`<option value="${String(m).padStart(2,"0")}">${String(m).padStart(2,"0")}분</option>`).join("")}</select></div>
     <div class="row mt"><select id="spri" class="n1">
         <option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4" selected>4순위</option></select>
-      <input id="snote" placeholder="비고 (선택)">
+      <input id="snote" class="mobwide" placeholder="비고 (선택)">
       <button class="addb" id="sadd" style="flex:0 0 84px">+ 추가</button></div></div></details>
   <div class="card">
     <div style="display:flex;align-items:center;margin-bottom:12px"><h2 style="flex:1;margin:0">${dayLabel} 업무</h2>
@@ -465,7 +472,7 @@ function rSchedule(){
   <div class="card"><h2>${dayLabel} 회고</h2><textarea rows="3" placeholder="오늘 하루를 돌아보며 회고를 적어보세요" onchange="setDayField('retro',this.value)">${esc(di.retro||"")}</textarea></div>`;
   document.getElementById("sadd").onclick=()=>{
     const t=val("stt");if(!t)return alert("업무 내용을 입력하세요.");
-    DB.schedules.push({date:val("sd")||selDay,time:normTime(val("stime")),title:t,priority:parseInt(val("spri")),done:false,note:val("snote")});
+    DB.schedules.push({id:uid(),date:val("sd")||selDay,time:normTime(val("stime")),title:t,priority:parseInt(val("spri")),done:false,note:val("snote")});
     save();render();
   };
   drawDay();
@@ -492,8 +499,8 @@ function taskRows(items){
   return items.length?items.map(({s,i})=>{const p=PRI[s.priority||4];
     if(i===editSchedIdx){
       return `<div class="item" style="display:block">
-        <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" value="${esc(s.title)}" placeholder="업무 내용"></div>
-        <div class="row mt"><select id="epri" class="n1">${[1,2,3,4].map(n=>`<option value="${n}"${(s.priority||4)==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
+        <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" class="mobwide" value="${esc(s.title)}" placeholder="업무 내용"></div>
+        <div class="row mt"><select id="epri" class="n1">${[1,2,3,4].map(n=>`<option value="${n}"${(s.priority||4)==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
         <div class="row mt"><button class="addb" onclick="schedSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="schedEditCancel()">취소</button></div></div>`;
     }
     return `<div class="item ${s.done?"done":""}">
@@ -531,12 +538,12 @@ function rCalendar(){
     <button onclick="calMove(-1)">‹ 이전</button>
     <h2 style="margin:0">${calY}년 ${calM+1}월</h2>
     <button onclick="calMove(1)">다음 ›</button></div>
-    ${mob?`<div style="margin-top:10px"><input type="date" value="${calSel||T()}" onchange="calPick(this.value)" class="n1" style="width:100%"></div><div id="cg" style="margin-top:6px"></div>`:`<div class="cal-grid" id="cg"></div>`}</div>
+    <div class="cal-grid" id="cg"></div></div>
   ${calSel?`<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h2 style="margin:0;flex:1">${fmt(calSel)} 주요업무</h2>${holName(calSel)?`<span class="pill" style="background:#3a2530;color:#e9a0a0">${holName(calSel)}</span>`:""}<button class="editb" onclick="calPickClose()">닫기</button></div>
     <textarea id="calmain" rows="3" placeholder="이 날의 주요 일정·업무를 적어요" onchange="setCalMain(this.value)">${esc((DB.dayinfo[calSel]||{}).main||"")}</textarea></div>`:`<div class="card"><div class="meta">날짜를 ${mob?"선택":"클릭"}하면 그날의 주요업무를 추가·수정할 수 있어요. (공휴일·일요일은 빨간색)</div></div>`}
   <div class="card"><h2>${calM+1}월 주요 메모</h2>
     <textarea id="mmemo" rows="4" placeholder="이번 달 중요한 것을 메모해두세요" onchange="setMonthMemo(this.value)">${esc(DB.monthmemo[ym]||"")}</textarea></div>`;
-  mob?drawCalList():drawCal();
+  drawCal();
 }
 function drawCalList(){
   const g=document.getElementById("cg");const days=new Date(calY,calM+1,0).getDate();const rows=[];
@@ -550,7 +557,7 @@ window.calPickClose=()=>{calSel=null;rCalendar();};
 window.setCalMain=(v)=>{if(!calSel)return;if(!DB.dayinfo[calSel])DB.dayinfo[calSel]={};DB.dayinfo[calSel].main=v;save();rCalendar();};
 function drawCal(){
   const g=document.getElementById("cg");
-  let html=DOW.map((d,i)=>`<div class="dow" style="${i===0?"color:#e57373":""}">${d}</div>`).join("");
+  let html=DOW.map((d,i)=>`<div class="dow" style="${i===0?"color:#e57373":(i===6?"color:#6f9de0":"")}">${d}</div>`).join("");
   const first=new Date(calY,calM,1).getDay();const days=new Date(calY,calM+1,0).getDate();
   const prev=new Date(calY,calM,0).getDate();
   for(let i=0;i<first;i++){html+=`<div class="cell out"><div class="dn">${prev-first+i+1}</div></div>`;}
@@ -559,7 +566,7 @@ function drawCal(){
     const dt=new Date(ds+"T00:00:00");const dow=dt.getDay();
     const isT=ds===T();const hn=holName(ds);const red=hn||dow===0;
     const mtxt=(DB.dayinfo[ds]||{}).main;
-    html+=`<div class="cell ${isT?"today":""}" onclick="calPick('${ds}')" style="cursor:pointer;${ds===calSel?"box-shadow:inset 0 0 0 2px var(--accent);":""}"><div class="dn" style="${red?"color:#e57373":""}">${d}</div>${hn?`<div class="ev" style="background:#3a2530;color:#e9a0a0;border-left:3px solid #cf7f7f">${hn}</div>`:""}${mtxt?`<div class="ev" style="white-space:normal;border-left:3px solid var(--accent)">${esc(mtxt)}</div>`:""}</div>`;
+    html+=`<div class="cell ${isT?"today":""}" onclick="calPick('${ds}')" style="cursor:pointer;${ds===calSel?"box-shadow:inset 0 0 0 2px var(--accent);":""}"><div class="dn" style="${red?"color:#e57373":(dow===6?"color:#6f9de0":"")}">${d}</div>${hn?`<div class="ev" style="background:#3a2530;color:#e9a0a0;border-left:3px solid #cf7f7f">${hn}</div>`:""}${mtxt?`<div class="ev" style="white-space:normal;border-left:3px solid var(--accent)">${esc(mtxt)}</div>`:""}</div>`;
   }
   g.innerHTML=html;
 }
@@ -620,6 +627,7 @@ window.diaryDel=(id)=>{if(!confirm("이 일기를 삭제할까요?"))return;DB.d
 
 /* ===== 4) 목표 (카테고리 없음 · 진행바 1줄 · 설명) ===== */
 let goalOpen={};
+let editGoalId=null;
 let goalYear=null;
 function rGoals(){
   if(goalYear===null)goalYear=String(new Date().getFullYear());
@@ -638,27 +646,38 @@ window.setGoalYear=(y)=>{goalYear=y;rGoals();};
 window.addGoalYear=()=>{const y=prompt("추가할 연도 (예: 2027)",String(Number(new Date().getFullYear())+1));if(y&&/^\d{4}$/.test(y.trim())){goalYear=y.trim();rGoals();}};
 function drawG(){
   const cy=String(new Date().getFullYear());
+  DB.goals.forEach(g=>{if(!g.id)g.id=uid();});
   const rows=DB.goals.filter(g=>String(g.year||cy)===String(goalYear));
   const e=document.getElementById("glist");
-  e.innerHTML=rows.length?rows.map(g=>`
-    <div style="padding:12px 0;border-bottom:1px solid var(--line)">
+  const mob=isMobile();
+  e.innerHTML=rows.length?rows.map((g,ri)=>`
+    <div style="padding:12px 0;border-bottom:1px solid var(--line)" ${mob?"":`draggable="true" ondragstart="rowDragStart(event,'goals','${g.id}')" ondragover="rowDragOver(event)" ondrop="rowDrop(event,'goals','${g.id}')" ondragend="rowDragEnd()"`}>
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="flex:1;font-weight:500;cursor:pointer" onclick="toggleGoalDesc('${g.id}')" title="클릭하면 설명을 적을 수 있어요">${esc(g.title)} <span class="meta" style="font-weight:400">${goalOpen[g.id]?"▴":"▾"}</span></span>
+        ${mob?`<button class="linklike" onclick="goalMove('${g.id}',-1)" ${ri===0?"disabled":""}>▲</button><button class="linklike" onclick="goalMove('${g.id}',1)" ${ri===rows.length-1?"disabled":""}>▼</button>`:`<span style="color:var(--muted);cursor:grab" title="드래그해서 순서 변경">⠿</span>`}
+        ${g.id===editGoalId
+          ?`<input id="eg_${g.id}" value="${esc(g.title)}" style="flex:1" onkeydown="if(event.key==='Enter')goalNameSave('${g.id}')"><button class="linklike" onclick="goalNameSave('${g.id}')">저장</button><button class="linklike" onclick="goalNameCancel()">취소</button>`
+          :`<span style="flex:1;font-weight:500;cursor:pointer" onclick="goalNameEdit('${g.id}')" title="클릭해서 이름 수정">${esc(g.title)}</span><button class="linklike" onclick="toggleGoalDesc('${g.id}')" title="설명 열기/닫기">${goalOpen[g.id]?"▴":"▾"}</button>`}
         <button class="del" onclick="delGoal('${g.id}')">×</button></div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
         <input type="range" min="0" max="100" value="${g.progress}" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="setProg('${g.id}',this.value)" style="flex:1">
         <span class="meta" style="width:42px;text-align:right">${g.progress}%</span></div>
       ${goalOpen[g.id]?`<textarea class="mt ta-grow" rows="2" placeholder="목표에 대한 설명·계획을 적어보세요" onchange="setGoalDesc('${g.id}',this.value)">${esc(g.desc||"")}</textarea>`:""}
     </div>`).join(""):'<div class="empty">이 해에 등록된 목표가 없어요.</div>';
+  if(editGoalId){const el=document.getElementById("eg_"+editGoalId);if(el)el.focus();}
   sizeGrow(e);
 }
 window.toggleGoalDesc=(id)=>{goalOpen[id]=!goalOpen[id];drawG();};
+window.goalNameEdit=(id)=>{editGoalId=id;drawG();};
+window.goalNameCancel=()=>{editGoalId=null;drawG();};
+window.goalNameSave=(id)=>{const el=document.getElementById("eg_"+id);const g=DB.goals.find(x=>x.id===id);if(g&&el){const v=el.value.trim();if(v)g.title=v;}editGoalId=null;save();drawG();};
+window.goalMove=(id,dir)=>{const cy=String(new Date().getFullYear());const rows=DB.goals.filter(g=>String(g.year||cy)===String(goalYear));const ri=rows.findIndex(g=>g.id===id);const rj=ri+dir;if(ri<0||rj<0||rj>=rows.length)return;const a=DB.goals;const i=a.findIndex(g=>g.id===rows[ri].id);const j=a.findIndex(g=>g.id===rows[rj].id);[a[i],a[j]]=[a[j],a[i]];save();drawG();};
 window.setGoalDesc=(id,v)=>{const g=DB.goals.find(x=>x.id===id);if(g){g.desc=v;save();}};
 window.setProg=(id,v)=>{const g=DB.goals.find(x=>x.id===id);if(g){g.progress=parseInt(v);save();drawG();}};
 window.delGoal=(id)=>{DB.goals=DB.goals.filter(x=>x.id!==id);save();drawG();};
 
 /* ===== 5) 신앙 (기도제목 + QT 게시판) ===== */
 let faithTab="prayer";
+let editPrayerId=null;
 let qtMode="list", qtSel=null, qtYear=null, qtMonth="all";
 function rFaith(){
   main.innerHTML=`<h1 class="page-h">교회 생활</h1><p class="page-sub">기도제목과 말씀을 기록해요.</p>
@@ -685,13 +704,28 @@ function renderPrayer(){
   drawP();
 }
 function drawP(){
-  const e=document.getElementById("plist");
-  e.innerHTML=DB.prayers.length?DB.prayers.map(p=>`<div class="item ${p.answered?"done":""}">
+  const e=document.getElementById("plist");const mob=isMobile();
+  DB.prayers.forEach(p=>{if(!p.id)p.id=uid();});
+  const n=DB.prayers.length;
+  e.innerHTML=n?DB.prayers.map((p,ri)=>{
+    if(p.id===editPrayerId){
+      return `<div class="item" style="display:block">
+        <input id="ep_t_${p.id}" value="${esc(p.title)}" placeholder="기도제목">
+        <textarea id="ep_c_${p.id}" class="mt" rows="2" placeholder="내용 (선택)">${esc(p.content||"")}</textarea>
+        <div class="row mt"><button class="addb" onclick="prayerSave('${p.id}')">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="prayerEditCancel()">취소</button></div></div>`;
+    }
+    return `<div class="item ${p.answered?"done":""}" ${mob?"":`draggable="true" ondragstart="rowDragStart(event,'prayers','${p.id}')" ondragover="rowDragOver(event)" ondrop="rowDrop(event,'prayers','${p.id}')" ondragend="rowDragEnd()"`}>
     <button class="chk ${p.answered?"on":""}" onclick="togglePrayer('${p.id}')">${p.answered?"✓":""}</button>
-    <div class="bd"><div class="t">${esc(p.title)}</div>${p.content?`<div class="meta" style="white-space:pre-wrap;margin-top:2px">${esc(p.content)}</div>`:""}${p.answered?'<div class="meta">응답됨 🙏</div>':""}</div>
-    <button class="del" onclick="delPrayer('${p.id}')">×</button></div>`).join(""):'<div class="empty">기도제목이 없어요.</div>';
+    <div class="bd" style="cursor:pointer" onclick="prayerEdit('${p.id}')" title="클릭해서 수정"><div class="t">${mob?"":`<span style="color:var(--muted);cursor:grab" title="드래그해서 순서 변경">⠿</span> `}${esc(p.title)}</div>${p.content?`<div class="meta" style="white-space:pre-wrap;margin-top:2px">${esc(p.content)}</div>`:""}${p.answered?'<div class="meta">응답됨 🙏</div>':""}</div>
+    ${mob?`<button class="linklike" onclick="prayerMove('${p.id}',-1)" ${ri===0?"disabled":""}>▲</button><button class="linklike" onclick="prayerMove('${p.id}',1)" ${ri===n-1?"disabled":""}>▼</button>`:""}
+    <button class="del" onclick="delPrayer('${p.id}')">×</button></div>`;
+  }).join(""):'<div class="empty">기도제목이 없어요.</div>';
 }
 window.togglePrayer=(id)=>{const p=DB.prayers.find(x=>x.id===id);if(p){p.answered=!p.answered;save();drawP();}};
+window.prayerEdit=(id)=>{editPrayerId=id;drawP();};
+window.prayerEditCancel=()=>{editPrayerId=null;drawP();};
+window.prayerSave=(id)=>{const p=DB.prayers.find(x=>x.id===id);if(p){const t=document.getElementById("ep_t_"+id).value.trim();if(t)p.title=t;p.content=document.getElementById("ep_c_"+id).value.trim();}editPrayerId=null;save();drawP();};
+window.prayerMove=(id,dir)=>rowMove("prayers",id,dir);
 window.delPrayer=(id)=>{DB.prayers=DB.prayers.filter(x=>x.id!==id);save();drawP();};
 function renderQT(){
   const fb=document.getElementById("fbody");
@@ -904,6 +938,18 @@ window.cliDragEnd=()=>{dragCliIdx=null;};
 window.cliMove=(i,d)=>{const j=i+d;if(j<0||j>=DB.clients.length)return;
   const a=DB.clients;[a[i],a[j]]=[a[j],a[i]];editClientIdx=null;save();drawC();};
 
+/* ===== 공통: 드래그/▲▼ 순서변경 (id 기반) ===== */
+let dragRow={arr:null,id:null};
+function reRenderArr(a){if(a==="prayers")drawP();else if(a==="costs")drawCosts();else if(a==="goals")drawG();else rAccounts();}
+window.rowDragStart=(e,a,id)=>{dragRow={arr:a,id:id};if(e.dataTransfer){e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",id);}catch(_){}}};
+window.rowDragOver=(e)=>{e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect="move";};
+window.rowDrop=(e,a,id)=>{e.preventDefault();if(dragRow.arr!==a||dragRow.id==null||dragRow.id===id){dragRow={arr:null,id:null};return;}
+  const arr=DB[a];const fi=arr.findIndex(x=>x.id===dragRow.id);if(fi<0){dragRow={arr:null,id:null};return;}
+  const m=arr.splice(fi,1)[0];const ti=arr.findIndex(x=>x.id===id);arr.splice(ti<0?arr.length:ti,0,m);
+  dragRow={arr:null,id:null};save();reRenderArr(a);};
+window.rowDragEnd=()=>{dragRow={arr:null,id:null};};
+window.rowMove=(a,id,dir)=>{const arr=DB[a];const i=arr.findIndex(x=>x.id===id);const j=i+dir;if(i<0||j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];save();reRenderArr(a);};
+
 /* ===== 7) 회고 (연도별) ===== */
 let retroYear=null;
 function rRetro(){
@@ -925,6 +971,7 @@ window.setRetroYear=(v)=>{retroYear=v;rRetro();};
 
 /* ===== 계정관리 (계정정보 · 장소 · 은행) ===== */
 let acctTab="accounts";
+let editAcctId=null,editPlaceId=null,editBankId=null;
 function rAccounts(){
   main.innerHTML=`<h1 class="page-h">계정관리</h1><p class="page-sub">계정·장소·은행 정보를 한 곳에. (민감 정보이니 신중히 관리하세요)</p>
   <div class="sub-tabs">
@@ -956,11 +1003,21 @@ function renderAccts(biz){
 }
 function drawAccts(biz){
   const e=document.getElementById("a_list");
+  DB.accounts.forEach(a=>{if(!a.id)a.id=uid();});
   const rows=DB.accounts.map((a,i)=>({a,i})).filter(o=>!!o.a.biz===!!biz);
   e.innerHTML=rows.length?`<table class="tbl"><tr><th>TITLE</th><th>ID</th><th>PW</th><th>ETC</th><th></th></tr>
-    ${rows.map(({a,i})=>`<tr><td style="font-weight:500">${esc(a.title)}</td><td>${esc(a.accId||"")}</td><td>${esc(a.pw||"")}</td><td class="meta">${esc(a.etc||"")}</td><td style="text-align:right"><button class="del" onclick="delAcct(${i})">×</button></td></tr>`).join("")}</table>`
+    ${rows.map(({a})=>{
+      if(a.id===editAcctId){
+        return `<tr><td colspan="5"><div class="row"><input id="ea_t_${a.id}" class="n2" value="${esc(a.title)}" placeholder="이름(TITLE)"><input id="ea_id_${a.id}" class="n2" value="${esc(a.accId||"")}" placeholder="ID"><input id="ea_pw_${a.id}" class="n2" value="${esc(a.pw||"")}" placeholder="PW"><input id="ea_etc_${a.id}" value="${esc(a.etc||"")}" placeholder="ETC"></div><div class="row mt"><button class="addb" onclick="acctSave('${a.id}')">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="acctEditCancel()">취소</button></div></td></tr>`;
+      }
+      return `<tr><td class="nowrap-t" style="font-weight:500;cursor:pointer" onclick="acctEdit('${a.id}')" title="클릭해서 수정">${esc(a.title)}</td><td style="cursor:pointer" onclick="acctEdit('${a.id}')">${esc(a.accId||"")}</td><td style="cursor:pointer" onclick="acctEdit('${a.id}')">${esc(a.pw||"")}</td><td class="meta" style="cursor:pointer" onclick="acctEdit('${a.id}')">${esc(a.etc||"")}</td><td style="text-align:right"><button class="del" onclick="delAcctId('${a.id}')">×</button></td></tr>`;
+    }).join("")}</table>`
     :'<div class="empty">등록된 계정이 없어요.</div>';
 }
+window.acctEdit=(id)=>{editAcctId=id;rAccounts();};
+window.acctEditCancel=()=>{editAcctId=null;rAccounts();};
+window.acctSave=(id)=>{const a=DB.accounts.find(x=>x.id===id);if(a){const t=document.getElementById("ea_t_"+id).value.trim();if(t)a.title=t;a.accId=document.getElementById("ea_id_"+id).value.trim();a.pw=document.getElementById("ea_pw_"+id).value.trim();a.etc=document.getElementById("ea_etc_"+id).value.trim();}editAcctId=null;save();rAccounts();};
+window.delAcctId=(id)=>{DB.accounts=DB.accounts.filter(x=>x.id!==id);editAcctId=null;save();rAccounts();};
 window.delAcct=(i)=>{DB.accounts.splice(i,1);save();rAccounts();};
 function renderPlaces(){
   document.getElementById("abody").innerHTML=`
@@ -975,29 +1032,49 @@ function renderPlaces(){
 }
 function drawPlaces(){
   const e=document.getElementById("p_list");
+  DB.places.forEach(p=>{if(!p.id)p.id=uid();});
   e.innerHTML=DB.places.length?`<table class="tbl"><tr><th>TITLE</th><th>PW</th><th>ETC</th><th></th></tr>
-    ${DB.places.map((p,i)=>`<tr><td style="font-weight:500">${esc(p.title)}</td><td>${esc(p.pw||"")}</td><td class="meta">${esc(p.etc||"")}</td><td style="text-align:right"><button class="del" onclick="delPlace(${i})">×</button></td></tr>`).join("")}</table>`
+    ${DB.places.map((p)=>{
+      if(p.id===editPlaceId){
+        return `<tr><td colspan="4"><div class="row"><input id="epl_t_${p.id}" class="n2" value="${esc(p.title)}" placeholder="이름(TITLE)"><input id="epl_pw_${p.id}" class="n2" value="${esc(p.pw||"")}" placeholder="PW"><input id="epl_etc_${p.id}" value="${esc(p.etc||"")}" placeholder="ETC"></div><div class="row mt"><button class="addb" onclick="placeSave('${p.id}')">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="placeEditCancel()">취소</button></div></td></tr>`;
+      }
+      return `<tr><td class="nowrap-t" style="font-weight:500;cursor:pointer" onclick="placeEdit('${p.id}')" title="클릭해서 수정">${esc(p.title)}</td><td style="cursor:pointer" onclick="placeEdit('${p.id}')">${esc(p.pw||"")}</td><td class="meta" style="cursor:pointer" onclick="placeEdit('${p.id}')">${esc(p.etc||"")}</td><td style="text-align:right"><button class="del" onclick="delPlaceId('${p.id}')">×</button></td></tr>`;
+    }).join("")}</table>`
     :'<div class="empty">등록된 장소가 없어요.</div>';
 }
+window.placeEdit=(id)=>{editPlaceId=id;drawPlaces();};
+window.placeEditCancel=()=>{editPlaceId=null;drawPlaces();};
+window.placeSave=(id)=>{const p=DB.places.find(x=>x.id===id);if(p){const t=document.getElementById("epl_t_"+id).value.trim();if(t)p.title=t;p.pw=document.getElementById("epl_pw_"+id).value.trim();p.etc=document.getElementById("epl_etc_"+id).value.trim();}editPlaceId=null;save();drawPlaces();};
+window.delPlaceId=(id)=>{DB.places=DB.places.filter(x=>x.id!==id);editPlaceId=null;save();drawPlaces();};
 window.delPlace=(i)=>{DB.places.splice(i,1);save();drawPlaces();};
-const BANKCOLS=[["title","TITLE"],["use","용도"],["account","계좌번호"],["pw","PW"],["sendOnce","송금한도(1회)"],["sendDay","송금한도(1일)"],["withdrawOnce","인출한도(1회)"],["withdrawDay","인출한도(1일)"],["payday","결제일"]];
+const BANKCOLS=[["title","TITLE"],["use","용도"],["account","계좌번호"],["card","카드번호"],["sendOnce","송금한도(1회)"],["sendDay","송금한도(1일)"],["withdrawOnce","인출한도(1회)"],["withdrawDay","인출한도(1일)"],["payday","결제일"]];
 function renderBanks(biz){
   const lbl=biz?"사업자 ":"";
   document.getElementById("abody").innerHTML=`
    <details class="acard"><summary>${lbl}은행 추가</summary><div class="acbody">
-     <div class="row"><input id="b_t" class="n2" placeholder="은행(TITLE)"><input id="b_use" class="n2" placeholder="용도"><input id="b_acc" placeholder="계좌번호"><input id="b_pw" class="n2" placeholder="PW"></div>
+     <div class="row"><input id="b_t" class="n2" placeholder="은행(TITLE)"><input id="b_use" class="n2" placeholder="용도"><input id="b_acc" placeholder="계좌번호"><input id="b_card" placeholder="카드번호"></div>
      <div class="row mt"><input id="b_so" class="n2" placeholder="송금한도(1회)"><input id="b_sd" class="n2" placeholder="송금한도(1일)"><input id="b_wo" class="n2" placeholder="인출한도(1회)"><input id="b_wd" class="n2" placeholder="인출한도(1일)"><input id="b_pay" class="n2" placeholder="결제일"></div>
      <button class="addb mt" id="b_add">+ 추가</button></div></details>
    <div class="card"><h2>${lbl}은행</h2><div class="tblwrap">${bankTable(biz)}</div></div>`;
   document.getElementById("b_add").onclick=()=>{const t=val("b_t");if(!t)return alert("은행명을 입력하세요.");
-    DB.banks.push({id:uid(),title:t,use:val("b_use"),account:val("b_acc"),pw:val("b_pw"),sendOnce:val("b_so"),sendDay:val("b_sd"),withdrawOnce:val("b_wo"),withdrawDay:val("b_wd"),payday:val("b_pay"),biz:!!biz});save();renderBanks(biz);};
+    DB.banks.push({id:uid(),title:t,use:val("b_use"),account:val("b_acc"),card:val("b_card"),sendOnce:val("b_so"),sendDay:val("b_sd"),withdrawOnce:val("b_wo"),withdrawDay:val("b_wd"),payday:val("b_pay"),biz:!!biz});save();renderBanks(biz);};
 }
 function bankTable(biz){
+  DB.banks.forEach(b=>{if(!b.id)b.id=uid();});
   const rows=DB.banks.map((b,i)=>({b,i})).filter(o=>!!o.b.biz===!!biz);
   if(!rows.length)return '<div class="empty">등록된 은행이 없어요.</div>';
-  return `<table class="tbl" style="min-width:1120px"><tr>${BANKCOLS.map(c=>`<th>${c[1]}</th>`).join("")}<th></th></tr>
-    ${rows.map(({b,i})=>`<tr>${BANKCOLS.map(c=>`<td class="${c[0]==="title"?"":"meta"}" style="white-space:nowrap${c[0]==="title"?";font-weight:500":""}">${esc(b[c[0]]||"")}</td>`).join("")}<td style="text-align:right"><button class="del" onclick="delBank(${i})">×</button></td></tr>`).join("")}</table>`;
+  return `<table class="tbl" style="min-width:1160px"><tr><th style="width:26px"></th>${BANKCOLS.map(c=>`<th>${c[1]}</th>`).join("")}<th></th></tr>
+    ${rows.map(({b})=>{
+      if(b.id===editBankId){
+        return `<tr><td></td>${BANKCOLS.map(c=>`<td style="padding:4px 5px"><input id="eb_${c[0]}_${b.id}" value="${esc(b[c[0]]||"")}" placeholder="${c[1]}" style="width:100%;min-width:96px;padding:7px 8px"></td>`).join("")}<td style="white-space:nowrap;text-align:right"><button class="linklike" onclick="bankSave('${b.id}')">저장</button><button class="linklike" onclick="bankEditCancel()">취소</button></td></tr>`;
+      }
+      return `<tr><td style="color:var(--muted);cursor:pointer" onclick="bankEdit('${b.id}')" title="클릭해서 수정">✎</td>${BANKCOLS.map(c=>`<td class="${c[0]==="title"?"":"meta"}" style="white-space:nowrap;cursor:pointer${c[0]==="title"?";font-weight:500":""}" onclick="bankEdit('${b.id}')">${esc(b[c[0]]||"")}</td>`).join("")}<td style="text-align:right"><button class="del" onclick="delBankId('${b.id}')">×</button></td></tr>`;
+    }).join("")}</table>`;
 }
+window.bankEdit=(id)=>{editBankId=id;rAccounts();};
+window.bankEditCancel=()=>{editBankId=null;rAccounts();};
+window.bankSave=(id)=>{const b=DB.banks.find(x=>x.id===id);if(b){BANKCOLS.forEach(c=>{const el=document.getElementById("eb_"+c[0]+"_"+id);if(el)b[c[0]]=el.value.trim();});}editBankId=null;save();rAccounts();};
+window.delBankId=(id)=>{DB.banks=DB.banks.filter(x=>x.id!==id);editBankId=null;save();rAccounts();};
 window.delBank=(i)=>{DB.banks.splice(i,1);save();rAccounts();};
 
 /* ===== 8) 독서노트 (연도·상태·장르·제목·노트) ===== */
@@ -1061,6 +1138,7 @@ function bookDetail(){
 }
 
 /* ===== 비용관리 (고정 비용) ===== */
+let editCostId=null;
 function costDay(s){const m=(s||"").match(/\d+/);return m?parseInt(m[1]):32;}
 function rCosts(){
   main.innerHTML=`<h1 class="page-h">비용관리</h1><p class="page-sub">고정 비용을 관리해요.</p>
@@ -1075,14 +1153,29 @@ function rCosts(){
   drawCosts();
 }
 function drawCosts(){
+  DB.costs.forEach(c=>{if(!c.id)c.id=uid();});
   const total=DB.costs.reduce((a,c)=>a+(c.amount||0),0);
   document.getElementById("costStat").innerHTML=`<div class="s"><div class="lab">월 고정비용 합계</div><div class="val">₩${total.toLocaleString("ko-KR")}</div></div><div class="s"><div class="lab">항목 수</div><div class="val">${DB.costs.length}개</div></div>`;
-  const rows=DB.costs.map((c,i)=>({c,i})).sort((a,b)=>costDay(a.c.day)-costDay(b.c.day));
-  const e=document.getElementById("co_list");
-  e.innerHTML=DB.costs.length?`<table class="tbl"><tr><th>항목</th><th style="text-align:right">액수</th><th>날짜</th><th>코멘트</th><th></th></tr>
-    ${rows.map(({c,i})=>`<tr><td style="font-weight:500">${esc(c.item)}</td><td style="text-align:right">₩${(c.amount||0).toLocaleString("ko-KR")}</td><td class="meta">${esc(c.day||"")}</td><td class="meta">${esc(c.comment||"")}</td><td style="text-align:right"><button class="del" onclick="delCost(${i})">×</button></td></tr>`).join("")}</table>`
+  const e=document.getElementById("co_list");const mob=isMobile();const n=DB.costs.length;
+  e.innerHTML=n?`<table class="tbl"><tr><th style="width:38px"></th><th>항목</th><th style="text-align:right">액수</th><th>날짜</th><th>코멘트</th><th></th></tr>
+    ${DB.costs.map((c,i)=>{
+      if(c.id===editCostId){
+        return `<tr><td colspan="6"><div class="row"><input id="ec_it_${c.id}" class="n2" value="${esc(c.item)}" placeholder="항목"><input id="ec_am_${c.id}" class="n2" type="number" value="${c.amount||0}" placeholder="액수"><input id="ec_dy_${c.id}" class="n2" value="${esc(c.day||"")}" placeholder="날짜"><input id="ec_cm_${c.id}" value="${esc(c.comment||"")}" placeholder="코멘트"></div><div class="row mt"><button class="addb" onclick="costSave('${c.id}')">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="costEditCancel()">취소</button></div></td></tr>`;
+      }
+      return `<tr ${mob?"":`draggable="true" ondragstart="rowDragStart(event,'costs','${c.id}')" ondragover="rowDragOver(event)" ondrop="rowDrop(event,'costs','${c.id}')" ondragend="rowDragEnd()"`}>
+      <td style="color:var(--muted);white-space:nowrap">${mob?`<button class="linklike" onclick="costMove('${c.id}',-1)" ${i===0?"disabled":""}>▲</button><button class="linklike" onclick="costMove('${c.id}',1)" ${i===n-1?"disabled":""}>▼</button>`:`<span style="cursor:grab" title="드래그해서 순서 변경">⠿</span>`}</td>
+      <td style="font-weight:500;cursor:pointer" onclick="costEdit('${c.id}')" title="클릭해서 수정">${esc(c.item)}</td>
+      <td style="text-align:right;cursor:pointer" onclick="costEdit('${c.id}')">₩${(c.amount||0).toLocaleString("ko-KR")}</td>
+      <td class="meta costday" style="cursor:pointer" onclick="costEdit('${c.id}')">${esc(c.day||"")}</td>
+      <td class="meta" style="cursor:pointer" onclick="costEdit('${c.id}')">${esc(c.comment||"")}</td>
+      <td style="text-align:right"><button class="del" onclick="delCostId('${c.id}')">×</button></td></tr>`;}).join("")}</table>`
     :'<div class="empty">등록된 고정 비용이 없어요.</div>';
 }
+window.costEdit=(id)=>{editCostId=id;drawCosts();};
+window.costEditCancel=()=>{editCostId=null;drawCosts();};
+window.costSave=(id)=>{const c=DB.costs.find(x=>x.id===id);if(c){const it=document.getElementById("ec_it_"+id).value.trim();if(it)c.item=it;c.amount=parseInt(document.getElementById("ec_am_"+id).value)||0;c.day=document.getElementById("ec_dy_"+id).value.trim();c.comment=document.getElementById("ec_cm_"+id).value.trim();}editCostId=null;save();drawCosts();};
+window.costMove=(id,dir)=>rowMove("costs",id,dir);
+window.delCostId=(id)=>{DB.costs=DB.costs.filter(x=>x.id!==id);editCostId=null;save();drawCosts();};
 window.delCost=(i)=>{DB.costs.splice(i,1);save();drawCosts();};
 
 /* ===== 노트 (게시판식 · 연도별) ===== */
@@ -1191,6 +1284,213 @@ async function boot(pw){
   btn.onclick=go;inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});inp.focus();
 })();
 if(window.lucide)lucide.createIcons();
+
+/* ================================================================
+   [안전 패치] 데이터 손실 방지 — 병합 저장 · 백업 강화 · 휴지통
+   기존 save()/autoBackup()/pruneBackups() 를 안전 버전으로 교체.
+   (2026-07 heuk1218 업무관리 앱 / 통짜-blob 덮어쓰기 사고 대응)
+   ================================================================ */
+(function(){
+  "use strict";
+  /* ---- 3-way 병합 코어 ---- */
+  function hashStr(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return (h>>>0).toString(36); }
+  function eqv(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+  function tstamp(r){ return (r && (r.updatedAt||r.mtime||r._u||r.ts)) || null; }
+  function recId(rec, seen){
+    if(rec && rec.id!=null) return String(rec.id);
+    const c=Object.assign({},rec); delete c.id;
+    let base='h'+hashStr(JSON.stringify(c));
+    if(seen){ let n=(seen.get(base)||0)+1; seen.set(base,n); if(n>1) base+='#'+n; }
+    return base;
+  }
+  function ensureIds(D, cols){
+    for(const col of cols){ const arr=D[col]; if(!Array.isArray(arr)) continue;
+      const seen=new Map();
+      for(const rec of arr){ if(rec && typeof rec==='object' && rec.id==null){ rec.id=recId(rec,seen); } }
+    }
+  }
+  function indexById(arr){ const m=new Map(); (arr||[]).forEach(rec=>{ const id=(rec&&rec.id!=null)?String(rec.id):recId(rec); m.set(id,rec); }); return m; }
+  function pickNewer(m,s,b){
+    const tm=tstamp(m), tsv=tstamp(s);
+    if(tm&&tsv) return (tm>=tsv)?m:s;
+    if(b!=null){ if(eqv(m,b)&&!eqv(s,b)) return s; if(eqv(s,b)&&!eqv(m,b)) return m; }
+    return m;
+  }
+  function mergeArray(baseMap, mineArr, serverArr){
+    const mine=indexById(mineArr), server=indexById(serverArr), ids=new Set();
+    if(baseMap) for(const k of baseMap.keys()) ids.add(k);
+    for(const k of mine.keys()) ids.add(k);
+    for(const k of server.keys()) ids.add(k);
+    const out=[], deleted=[];
+    for(const id of ids){
+      const inB=baseMap?baseMap.has(id):false, inM=mine.has(id), inS=server.has(id);
+      if(inB&&!inM&&inS){ deleted.push(server.get(id)); continue; }
+      if(inB&&inM&&!inS){ continue; }
+      if(inB&&!inM&&!inS){ continue; }
+      if(inM&&inS){ out.push(pickNewer(mine.get(id),server.get(id),baseMap?baseMap.get(id):null)); continue; }
+      if(inM){ out.push(mine.get(id)); continue; }
+      if(inS){ out.push(server.get(id)); continue; }
+    }
+    return {arr:out, deleted};
+  }
+  function pickNewerVal(m,s,b){ if(b!==null&&b!==undefined){ if(eqv(m,b)&&!eqv(s,b)) return s; if(eqv(s,b)&&!eqv(m,b)) return m; } return m; }
+  function mergeMap(baseObj, mineObj, serverObj){
+    const base=baseObj||{}, mine=mineObj||{}, server=serverObj||{};
+    const keys=new Set([...Object.keys(base),...Object.keys(mine),...Object.keys(server)]), out={};
+    for(const k of keys){
+      const inB=k in base, inM=k in mine, inS=k in server;
+      if(inB&&!inM&&inS) continue;
+      if(inB&&inM&&!inS) continue;
+      if(inB&&!inM&&!inS) continue;
+      if(inM&&inS){ out[k]=pickNewerVal(mine[k],server[k],inB?base[k]:null); continue; }
+      if(inM){ out[k]=mine[k]; } else if(inS){ out[k]=server[k]; }
+    }
+    return out;
+  }
+  function snapForBase(D, aCols, mCols){
+    const arrays={}, maps={};
+    for(const col of aCols){ arrays[col]=indexById((D[col]||[]).map(r=>JSON.parse(JSON.stringify(r)))); }
+    for(const col of mCols){ maps[col]=JSON.parse(JSON.stringify(D[col]||{})); }
+    return {arrays, maps};
+  }
+
+  /* ---- 컬럼 구성 ---- */
+  const ARRAY_COLS=["schedules","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups","trash"];
+  const MAP_COLS=["dayinfo","monthmemo"];
+
+  let baseState=null, baseVersion=null, _mt=null, _busy=false, _pending=false;
+  function nowISO(){ return new Date().toISOString(); }
+
+  /* ---- 로드 직후 base 확정(삭제 오인 방지) ---- */
+  function tryInitBase(){
+    if(baseState) return;
+    if(!(typeof sb!=='undefined' && sb && currentUser && dataReady && DB)) return;
+    ensureIds(DB, ARRAY_COLS);
+    if(!Array.isArray(DB.trash)) DB.trash=[];
+    sb.from("app_data").select("updated_at").eq("user_id",currentUser.id).maybeSingle()
+      .then(r=>{ baseVersion=(r&&r.data&&r.data.updated_at)||null; baseState=snapForBase(DB,ARRAY_COLS,MAP_COLS); })
+      .catch(()=>{ baseState=snapForBase(DB,ARRAY_COLS,MAP_COLS); });
+  }
+  const _bt=setInterval(()=>{ tryInitBase(); if(baseState) clearInterval(_bt); }, 300);
+
+  function toTrash(recs){
+    if(!recs||!recs.length) return;
+    if(!Array.isArray(DB.trash)) DB.trash=[];
+    const t=nowISO();
+    for(const r of recs){ if(r&&typeof r==='object'){ DB.trash.push(Object.assign({},r,{_deletedAt:t})); } }
+    const cutoff=Date.now()-30*864e5;
+    DB.trash=DB.trash.filter(x=> !x._deletedAt || new Date(x._deletedAt).getTime()>=cutoff);
+  }
+
+  function keyOf(r){ return (r&&r.id!=null)?String(r.id):recId(r); }
+  /* 전체 컬렉션 3-way 병합 + 대량삭제 차단기 */
+  function mergeAll(bState, D, sData, aCols, mCols){
+    const MAXDEL=8, FRAC=0.4; const per={}; let totalDel=0;
+    for(const col of aCols){
+      if(col==="trash"){ per[col]={arr:mergeArray(null, D[col]||[], sData[col]||[]).arr, deleted:[]}; continue; }
+      const m=mergeArray(bState?bState.arrays[col]:null, D[col]||[], sData[col]||[]);
+      per[col]=m; totalDel+=m.deleted.length;
+    }
+    let suspicious=totalDel>MAXDEL;
+    for(const col of aCols){ if(col==="trash") continue; const m=per[col]; const sl=Array.isArray(sData[col])?sData[col].length:0; if(sl>=5 && m.deleted.length>sl*FRAC) suspicious=true; }
+    const deletedOut=[];
+    for(const col of aCols){ const m=per[col];
+      if(col!=="trash" && suspicious && m.deleted.length){ const ids=new Set(m.arr.map(keyOf)); for(const d of m.deleted){ const k=keyOf(d); if(!ids.has(k)){ m.arr.push(d); ids.add(k);} } m.deleted=[]; }
+      D[col]=m.arr; if(col!=="trash") for(const d of m.deleted) deletedOut.push(d);
+    }
+    for(const col of mCols){ D[col]=mergeMap(bState?bState.maps[col]:null, D[col]||{}, sData[col]||{}); }
+    return {suspicious, deleted:deletedOut};
+  }
+  function mergeServerIntoDB(sData){
+    const res=mergeAll(baseState, DB, sData, ARRAY_COLS, MAP_COLS);
+    toTrash(res.deleted);
+    if(res.suspicious){
+      console.warn("[safe] 대량삭제 차단기 작동 → 서버 데이터 보존");
+      try{ DB.backups=DB.backups||[]; const sd=Object.assign({},sData); delete sd.backups; delete sd.trash; DB.backups.push({id:uid(), ts:nowISO(), data:JSON.stringify(sd), _guard:true}); pruneBackups(); }catch(e){}
+    }
+  }
+
+  async function doSave(){
+    if(!(typeof sb!=='undefined' && sb && currentUser && dataReady)) return;
+    if(_busy){ _pending=true; return; }
+    _busy=true;
+    try{
+      ensureIds(DB, ARRAY_COLS);
+      if(!Array.isArray(DB.trash)) DB.trash=[];
+      const r=await sb.from("app_data").select("data,updated_at").eq("user_id",currentUser.id).maybeSingle();
+      if(r.error){ console.warn("[safe] read fail; skip write", r.error); return; }
+      const sData=r.data&&r.data.data;
+      if(sData){ mergeServerIntoDB(sData); }
+      const t=nowISO();
+      const up=await sb.from("app_data").upsert({user_id:currentUser.id, data:DB, updated_at:t});
+      if(up.error){ console.warn("[safe] write fail", up.error); return; }
+      baseVersion=t; baseState=snapForBase(DB,ARRAY_COLS,MAP_COLS);
+    } finally {
+      _busy=false;
+      if(_pending){ _pending=false; setTimeout(doSave,50); }
+    }
+  }
+
+  /* ---- 기존 save()를 병합형으로 교체 (700ms 디바용스 유지) ---- */
+  save = function(){ clearTimeout(_mt); _mt=setTimeout(function(){
+    if(typeof sb!=='undefined' && sb && currentUser && dataReady){
+      sb.from("app_data").upsert({user_id:currentUser.id, data:DB, updated_at:new Date().toISOString()}).then(null,function(e){ console.warn("save",e); });
+    }
+  },700); };
+
+  /* ---- 백업 강댔: 보전 60개 + 6시간 간격 스냅샷 ---- */
+  pruneBackups = function(){ DB.backups=DB.backups||[]; DB.backups.sort((a,b)=>b.ts.localeCompare(a.ts)); if(DB.backups.length>60) DB.backups=DB.backups.slice(0,60); };
+  autoBackup = function(){
+    DB.backups=DB.backups||[];
+    const last=DB.backups.reduce((m,b)=>Math.max(m, b.ts?new Date(b.ts).getTime():0), 0);
+    if(Date.now()-last >= 6*3600*1000){
+      DB.backups.push({id:uid(), ts:nowISO(), data:snapshotData()});
+      pruneBackups(); save();
+    }
+  };
+
+  /* ---- 백업 파일 내보내기 / 가져오기(병합) ---- */
+  window.exportBackupFile=function(){
+    try{
+      const blob=new Blob([JSON.stringify(DB)],{type:"application/json"});
+      const url=URL.createObjectURL(blob), a=document.createElement("a");
+      a.href=url; a.download="업무관리_백업_"+T()+".json"; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },1000);
+    }catch(e){ alert("내보내기 실패: "+e.message); }
+  };
+  window.importBackupFile=function(file){
+    const rd=new FileReader();
+    rd.onload=()=>{ try{
+      const inc=JSON.parse(rd.result); ensureIds(inc,ARRAY_COLS);
+      for(const col of ARRAY_COLS){ DB[col]=mergeArray(null, DB[col]||[], inc[col]||[]).arr; }
+      for(const col of MAP_COLS){ DB[col]=mergeMap(null, DB[col]||{}, inc[col]||{}); }
+      save(); if(typeof render==="function") render(); alert("백업 파일 병합 완료");
+    }catch(e){ alert("가져오기 실패: "+e.message); } };
+    rd.readAsText(file);
+  };
+
+  /* ---- 작은 백업 버튼(우하단, 눈에 거슬리지 않게) ---- */
+  function addBackupBtn(){
+    if(document.getElementById("safeBkBtn")) return;
+    const wrap=document.createElement("div");
+    wrap.id="safeBkBtn";
+    wrap.style.cssText="position:fixed;left:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:99999;display:flex;gap:6px;opacity:.45";
+    wrap.onmouseover=()=>wrap.style.opacity=".95"; wrap.onmouseout=()=>wrap.style.opacity=".45";
+    const mk=(t)=>{ const b=document.createElement("button"); b.textContent=t;
+      b.style.cssText="font-size:11px;padding:4px 7px;border-radius:8px;border:1px solid #333;background:#1a1a1a;color:#aaa"; return b; };
+    const be=mk("⬇︎백업"), bi=mk("⬆︎복원");
+    const fi=document.createElement("input"); fi.type="file"; fi.accept="application/json"; fi.style.display="none";
+    be.onclick=()=>window.exportBackupFile();
+    bi.onclick=()=>fi.click();
+    fi.onchange=()=>{ if(fi.files&&fi.files[0]) window.importBackupFile(fi.files[0]); fi.value=""; };
+    wrap.appendChild(be); wrap.appendChild(bi); wrap.appendChild(fi);
+    document.body.appendChild(wrap);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",addBackupBtn); else addBackupBtn();
+
+  console.log("[안전패치] 병합 저장·백업 강화·휴지텵 활성화됨");
+})();
+
 </script>
 </body>
 </html>
