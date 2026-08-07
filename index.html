@@ -244,6 +244,7 @@
       <button data-p="dashboard" class="on"><i class="ico" data-lucide="layout-dashboard"></i><span class="lab">대시보드</span></button>
       <div class="nav-sec">개인</div>
       <button data-p="schedule"><i class="ico" data-lucide="calendar-check"></i><span class="lab">일정</span></button>
+      <button data-p="routines"><i class="ico" data-lucide="repeat"></i><span class="lab">루틴업무</span></button>
       <button data-p="calendar"><i class="ico" data-lucide="calendar"></i><span class="lab">캘린더</span></button>
       <button data-p="diary"><i class="ico" data-lucide="book"></i><span class="lab">일기</span></button>
       <button data-p="goals"><i class="ico" data-lucide="target"></i><span class="lab">목표</span></button>
@@ -305,7 +306,7 @@ const DB={
   notes:[{id:uid(),date:T(),title:"첫 노트",content:"자유롭게 기록하는 공간이에요."}]
 };
 if(!DB.books)DB.books=[];
-if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];
+if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];if(!DB.routines)DB.routines=[];
 let _saveT,dataReady=false;function save(){clearTimeout(_saveT);_saveT=setTimeout(()=>{if(sb&&currentUser&&dataReady)sb.from("app_data").upsert({user_id:currentUser.id,data:DB,updated_at:new Date().toISOString()}).then(null,e=>console.warn("save",e));},700);}
 function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function fmt(d){if(!d)return"";const x=new Date(d+"T00:00:00");const w=["일","월","화","수","목","금","토"];return `${x.getMonth()+1}월 ${x.getDate()}일 (${w[x.getDay()]})`;}
@@ -327,7 +328,7 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
   closeMenu();
 });
 document.getElementById("logout").onclick=async()=>{if(confirm("로그아웃할까요?")){await sb.auth.signOut();location.reload();}};
-function render(){({dashboard:rDashboard,schedule:rSchedule,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();if(typeof setSearchPlaceholder==="function")setSearchPlaceholder();sizeGrow();}
+function render(){({dashboard:rDashboard,schedule:rSchedule,routines:rRoutines,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();if(typeof setSearchPlaceholder==="function")setSearchPlaceholder();sizeGrow();}
 /* 텍스트영역 자동 늘어남: 내용에 맞춰 커지고 페이지가 통째로 스크롤됨 */
 function autoGrow(ta){if(!ta)return;ta.style.height="auto";ta.style.height=(ta.scrollHeight+2)+"px";}
 function sizeGrow(root){(root||document).querySelectorAll("textarea.ta-fill,textarea.ta-grow").forEach(autoGrow);}
@@ -346,14 +347,15 @@ const G_PROV={
   sermons:()=>(DB.sermons||[]).map(x=>({keys:[x.title,x.ref,x.speaker],t:x.title||"(제목없음)",g:"교회 · 설교 · "+fmt(x.date),date:x.date,go:()=>{gNav("faith");faithTab="sermon";sermonYear=x.date.slice(0,4);sermonMode="detail";sermonSel=x.id;rFaith();}})),
   clients:()=>(DB.clients||[]).map(c=>({keys:[c.name,c.cycle,c.note,c.field],t:c.name,g:"클라이언트"+(c.field?" · "+c.field:""),date:"",go:()=>{gNav("clients");rClients();}})),
   costs:()=>(DB.costs||[]).map(c=>({keys:[c.item,c.comment],t:c.item,g:"비용관리",date:"",go:()=>{gNav("costs");rCosts();}})),
+  routines:()=>(DB.routines||[]).map(r=>({keys:[r.title],t:r.title,g:"루틴업무 · "+RTNAME[r.freq],date:"",go:()=>{routineTab=r.freq;gNav("routines");rRoutines();}})),
   books:()=>(DB.books||[]).map(b=>({keys:[b.title,b.genre,b.note],t:b.title,g:"독서노트 · "+b.year,date:String(b.year||""),go:()=>{gNav("books");bookYear=String(b.year);bookStatus="all";bookOpen(b.id);}})),
   notes:()=>(DB.notes||[]).map(n=>({keys:[n.title,n.content],t:n.title||"(무제)",g:"노트 · "+fmt(n.date),date:n.date,go:()=>{gNav("notes");noteYear=n.date.slice(0,4);noteOpen(n.id);}})),
   retro:()=>Object.keys(DB.dayinfo||{}).filter(d=>(DB.dayinfo[d]||{}).retro).map(d=>({keys:[DB.dayinfo[d].retro],t:(DB.dayinfo[d].retro||"").slice(0,40),g:"회고 · "+fmt(d),date:d,go:()=>{gNav("retro");try{retroYear=d.slice(0,4);}catch(e){}rRetro();}})),
   accounts:()=>{const a=[];(DB.accounts||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 계정",date:"",go:()=>{gNav("accounts");rAccounts();}}));(DB.places||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 장소",date:"",go:()=>{gNav("accounts");rAccounts();}}));(DB.banks||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 은행",date:"",go:()=>{gNav("accounts");rAccounts();}}));return a;}
 };
-const G_ALL=["schedules","diary","goals","prayers","qt","sermons","clients","costs","books","notes","retro","accounts"];
-const G_SCOPE={schedule:["schedules"],calendar:["schedules"],diary:["diary"],goals:["goals"],faith:["prayers","qt","sermons"],clients:["clients"],costs:["costs"],books:["books"],notes:["notes"],retro:["retro"],accounts:["accounts"]};
-const G_NAME={schedule:"일정",calendar:"캘린더",diary:"일기",goals:"목표",faith:"교회",clients:"클라이언트",costs:"비용관리",books:"독서노트",notes:"노트",retro:"회고",accounts:"계정관리"};
+const G_ALL=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","books","notes","retro","accounts"];
+const G_SCOPE={schedule:["schedules"],routines:["routines"],calendar:["schedules"],diary:["diary"],goals:["goals"],faith:["prayers","qt","sermons"],clients:["clients"],costs:["costs"],books:["books"],notes:["notes"],retro:["retro"],accounts:["accounts"]};
+const G_NAME={schedule:"일정",routines:"루틴업무",calendar:"캘린더",diary:"일기",goals:"목표",faith:"교회",clients:"클라이언트",costs:"비용관리",books:"독서노트",notes:"노트",retro:"회고",accounts:"계정관리"};
 function setSearchPlaceholder(){const q=document.getElementById("gq");if(!q)return;q.placeholder=(G_SCOPE[page]&&G_NAME[page])?G_NAME[page]+"에서 검색...":"전체 검색...";}
 function gScore(keys,q){let best=0;for(let i=0;i<keys.length;i++){const k=keys[i];if(!k)continue;const idx=k.toString().toLowerCase().indexOf(q);if(idx<0)continue;const sc=i===0?(idx===0?100:70):40;if(sc>best)best=sc;}return best;}
 function gSearch(q){
@@ -487,11 +489,18 @@ function weekCol(d){
   const isT=d===T();const isSel=d===selDay;const dt=new Date(d+"T00:00:00");
   const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===d).sort(byPri);
   const r=items.length?Math.round(items.filter(o=>o.s.done).length/items.length*100):null;
+function weekCol(d){
+  const isT=d===T();const isSel=d===selDay;const dt=new Date(d+"T00:00:00");
+  const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===d).sort(byPri);
+  const r=items.length?Math.round(items.filter(o=>o.s.done).length/items.length*100):null;
   const mn=(DB.dayinfo[d]||{}).main;
+  const rts=routinesForDate(d);
+  const rtHtml=rts.map(r=>`<div class="wtask"><span class="pdot" style="background:${PRI[r.pri||4].c}"></span>${r.time?`<b style="font-weight:500;color:var(--muted)">${esc(r.time)}</b> `:""}${esc(r.title)}<span style="color:#7a7a7a;font-size:10px"> ·루틴</span></div>`).join("");
+  const taskHtml=items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${PRI[s.priority||4].c}"></span>${s.time?`<b style="font-weight:500;color:var(--muted)">${s.time}</b> `:""}${esc(s.title)}</div>`).join("");
   return `<div class="wcol ${isT?"today":""} ${isSel?"sel":""}" onclick="selectDay('${d}')">
     <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${r!==null?` · <span style="color:var(--accent)">${r}%</span>`:""}</div>
     ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
-    ${items.length?items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${PRI[s.priority||4].c}"></span>${s.time?`<b style="font-weight:500;color:var(--muted)">${s.time}</b> `:""}${esc(s.title)}</div>`).join(""):'<div class="wempty">—</div>'}</div>`;
+    ${rtHtml}${taskHtml||(rts.length?"":'<div class="wempty">—</div>')}</div>`;
 }
 const byPri=(a,b)=>(a.s.done-b.s.done)||((a.s.priority||4)-(b.s.priority||4));
 const byTime=(a,b)=>(a.s.done-b.s.done)||((a.s.time||"99:99").localeCompare(b.s.time||"99:99"));
@@ -512,13 +521,86 @@ function taskRows(items){
 let todaySort="time",editSchedIdx=null;
 function drawDay(){
   const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===selDay);
-  document.getElementById("tlist").innerHTML=taskRows([...items].sort(todaySort==="time"?byTime:byPri));
+  const rts=routinesForDate(selDay);
+  const rdone=((DB.dayinfo[selDay]||{}).rdone)||{};
+  let html="";
+  if(rts.length){
+    html+=`<div class="meta" style="font-weight:600;color:var(--accent-2);margin:0 0 6px">🔁 반복 루틴</div>`;
+    html+=rts.map(r=>{const done=!!rdone[r.id];const p=PRI[r.pri||4];
+      return `<div class="item ${done?"done":""}">
+        <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+        <div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}${esc(r.title)} <span class="pill">루틴</span></div>
+          <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span></div></div></div>`;}).join("");
+    if(items.length)html+=`<div class="meta" style="font-weight:600;margin:14px 0 6px">그 외 업무</div>`;
+  }
+  html+=taskRows([...items].sort(todaySort==="time"?byTime:byPri));
+  document.getElementById("tlist").innerHTML=html;
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
 window.goToday=()=>{selDay=T();editSchedIdx=null;rSchedule();};
 window.schedEdit=(i)=>{editSchedIdx=i;drawDay();};
 window.schedEditCancel=()=>{editSchedIdx=null;drawDay();};
 window.schedSave=(i)=>{const s=DB.schedules[i];if(!s)return;s.time=normTime(document.getElementById("etime").value);const t=document.getElementById("etitle").value.trim();if(t)s.title=t;s.priority=parseInt(document.getElementById("epri").value)||4;s.note=document.getElementById("enote").value.trim();editSchedIdx=null;save();rSchedule();};
+
+/* ===== 루틴업무 (일간·주간·월간 반복 → 일정에 자동 표시) ===== */
+let routineTab="daily", routineSel=new Set(), routineEdit=null;
+const RTNAME={daily:"일간",weekly:"주간",monthly:"월간"};
+function rRoutines(){
+  if(!DB.routines)DB.routines=[];
+  main.innerHTML=`<h1 class="page-h">루틴업무</h1><p class="page-sub">매일·매주·매월 반복되는 업무를 등록하면, 해당 날짜의 일정에 자동으로 표시돼요.</p>
+  <div class="sub-tabs">${Object.keys(RTNAME).map(k=>`<button data-rt="${k}" class="${routineTab===k?"on":""}">${RTNAME[k]}</button>`).join("")}</div>
+  <details class="acard" open><summary>${RTNAME[routineTab]} 루틴 추가</summary><div class="acbody">
+    <div class="row"><input id="rt_title" placeholder="반복 업무 내용 (예: 성경 읽기)"></div>
+    <div class="row mt"><select id="rt_pri" class="n1"><option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4" selected>4순위</option></select>
+      <input id="rt_time" class="n2" placeholder="시간(선택)" inputmode="numeric" style="flex:1 1 110px">
+      <select id="rt_h" class="n2" onchange="rtPick()"><option value="">시</option>${[...Array(24)].map((_,h)=>`<option value="${String(h).padStart(2,"0")}">${String(h).padStart(2,"0")}시</option>`).join("")}</select>
+      <select id="rt_m" class="n2" onchange="rtPick()">${[0,5,10,15,20,25,30,35,40,45,50,55].map(m=>`<option value="${String(m).padStart(2,"0")}">${String(m).padStart(2,"0")}분</option>`).join("")}</select></div>
+    ${routineTab==="weekly"?`<div class="mt"><div class="meta" style="margin-bottom:5px">반복 요일 (여러 개 선택)</div><div id="rt_wk" style="display:flex;gap:5px;flex-wrap:wrap">${DOW.map((n,i)=>`<button type="button" class="rtwd" data-d="${i}" onclick="rtToggleWd(${i})" style="width:38px;height:38px;border-radius:9px;background:var(--input);border:1px solid var(--line);color:${i===0?"#ff6b6b":i===6?"#6f9de0":"var(--muted)"}">${n}</button>`).join("")}</div></div>`:""}
+    ${routineTab==="monthly"?`<div class="mt"><div class="meta" style="margin-bottom:5px">매월 며칠</div><select id="rt_day" class="n1" style="flex:0 0 130px">${[...Array(31)].map((_,i)=>`<option value="${i+1}">${i+1}일</option>`).join("")}<option value="last">말일</option></select></div>`:""}
+    <button class="addb mt" id="rt_add">${routineEdit?"수정 저장":"+ 추가"}</button></div></details>
+  <div class="card"><h2>${RTNAME[routineTab]} 루틴 목록</h2><div id="rt_list"></div></div>`;
+  main.querySelectorAll(".sub-tabs button").forEach(b=>b.onclick=()=>{routineTab=b.dataset.rt;routineEdit=null;routineSel=new Set();rRoutines();});
+  document.getElementById("rt_add").onclick=rtAdd;
+  if(routineEdit){const it=DB.routines.find(x=>x.id===routineEdit);if(it){document.getElementById("rt_title").value=it.title||"";document.getElementById("rt_pri").value=it.pri||4;document.getElementById("rt_time").value=it.time||"";if(routineTab==="monthly"&&document.getElementById("rt_day"))document.getElementById("rt_day").value=it.day==="last"?"last":it.day;}}
+  if(routineTab==="weekly")rtDrawWd();
+  drawRoutines();
+}
+window.rtPick=()=>{const h=document.getElementById("rt_h").value;if(h==="")return;document.getElementById("rt_time").value=h+":"+(document.getElementById("rt_m").value||"00");};
+window.rtToggleWd=(i)=>{routineSel.has(i)?routineSel.delete(i):routineSel.add(i);rtDrawWd();};
+function rtDrawWd(){document.querySelectorAll(".rtwd").forEach(b=>{const on=routineSel.has(+b.dataset.d);b.style.background=on?"var(--accent)":"var(--input)";b.style.color=on?"var(--on-accent)":(+b.dataset.d===0?"#ff6b6b":+b.dataset.d===6?"#6f9de0":"var(--muted)");b.style.borderColor=on?"var(--accent)":"var(--line)";});}
+function rtAdd(){
+  const title=val("rt_title");if(!title)return alert("업무 내용을 입력하세요.");
+  const o={freq:routineTab,title,pri:parseInt(document.getElementById("rt_pri").value)||4,time:normTime(document.getElementById("rt_time").value)};
+  if(routineTab==="weekly"){if(!routineSel.size)return alert("반복 요일을 하나 이상 선택하세요.");o.wd=[...routineSel].sort((a,b)=>a-b);}
+  if(routineTab==="monthly"){const d=document.getElementById("rt_day").value;o.day=d==="last"?"last":parseInt(d);}
+  if(routineEdit){const it=DB.routines.find(x=>x.id===routineEdit);if(it)Object.assign(it,o);}
+  else{o.id=uid();DB.routines.push(o);}
+  routineEdit=null;routineSel=new Set();save();rRoutines();
+}
+window.rtEdit=(id)=>{const it=DB.routines.find(x=>x.id===id);if(!it)return;routineTab=it.freq;routineEdit=id;routineSel=new Set(it.wd||[]);rRoutines();window.scrollTo({top:0,behavior:"smooth"});};
+window.rtDel=(id)=>{DB.routines=DB.routines.filter(x=>x.id!==id);if(routineEdit===id){routineEdit=null;routineSel=new Set();}save();rRoutines();};
+function rtRecurLabel(r){if(r.freq==="daily")return"매일";if(r.freq==="weekly")return"매주 "+(r.wd||[]).map(i=>DOW[i]).join("·")+"요일";return r.day==="last"?"매월 말일":"매월 "+r.day+"일";}
+function drawRoutines(){
+  const rows=DB.routines.filter(r=>r.freq===routineTab);
+  const e=document.getElementById("rt_list");
+  e.innerHTML=rows.length?rows.map(r=>{const p=PRI[r.pri||4];return `<div class="item">
+    <span class="pdot" style="background:${p.c};margin-top:6px"></span>
+    <div class="bd" style="cursor:pointer" onclick="rtEdit('${r.id}')" title="클릭해서 수정"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}${esc(r.title)}</div>
+      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
+    <button class="del" onclick="rtDel('${r.id}')">×</button></div>`;}).join(""):'<div class="empty">등록된 루틴이 없어요.</div>';
+}
+function routinesForDate(ds){
+  if(!DB.routines||!DB.routines.length)return [];
+  const dt=new Date(ds+"T00:00:00");const dow=dt.getDay();
+  const last=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();const dom=dt.getDate();
+  return DB.routines.filter(r=>{
+    if(r.freq==="daily")return true;
+    if(r.freq==="weekly")return (r.wd||[]).includes(dow);
+    if(r.freq==="monthly")return r.day==="last"?dom===last:(parseInt(r.day)===dom);
+    return false;
+  }).slice().sort((a,b)=>(a.pri||4)-(b.pri||4)||((a.time||"99:99").localeCompare(b.time||"99:99")));
+}
+window.routineToggle=(id)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};const di=DB.dayinfo[selDay];if(!di.rdone)di.rdone={};di.rdone[id]=!di.rdone[id];save();drawDay();};
 
 /* ===== 2) 캘린더 ===== */
 let calY,calM,calSel=null;
@@ -1256,7 +1338,7 @@ async function boot(pw){
   const {data,error}=await sb.auth.signInWithPassword({email:USER_EMAIL,password:pw});
   if(error)return "badpw";
   currentUser=data.user;
-  const ARR=["schedules","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups"];
+  const ARR=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups"];
   let loaded=false,loadFailed=false;
   try{const r=await sb.from("app_data").select("data").eq("user_id",currentUser.id).maybeSingle();
     if(r.error){loadFailed=true;}
@@ -1355,7 +1437,7 @@ if(window.lucide)lucide.createIcons();
   }
 
   /* ---- 컬럼 구성 ---- */
-  const ARRAY_COLS=["schedules","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups","trash"];
+  const ARRAY_COLS=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups","trash"];
   const MAP_COLS=["dayinfo","monthmemo"];
 
   let baseState=null, baseVersion=null, _mt=null, _busy=false, _pending=false;
