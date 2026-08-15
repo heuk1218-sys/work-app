@@ -244,6 +244,7 @@
       <button data-p="dashboard" class="on"><i class="ico" data-lucide="layout-dashboard"></i><span class="lab">대시보드</span></button>
       <div class="nav-sec">개인</div>
       <button data-p="schedule"><i class="ico" data-lucide="calendar-check"></i><span class="lab">일정</span></button>
+      <button data-p="routines"><i class="ico" data-lucide="repeat"></i><span class="lab">루틴업무</span></button>
       <button data-p="calendar"><i class="ico" data-lucide="calendar"></i><span class="lab">캘린더</span></button>
       <button data-p="diary"><i class="ico" data-lucide="book"></i><span class="lab">일기</span></button>
       <button data-p="goals"><i class="ico" data-lucide="target"></i><span class="lab">목표</span></button>
@@ -274,13 +275,50 @@
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ════════════════════════════════════════════════════════════════
+     인증 코어 — 아래 앱 스크립트와 의도적으로 분리된 독립 블록.
+     앱 스크립트에 문법 오류나 실행 오류가 나도 이 블록은 살아남아
+     "로그인 자체가 안 되는" 상황이 생기지 않게 한다.
+     따라서 여기서는 앱 쪽 변수·함수를 절대 참조하지 않는다.
+     ════════════════════════════════════════════════════════════════ -->
 <script>
-/* ===== Supabase 설정: 아래 3줄을 본인 값으로 바꾸세요 ===== */
+/* ===== Supabase 설정 ===== */
 const SUPABASE_URL="https://wsjpncrrpioyipitxxlk.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzanBuY3JycGlveWlwaXR4eGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDAwNjcsImV4cCI6MjA5ODg3NjA2N30.0yNyCkAcf76FIt8MRmnBSy5onAgZdqFtvqJRW2zXBpo";
 const USER_EMAIL="heuk1218@gmail.com";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-let currentUser=null;
+var currentUser=null;
+(function(){
+  const inp=document.getElementById("lockpw"),btn=document.getElementById("lockbtn"),msg=document.getElementById("lockmsg");
+  if(!inp||!btn||!msg)return;
+  const go=async()=>{
+    btn.disabled=true;msg.textContent="확인 중...";
+    let r;
+    try{
+      const {data,error}=await sb.auth.signInWithPassword({email:USER_EMAIL,password:inp.value});
+      if(error){r="badpw";}
+      else{
+        currentUser=data.user;
+        r = (typeof window.__appBoot==="function") ? await window.__appBoot() : "noapp";
+      }
+    }catch(e){console.error("[auth] boot 실패",e);r="error";}
+    if(r==="ok")return;
+    msg.textContent =
+      r==="loadfail" ? "데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요." :
+      r==="noapp"    ? "로그인은 됐지만 앱 화면을 불러오지 못했어요. 새로고침해 주세요." :
+      r==="error"    ? "오류가 발생했어요. 새로고침 후 다시 시도해 주세요." :
+                       "비밀번호가 틀렸어요.";
+    if(r==="badpw")inp.value="";
+    btn.disabled=false;inp.focus();
+  };
+  btn.onclick=go;
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+  inp.focus();
+})();
+</script>
+
+<!-- ════════ 앱 본체 (기능 코드) ════════ -->
+<script>
 function T(){return new Date().toLocaleDateString("sv-SE");}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 const DB={
@@ -305,7 +343,7 @@ const DB={
   notes:[{id:uid(),date:T(),title:"첫 노트",content:"자유롭게 기록하는 공간이에요."}]
 };
 if(!DB.books)DB.books=[];
-if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];
+if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];if(!DB.routines)DB.routines=[];
 let _saveT,dataReady=false;function save(){clearTimeout(_saveT);_saveT=setTimeout(()=>{if(sb&&currentUser&&dataReady)sb.from("app_data").upsert({user_id:currentUser.id,data:DB,updated_at:new Date().toISOString()}).then(null,e=>console.warn("save",e));},700);}
 function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function fmt(d){if(!d)return"";const x=new Date(d+"T00:00:00");const w=["일","월","화","수","목","금","토"];return `${x.getMonth()+1}월 ${x.getDate()}일 (${w[x.getDay()]})`;}
@@ -327,7 +365,22 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
   closeMenu();
 });
 document.getElementById("logout").onclick=async()=>{if(confirm("로그아웃할까요?")){await sb.auth.signOut();location.reload();}};
-function render(){({dashboard:rDashboard,schedule:rSchedule,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup}[page])();if(typeof setSearchPlaceholder==="function")setSearchPlaceholder();sizeGrow();}
+const PAGES={dashboard:rDashboard,schedule:rSchedule,routines:rRoutines,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup};
+/* 한 페이지가 죽어도 앱 전체가 멈추지 않도록 렌더를 격리한다 */
+function render(){
+  const fn=PAGES[page];
+  try{
+    if(typeof fn!=="function")throw new Error("알 수 없는 페이지: "+page);
+    fn();
+  }catch(e){
+    console.error("[render] "+page,e);
+    main.innerHTML=`<h1 class="page-h">화면을 불러오지 못했어요</h1>
+      <p class="page-sub">이 페이지에서만 오류가 났어요. 다른 메뉴는 그대로 쓰실 수 있어요.</p>
+      <div class="card"><div class="meta" style="white-space:pre-wrap;color:var(--bad)">${esc(String((e&&e.message)||e))}</div>
+        <button class="ghostb mt" onclick="render()">다시 시도</button></div>`;
+  }
+  try{if(typeof setSearchPlaceholder==="function")setSearchPlaceholder();sizeGrow();if(window.lucide)lucide.createIcons();}catch(e){console.warn("[render] 후처리",e);}
+}
 /* 텍스트영역 자동 늘어남: 내용에 맞춰 커지고 페이지가 통째로 스크롤됨 */
 function autoGrow(ta){if(!ta)return;ta.style.height="auto";ta.style.height=(ta.scrollHeight+2)+"px";}
 function sizeGrow(root){(root||document).querySelectorAll("textarea.ta-fill,textarea.ta-grow").forEach(autoGrow);}
@@ -340,6 +393,7 @@ function gHide(){const el=document.getElementById("gresults");if(el){el.style.di
 const G_PROV={
   schedules:()=>(DB.schedules||[]).map(s=>({keys:[s.title,s.note,s.time],t:s.title||"(무제)",g:"일정 · "+fmt(s.date),date:s.date,go:()=>{selDay=s.date;gNav("schedule");rSchedule();}})),
   diary:()=>(DB.diary||[]).map(d=>({keys:[d.title,d.content],t:d.title||"(무제)",g:"일기 · "+fmt(d.date),date:d.date,go:()=>{gNav("diary");diaryYear=d.date.slice(0,4);diaryOpen(d.id);}})),
+  routines:()=>(DB.routines||[]).map(r=>({keys:[r.title],t:r.title,g:"루틴업무 · "+(RTNAME[r.freq]||""),date:"",go:()=>{routineTab=r.freq;gNav("routines");rRoutines();}})),
   goals:()=>(DB.goals||[]).map(x=>({keys:[x.title,x.desc],t:x.title,g:"목표",date:"",go:()=>{gNav("goals");rGoals();}})),
   prayers:()=>(DB.prayers||[]).map(p=>({keys:[p.title,p.content],t:p.title,g:"교회 · 기도제목",date:"",go:()=>{gNav("faith");faithTab="prayer";rFaith();}})),
   qt:()=>(DB.qt||[]).map(x=>({keys:[x.title,x.content],t:x.title||"(제목없음)",g:"교회 · QT · "+fmt(x.date),date:x.date,go:()=>{gNav("faith");faithTab="qt";qtYear=x.date.slice(0,4);qtOpen(x.id);}})),
@@ -351,9 +405,9 @@ const G_PROV={
   retro:()=>Object.keys(DB.dayinfo||{}).filter(d=>(DB.dayinfo[d]||{}).retro).map(d=>({keys:[DB.dayinfo[d].retro],t:(DB.dayinfo[d].retro||"").slice(0,40),g:"회고 · "+fmt(d),date:d,go:()=>{gNav("retro");try{retroYear=d.slice(0,4);}catch(e){}rRetro();}})),
   accounts:()=>{const a=[];(DB.accounts||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 계정",date:"",go:()=>{gNav("accounts");rAccounts();}}));(DB.places||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 장소",date:"",go:()=>{gNav("accounts");rAccounts();}}));(DB.banks||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 은행",date:"",go:()=>{gNav("accounts");rAccounts();}}));return a;}
 };
-const G_ALL=["schedules","diary","goals","prayers","qt","sermons","clients","costs","books","notes","retro","accounts"];
-const G_SCOPE={schedule:["schedules"],calendar:["schedules"],diary:["diary"],goals:["goals"],faith:["prayers","qt","sermons"],clients:["clients"],costs:["costs"],books:["books"],notes:["notes"],retro:["retro"],accounts:["accounts"]};
-const G_NAME={schedule:"일정",calendar:"캘린더",diary:"일기",goals:"목표",faith:"교회",clients:"클라이언트",costs:"비용관리",books:"독서노트",notes:"노트",retro:"회고",accounts:"계정관리"};
+const G_ALL=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","books","notes","retro","accounts"];
+const G_SCOPE={schedule:["schedules"],routines:["routines"],calendar:["schedules"],diary:["diary"],goals:["goals"],faith:["prayers","qt","sermons"],clients:["clients"],costs:["costs"],books:["books"],notes:["notes"],retro:["retro"],accounts:["accounts"]};
+const G_NAME={schedule:"일정",routines:"루틴업무",calendar:"캘린더",diary:"일기",goals:"목표",faith:"교회",clients:"클라이언트",costs:"비용관리",books:"독서노트",notes:"노트",retro:"회고",accounts:"계정관리"};
 function setSearchPlaceholder(){const q=document.getElementById("gq");if(!q)return;q.placeholder=(G_SCOPE[page]&&G_NAME[page])?G_NAME[page]+"에서 검색...":"전체 검색...";}
 function gScore(keys,q){let best=0;for(let i=0;i<keys.length;i++){const k=keys[i];if(!k)continue;const idx=k.toString().toLowerCase().indexOf(q);if(idx<0)continue;const sc=i===0?(idx===0?100:70):40;if(sc>best)best=sc;}return best;}
 function gSearch(q){
@@ -378,19 +432,21 @@ function rDashboard(){
   const today=T();
   const todayTasks=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===today).sort((a,b)=>(a.s.done-b.s.done)||((a.s.time||"99:99").localeCompare(b.s.time||"99:99")));
   const ws=weekStart(today);const wdays=[...Array(7)].map((_,i)=>{const x=new Date(ws);x.setDate(ws.getDate()+i);return x.toLocaleDateString("sv-SE");});
-  const wkTasks=DB.schedules.filter(s=>wdays.includes(s.date));
-  const wkRate=wkTasks.length?Math.round(wkTasks.filter(s=>s.done).length/wkTasks.length*100):0;
-  const tdRate=todayTasks.length?Math.round(todayTasks.filter(o=>o.s.done).length/todayTasks.length*100):0;
+  /* 달성률은 일정 + 루틴을 합쳐 계산한다 */
+  const tdU=dayUnits(today);
+  const wkRate=rangeUnits(wdays).rate;
+  const tdRate=tdU.rate;
+  const tdRoutines=routinesForDate(today), tdRdone=rdoneOf(today);
   const curM=new Date().getMonth()+1;
   const dueThis=DB.clients.filter(c=>recontractMonth(c.recontract)===curM);
   const ym=today.slice(0,7);
   const monthMains=Object.entries(DB.dayinfo).filter(([d,v])=>d.slice(0,7)===ym&&v.main&&v.main.trim()).sort((a,b)=>a[0].localeCompare(b[0]));
   const wname=DOW[new Date(today+"T00:00:00").getDay()];
-  const tdDone=todayTasks.filter(o=>o.s.done).length;
+  const tdDone=tdU.done;
   const nextM=curM===12?1:curM+1;
   const dueNext=DB.clients.filter(c=>recontractMonth(c.recontract)===nextM);
   const C=2*Math.PI*50;
-  const bars=wdays.map(d=>{const items=DB.schedules.filter(s=>s.date===d);const done=items.filter(s=>s.done).length;const r=items.length?Math.round(done/items.length*100):0;const isT=d===today;const dt=new Date(d+"T00:00:00");
+  const bars=wdays.map(d=>{const u=dayUnits(d);const r=u.rate;const isT=d===today;const dt=new Date(d+"T00:00:00");
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end">
       <div class="meta" style="font-size:10px;color:${isT?"var(--accent)":"var(--muted)"}">${r}%</div>
       <div style="width:60%;height:${Math.max(r,3)}px;background:${isT?"var(--accent)":"#3a3a3a"};border-radius:5px 5px 0 0"></div>
@@ -405,17 +461,17 @@ function rDashboard(){
         <circle cx="60" cy="60" r="50" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-tdRate/100)}" transform="rotate(-90 60 60)"/>
         <text x="60" y="60" text-anchor="middle" dominant-baseline="central" fill="var(--ink)" font-size="26" font-weight="700">${tdRate}%</text></svg>
       <div><div style="font-size:15px;font-weight:600">오늘 달성률</div>
-        <div class="meta" style="margin-top:5px">완료 ${tdDone} · 남은 할 일 <b style="color:var(--accent)">${todayTasks.length-tdDone}</b></div>
+        <div class="meta" style="margin-top:5px">완료 ${tdDone} · 남은 할 일 <b style="color:var(--accent)">${tdU.total-tdDone}</b>${tdRoutines.length?` <span style="color:var(--muted)">(루틴 ${tdRoutines.length}건 포함)</span>`:""}</div>
         <button class="linklike" style="padding:0;margin-top:7px" onclick="goPage('schedule')">일정으로 가기 ›</button></div></div>
     <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">이번 주 달성률</h2><span class="meta">평균 ${wkRate}%</span></div>
       <div style="display:flex;align-items:flex-end;gap:8px;margin-top:14px;min-height:112px">${bars}</div></div></div>
   <div class="two-col">
     <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">오늘 일정 <span class="meta" style="font-weight:400">· 시간순</span></h2><button class="linklike" onclick="goPage('schedule')">더보기 ›</button></div>
-      <div class="mt">${todayTasks.length?todayTasks.map(({s,i})=>`<div class="item ${s.done?"done":""}"><button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button><div class="bd"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div><div class="meta"><span style="color:${PRI[s.priority||4].c}">${PRI[s.priority||4].t}</span></div></div></div>`).join(""):'<div class="empty">오늘 일정이 없어요.</div>'}</div></div>
+      <div class="mt">${tdRoutines.map(r=>`<div class="item ${tdRdone[r.id]?"done":""}"><button class="chk ${tdRdone[r.id]?"on":""}" onclick="routineToggle('${r.id}','${today}')">${tdRdone[r.id]?"✓":""}</button><div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div><div class="meta"><span style="color:${priInfo(r.pri).c}">${priInfo(r.pri).t}</span></div></div></div>`).join("")}${todayTasks.length?todayTasks.map(({s,i})=>`<div class="item ${s.done?"done":""}"><button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button><div class="bd"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div><div class="meta"><span style="color:${priInfo(s.priority).c}">${priInfo(s.priority).t}</span></div></div></div>`).join(""):(tdRoutines.length?"":'<div class="empty">오늘 일정이 없어요.</div>')}</div></div>
     <div>
       <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">이번 주</h2><button class="linklike" onclick="goPage('schedule')">›</button></div>
-        <div class="mt">${wdays.map(d=>{const dt=new Date(d+"T00:00:00");const items=DB.schedules.filter(s=>s.date===d);const done=items.filter(s=>s.done).length;const isT=d===today;
-          return `<div class="item" style="padding:8px 0"><div class="bd"><div class="t" style="font-size:13.5px;${isT?"color:var(--accent)":""}">${dt.getDate()}일 ${DOW[dt.getDay()]}</div></div><span class="meta" style="align-self:center">${items.length?`${done}/${items.length}`:"—"}</span></div>`;}).join("")}</div></div>
+        <div class="mt">${wdays.map(d=>{const dt=new Date(d+"T00:00:00");const u=dayUnits(d);const isT=d===today;
+          return `<div class="item" style="padding:8px 0"><div class="bd"><div class="t" style="font-size:13.5px;${isT?"color:var(--accent)":""}">${dt.getDate()}일 ${DOW[dt.getDay()]}</div></div><span class="meta" style="align-self:center">${u.total?`${u.done}/${u.total}`:"—"}</span></div>`;}).join("")}</div></div>
       <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">${curM}월 주요 일정</h2><button class="linklike" onclick="goPage('calendar')">›</button></div>
         <div class="mt">${monthMains.length?monthMains.slice(0,5).map(([d,v])=>`<div class="item" style="padding:8px 0"><div class="bd"><div class="meta" style="color:var(--accent)">${fmt(d)}</div><div style="font-size:13.5px">${esc(v.main)}</div></div></div>`).join(""):'<div class="empty">주요 일정이 없어요.</div>'}</div></div></div></div>
   <div class="stat">
@@ -427,10 +483,78 @@ function rDashboard(){
 
 /* ===== 1) 일정 (주간 보기 · 날짜 선택 · 반응형) ===== */
 const PRI={1:{t:"1순위",c:"#e0e0e0"},2:{t:"2순위",c:"#b6b6b6"},3:{t:"3순위",c:"#8f8f8f"},4:{t:"4순위",c:"#6f6f6f"}};
+/* 우선순위 미지정(null) 지원.
+   기존 데이터는 priority가 명시돼 있으므로 표시가 바뀌지 않고,
+   새로 추가하는 업무만 "미지정"으로 시작해 직접 고르도록 유도한다. */
+const PRI_NONE={t:"미지정",c:"#4a4a4a"};
+function priInfo(p){return PRI[p]||PRI_NONE;}
+function priRank(p){return p?+p:5;}   /* 미지정은 정렬상 맨 뒤 */
 let selDay=null;
 function isMobile(){return window.innerWidth<=760;}
 function weekStart(ds){const d=new Date(ds+"T00:00:00");const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return d;}
 function fmtShort(ds){const x=new Date(ds+"T00:00:00");return `${x.getMonth()+1}.${x.getDate()}`;}
+
+/* ═══ 일정 인사이트 ═══
+   모두 "읽기 전용" 계산이다. 어떤 것도 저장된 일정을 자동으로 바꾸지 않는다.
+   옮길지 말지는 항상 사용자가 직접 누른다. */
+
+/* 지난 날짜에 남아 있는 미완료 업무 */
+function staleTasks(){
+  const today=T();
+  return DB.schedules.map((s,i)=>({s,i}))
+    .filter(o=>!o.s.done&&o.s.date&&o.s.date<today)
+    .sort((a,b)=>a.s.date.localeCompare(b.s.date));
+}
+/* 며칠째 밀렸는지 */
+function daysLate(ds){
+  const a=new Date(ds+"T00:00:00"), b=new Date(T()+"T00:00:00");
+  return Math.round((b-a)/86400000);
+}
+/* 요일별 과거 미완료율 — 과부하 경고의 근거 */
+function dowMissRate(){
+  const today=T(), hist={};
+  DB.schedules.forEach(s=>{
+    if(!s.date||s.date>=today)return;
+    const w=new Date(s.date+"T00:00:00").getDay();
+    if(!hist[w])hist[w]={t:0,u:0};
+    hist[w].t++; if(!s.done)hist[w].u++;
+  });
+  return hist;
+}
+/* 이번 주 남은 날 중 일이 몰린 날 */
+function overloadWarning(weekDays){
+  const today=T(), hist=dowMissRate(), out=[];
+  weekDays.forEach(d=>{
+    if(d<today)return;
+    const u=dayUnits(d);
+    if(u.total<10)return;                       /* 10건 미만은 경고하지 않음 */
+    const h=hist[new Date(d+"T00:00:00").getDay()];
+    out.push({date:d,total:u.total,miss:(h&&h.t>=10)?Math.round(100*h.u/h.t):null});
+  });
+  return out;
+}
+/* 20시 이후로 잡은 일정의 과거 완료율 */
+function eveningStats(){
+  const today=T(); let t=0,d=0;
+  DB.schedules.forEach(s=>{
+    if(!s.date||s.date>=today||!s.time)return;
+    if(parseInt(s.time.slice(0,2))<20)return;
+    t++; if(s.done)d++;
+  });
+  return {total:t,done:d,rate:t?Math.round(100*d/t):null};
+}
+/* 밀린 업무를 오늘로 (사용자가 직접 누를 때만 실행) */
+window.pullTask=(i)=>{const s=DB.schedules[i];if(!s)return;s.date=T();save();rSchedule();};
+window.pullAllStale=()=>{
+  const list=staleTasks();
+  if(!list.length)return;
+  if(!confirm(`밀린 업무 ${list.length}건을 모두 오늘(${T()})로 옮길까요?`))return;
+  list.forEach(o=>{DB.schedules[o.i].date=T();});
+  save();rSchedule();
+};
+window.doneStale=(i)=>{const s=DB.schedules[i];if(!s)return;s.done=true;save();rSchedule();};
+window.toggleStale=()=>{staleOpen=!staleOpen;rSchedule();};
+let staleOpen=false;
 function rSchedule(){
   if(!selDay)selDay=T();
   const mob=isMobile();
@@ -442,10 +566,36 @@ function rSchedule(){
   const dsel=new Date(selDay+"T00:00:00");
   const dayLabel = selDay===T() ? "오늘" : `${dsel.getMonth()+1}월 ${dsel.getDate()}일`;
   const di=DB.dayinfo[selDay]||{};
-  const rate=(list)=>list.length?Math.round(list.filter(s=>s.done).length/list.length*100):0;
   const ws2=weekStart(selDay);const weekDays=[...Array(7)].map((_,i)=>{const x=new Date(ws2);x.setDate(ws2.getDate()+i);return x.toLocaleDateString("sv-SE");});
-  const weekRate=rate(DB.schedules.filter(s=>weekDays.includes(s.date)));
-  const dayRate=rate(DB.schedules.filter(s=>s.date===selDay));
+  /* 달성률은 일정 + 루틴을 합쳐 계산한다 */
+  const weekRate=rangeUnits(weekDays).rate;
+  const dayRate=dayUnits(selDay).rate;
+
+  /* 밀린 업무 — 자동으로 옮기지 않고 보여주기만 한다 */
+  const stale=staleTasks();
+  const staleHtml=stale.length?`<div class="card" style="border-color:var(--accent)">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <h2 style="flex:1;margin:0">밀린 업무 <span class="meta" style="font-weight:400">· ${stale.length}건 · ${fmt(stale[0].s.date)}부터</span></h2>
+      <button class="ghostb" style="padding:6px 12px;font-size:12.5px" onclick="toggleStale()">${staleOpen?"접기":"펼치기"}</button>
+      <button class="ghostb" style="padding:6px 12px;font-size:12.5px" onclick="pullAllStale()">모두 오늘로</button></div>
+    ${staleOpen?`<div class="mt">${stale.map(o=>`<div class="item">
+        <button class="chk" onclick="doneStale(${o.i})" title="완료 처리"></button>
+        <div class="bd"><div class="t">${o.s.time?`<span class="tt-time">${esc(o.s.time)}</span> `:""}${esc(o.s.title)}</div>
+          <div class="meta"><span style="color:var(--bad)">${daysLate(o.s.date)}일 밀림</span> · ${fmt(o.s.date)}</div></div>
+        <button class="ghostb" style="padding:5px 10px;font-size:12px" onclick="pullTask(${o.i})">오늘로</button>
+        <button class="del" onclick="rm('schedules',${o.i})">×</button></div>`).join("")}</div>`
+      :`<div class="meta mt">지나간 날짜에 완료되지 않은 업무예요. 눌러서 오늘로 옮기거나 완료 처리할 수 있어요.</div>`}
+    </div>`:"";
+
+  /* 과부하 · 저녁 시간대 경고 */
+  const ov=overloadWarning(weekDays);
+  const ev=eveningStats();
+  const warns=[];
+  ov.forEach(o=>warns.push(`<b>${fmt(o.date)}</b>에 ${o.total}건이 몰려 있어요.${o.miss!==null?` 이 요일은 평소 미완료율이 <b style="color:var(--bad)">${o.miss}%</b>예요.`:""} 일부를 앞당겨 보세요.`));
+  if(ev.rate!==null&&ev.total>=8&&ev.rate<75)warns.push(`20시 이후로 잡은 일정은 지금까지 <b style="color:var(--bad)">${ev.rate}%</b>만 끝났어요 (${ev.done}/${ev.total}). 늦은 시간 배치는 신중히.`);
+  const overloadHtml=warns.length?`<div class="card" style="border-color:var(--line)">
+    <h2 style="margin:0 0 10px">눈여겨볼 점</h2>
+    ${warns.map(w=>`<div class="meta" style="line-height:1.9">· ${w}</div>`).join("")}</div>`:"";
   main.innerHTML=`<h1 class="page-h">일정</h1><p class="page-sub">${mob?"하루씩 넘겨보며 정리해요.":"이번 주 업무를 한눈에 보고 정리해요."}</p>
   <div class="card"><div class="cal-head">
       <button onclick="weekMove(${-step})">${mob?"‹ 이전날":"‹ 이전주"}</button>
@@ -453,6 +603,8 @@ function rSchedule(){
       <button onclick="weekMove(${step})">${mob?"다음날 ›":"다음주 ›"}</button></div>
     <div class="week-scroll"><div class="week-grid" style="grid-template-columns:repeat(${days.length},minmax(${mob?"100%":"130px"},1fr))">${days.map(weekCol).join("")}</div></div>
     <div style="display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:var(--muted)"><span>이번주 달성률 <b style="color:var(--accent)">${weekRate}%</b></span><span>${dayLabel} 달성률 <b style="color:var(--accent)">${dayRate}%</b></span></div></div>
+  ${staleHtml}
+  ${overloadHtml}
   <div class="card"><h2>${dayLabel} 주요업무</h2>
     <textarea id="daymain" rows="2" placeholder="이 날의 핵심 일정·업무를 적어두세요 (예: 11시 스터디, 14시 회의)" onchange="setMain(this.value)">${esc((DB.dayinfo[selDay]||{}).main||"")}</textarea></div>
   <details class="acard"><summary>업무 추가</summary><div class="acbody">
@@ -461,7 +613,7 @@ function rSchedule(){
       <select id="shour" class="n2" onchange="pickTime()" style="flex:0 0 84px"><option value="">시</option>${[...Array(24)].map((_,h)=>`<option value="${String(h).padStart(2,"0")}">${String(h).padStart(2,"0")}시</option>`).join("")}</select>
       <select id="smin" class="n2" onchange="pickTime()" style="flex:0 0 84px">${[0,5,10,15,20,25,30,35,40,45,50,55].map(m=>`<option value="${String(m).padStart(2,"0")}">${String(m).padStart(2,"0")}분</option>`).join("")}</select></div>
     <div class="row mt"><select id="spri" class="n1">
-        <option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4" selected>4순위</option></select>
+        <option value="" selected>우선순위 미지정</option><option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4">4순위</option></select>
       <input id="snote" class="mobwide" placeholder="비고 (선택)">
       <button class="addb" id="sadd" style="flex:0 0 84px">+ 추가</button></div></div></details>
   <div class="card">
@@ -472,7 +624,7 @@ function rSchedule(){
   <div class="card"><h2>${dayLabel} 회고</h2><textarea rows="3" placeholder="오늘 하루를 돌아보며 회고를 적어보세요" onchange="setDayField('retro',this.value)">${esc(di.retro||"")}</textarea></div>`;
   document.getElementById("sadd").onclick=()=>{
     const t=val("stt");if(!t)return alert("업무 내용을 입력하세요.");
-    DB.schedules.push({id:uid(),date:val("sd")||selDay,time:normTime(val("stime")),title:t,priority:parseInt(val("spri")),done:false,note:val("snote")});
+    DB.schedules.push({id:uid(),date:val("sd")||selDay,time:normTime(val("stime")),title:t,priority:parseInt(val("spri"))||null,done:false,note:val("snote")});
     save();render();
   };
   drawDay();
@@ -486,21 +638,25 @@ window.setDayField=(f,v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayin
 function weekCol(d){
   const isT=d===T();const isSel=d===selDay;const dt=new Date(d+"T00:00:00");
   const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===d).sort(byPri);
-  const r=items.length?Math.round(items.filter(o=>o.s.done).length/items.length*100):null;
+  const u=dayUnits(d);
+  const pct=u.total?u.rate:null;
   const mn=(DB.dayinfo[d]||{}).main;
+  const rts=routinesForDate(d), rd=rdoneOf(d);
+  const rtHtml=rts.map(rt=>`<div class="wtask ${rd[rt.id]?"done":""}"><span class="pdot" style="background:${priInfo(rt.pri).c}"></span>${rt.time?`<b style="font-weight:500;color:var(--muted)">${esc(rt.time)}</b> `:""}${esc(rt.title)}<span style="color:#7a7a7a;font-size:10px"> ·루틴</span></div>`).join("");
+  const taskHtml=items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${priInfo(s.priority).c}"></span>${s.time?`<b style="font-weight:500;color:var(--muted)">${s.time}</b> `:""}${esc(s.title)}</div>`).join("");
   return `<div class="wcol ${isT?"today":""} ${isSel?"sel":""}" onclick="selectDay('${d}')">
-    <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${r!==null?` · <span style="color:var(--accent)">${r}%</span>`:""}</div>
+    <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${pct!==null?` · <span style="color:var(--accent)">${pct}%</span>`:""}</div>
     ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
-    ${items.length?items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${PRI[s.priority||4].c}"></span>${s.time?`<b style="font-weight:500;color:var(--muted)">${s.time}</b> `:""}${esc(s.title)}</div>`).join(""):'<div class="wempty">—</div>'}</div>`;
+    ${rtHtml}${taskHtml||(rts.length?"":'<div class="wempty">—</div>')}</div>`;
 }
-const byPri=(a,b)=>(a.s.done-b.s.done)||((a.s.priority||4)-(b.s.priority||4));
+const byPri=(a,b)=>(a.s.done-b.s.done)||(priRank(a.s.priority)-priRank(b.s.priority));
 const byTime=(a,b)=>(a.s.done-b.s.done)||((a.s.time||"99:99").localeCompare(b.s.time||"99:99"));
 function taskRows(items){
-  return items.length?items.map(({s,i})=>{const p=PRI[s.priority||4];
+  return items.length?items.map(({s,i})=>{const p=priInfo(s.priority);
     if(i===editSchedIdx){
       return `<div class="item" style="display:block">
         <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" class="mobwide" value="${esc(s.title)}" placeholder="업무 내용"></div>
-        <div class="row mt"><select id="epri" class="n1">${[1,2,3,4].map(n=>`<option value="${n}"${(s.priority||4)==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
+        <div class="row mt"><select id="epri" class="n1"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
         <div class="row mt"><button class="addb" onclick="schedSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="schedEditCancel()">취소</button></div></div>`;
     }
     return `<div class="item ${s.done?"done":""}">
@@ -511,14 +667,204 @@ function taskRows(items){
 }
 let todaySort="time",editSchedIdx=null;
 function drawDay(){
+  const el=document.getElementById("tlist");
+  if(!el)return;
   const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===selDay);
-  document.getElementById("tlist").innerHTML=taskRows([...items].sort(todaySort==="time"?byTime:byPri));
+  const rts=routinesForDate(selDay);
+  const rd=rdoneOf(selDay);
+  let html="";
+  if(rts.length){
+    html+=`<div class="meta" style="font-weight:600;color:var(--accent-2);margin:0 0 6px">🔁 반복 루틴 <span style="font-weight:400">· ${rts.filter(r=>rd[r.id]).length}/${rts.length}</span></div>`;
+    html+=rts.map(r=>{const done=!!rd[r.id];const p=priInfo(r.pri);
+      return `<div class="item ${done?"done":""}">
+        <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+        <div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div>
+          <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
+        <button class="linklike" onclick="goPage('routines')" title="루틴 관리">›</button></div>`;}).join("");
+    html+=`<div style="height:12px"></div>`;
+  }
+  html+=taskRows([...items].sort(todaySort==="time"?byTime:byPri));
+  el.innerHTML=html;
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
 window.goToday=()=>{selDay=T();editSchedIdx=null;rSchedule();};
 window.schedEdit=(i)=>{editSchedIdx=i;drawDay();};
 window.schedEditCancel=()=>{editSchedIdx=null;drawDay();};
-window.schedSave=(i)=>{const s=DB.schedules[i];if(!s)return;s.time=normTime(document.getElementById("etime").value);const t=document.getElementById("etitle").value.trim();if(t)s.title=t;s.priority=parseInt(document.getElementById("epri").value)||4;s.note=document.getElementById("enote").value.trim();editSchedIdx=null;save();rSchedule();};
+window.schedSave=(i)=>{const s=DB.schedules[i];if(!s)return;s.time=normTime(document.getElementById("etime").value);const t=document.getElementById("etitle").value.trim();if(t)s.title=t;s.priority=parseInt(document.getElementById("epri").value)||null;s.note=document.getElementById("enote").value.trim();editSchedIdx=null;save();rSchedule();};
+
+/* ═══════════════════════════════════════════════════════════════
+   루틴업무 — 일간·주간·월간 반복 업무
+   완료 여부는 일정을 복제하지 않고 dayinfo[날짜].rdone[루틴id]에 기록한다.
+
+   설계 노트 — 이전 버전에서 문제가 됐던 지점을 모두 막았다:
+   · startDate 필수 → 루틴을 만들기 "이전" 날짜에는 절대 나타나지 않는다
+   · endDate/paused → 그만둔 루틴도 지난 기록은 그대로 보존된다
+   · 말일 보정      → 31일 루틴이 30일까지인 달에서 조용히 사라지지 않는다
+   · 달성률 반영    → 루틴 완료가 일정 달성률에 함께 집계된다 (dayUnits)
+   · 고아기록 청소  → 루틴 삭제 시 dayinfo의 완료기록도 함께 정리한다
+   ═══════════════════════════════════════════════════════════════ */
+const RTNAME={daily:"일간",weekly:"주간",monthly:"월간"};
+let routineTab="daily", routineSel=new Set(), routineEdit=null;
+
+function lastDomOf(ds){const d=new Date(ds+"T00:00:00");return new Date(d.getFullYear(),d.getMonth()+1,0).getDate();}
+
+/* 해당 날짜에 표시할 루틴 목록 */
+function routinesForDate(ds){
+  const list=DB.routines||[];
+  if(!list.length||!ds)return [];
+  const dt=new Date(ds+"T00:00:00");
+  const dow=dt.getDay(), dom=dt.getDate(), lastDom=lastDomOf(ds);
+  return list.filter(r=>{
+    if(r.paused)return false;
+    if(r.startDate&&ds<r.startDate)return false;   /* 시작일 이전엔 표시 안 함 */
+    if(r.endDate&&ds>r.endDate)return false;       /* 종료일 이후엔 표시 안 함 */
+    if(r.freq==="daily")return true;
+    if(r.freq==="weekly")return (r.wd||[]).includes(dow);
+    if(r.freq==="monthly"){
+      if(r.day==="last")return dom===lastDom;
+      return dom===Math.min(parseInt(r.day)||1,lastDom);   /* 말일 보정 */
+    }
+    return false;
+  }).slice().sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
+}
+function rdoneOf(ds){return ((DB.dayinfo[ds]||{}).rdone)||{};}
+
+/* 일정 + 루틴을 합친 그 날의 달성 현황 — 앱 안 모든 달성률의 단일 기준 */
+function dayUnits(ds){
+  const tasks=DB.schedules.filter(s=>s.date===ds);
+  const rts=routinesForDate(ds);
+  const rd=rdoneOf(ds);
+  const total=tasks.length+rts.length;
+  const done=tasks.filter(s=>s.done).length+rts.filter(r=>rd[r.id]).length;
+  return {total,done,rate:total?Math.round(done/total*100):0};
+}
+function rangeUnits(days){
+  return days.reduce((a,d)=>{const u=dayUnits(d);a.total+=u.total;a.done+=u.done;return a;},
+    {total:0,done:0,get rate(){return this.total?Math.round(this.done/this.total*100):0}});
+}
+
+window.routineToggle=(id,ds)=>{
+  const d=ds||selDay;
+  if(!DB.dayinfo[d])DB.dayinfo[d]={};
+  const di=DB.dayinfo[d];
+  if(!di.rdone)di.rdone={};
+  if(di.rdone[id])delete di.rdone[id]; else di.rdone[id]=true;
+  save();render();   /* 현재 페이지를 다시 그린다 (일정·대시보드 어디서 눌러도 동작) */
+};
+
+/* 완료기록 청소 — 블롭이 무한정 커지는 것을 막는다 */
+function purgeRdone(id){Object.values(DB.dayinfo||{}).forEach(v=>{if(v&&v.rdone)delete v.rdone[id];});}
+function purgeOrphanRdone(){
+  const alive=new Set((DB.routines||[]).map(r=>r.id));
+  let n=0;
+  Object.values(DB.dayinfo||{}).forEach(v=>{
+    if(!v||!v.rdone)return;
+    Object.keys(v.rdone).forEach(id=>{if(!alive.has(id)){delete v.rdone[id];n++;}});
+  });
+  if(n)console.log("[루틴] 고아 완료기록 "+n+"건 정리");
+}
+
+function rtRecurLabel(r){
+  if(r.freq==="daily")return "매일";
+  if(r.freq==="weekly")return "매주 "+(r.wd||[]).slice().sort((a,b)=>a-b).map(i=>DOW[i]).join("·")+"요일";
+  return r.day==="last"?"매월 말일":"매월 "+r.day+"일";
+}
+function rtPeriodLabel(r){
+  const s=r.startDate?fmtShort(r.startDate):"?";
+  return r.endDate?`${s} ~ ${fmtShort(r.endDate)}`:`${s} ~`;
+}
+
+function rRoutines(){
+  if(!DB.routines)DB.routines=[];
+  const rows=DB.routines.filter(r=>r.freq===routineTab);
+  main.innerHTML=`<h1 class="page-h">루틴업무</h1><p class="page-sub">매일·매주·매월 반복되는 업무를 등록하면 해당 날짜의 일정에 자동으로 나타나요.</p>
+  <div class="sub-tabs">${Object.keys(RTNAME).map(k=>`<button data-rt="${k}" class="${routineTab===k?"on":""}">${RTNAME[k]}</button>`).join("")}</div>
+  <details class="acard"${routineEdit?" open":""}><summary>${RTNAME[routineTab]} 루틴 ${routineEdit?"수정":"추가"}</summary><div class="acbody">
+    <div class="row"><input id="rt_title" placeholder="반복 업무 내용 (예: 이태화 세무사님 칼럼)"></div>
+    <div class="row mt">
+      <select id="rt_pri" class="n1"><option value="">우선순위 미지정</option>${[1,2,3,4].map(n=>`<option value="${n}">${n}순위</option>`).join("")}</select>
+      <input id="rt_time" class="n2" placeholder="시간 24h (예: 09:00)" inputmode="numeric" style="flex:1 1 120px">
+      <select id="rt_h" class="n2" onchange="rtPick()" style="flex:0 0 84px"><option value="">시</option>${[...Array(24)].map((_,h)=>`<option value="${String(h).padStart(2,"0")}">${String(h).padStart(2,"0")}시</option>`).join("")}</select>
+      <select id="rt_m" class="n2" onchange="rtPick()" style="flex:0 0 84px">${[0,5,10,15,20,25,30,35,40,45,50,55].map(m=>`<option value="${String(m).padStart(2,"0")}">${String(m).padStart(2,"0")}분</option>`).join("")}</select></div>
+    ${routineTab==="weekly"?`<div class="mt"><div class="meta" style="margin-bottom:5px">반복 요일 (여러 개 선택)</div>
+      <div id="rt_wk" style="display:flex;gap:5px;flex-wrap:wrap">${DOW.map((n,i)=>`<button type="button" class="rtwd" data-d="${i}" onclick="rtToggleWd(${i})" style="width:38px;height:38px;border-radius:9px;background:var(--input);border:1px solid var(--line);color:${i===0?"#ff6b6b":i===6?"#6f9de0":"var(--muted)"}">${n}</button>`).join("")}</div></div>`:""}
+    ${routineTab==="monthly"?`<div class="mt"><div class="meta" style="margin-bottom:5px">매월 며칠</div>
+      <select id="rt_day" class="n1" style="flex:0 0 130px">${[...Array(31)].map((_,i)=>`<option value="${i+1}">${i+1}일</option>`).join("")}<option value="last">말일</option></select>
+      <div class="meta" style="margin-top:5px">29·30·31일을 고르면, 그 날짜가 없는 달에는 말일에 표시돼요.</div></div>`:""}
+    <div class="row mt">
+      <div style="flex:1"><div class="meta" style="margin-bottom:5px">시작일</div><input type="date" id="rt_start" value="${T()}"></div>
+      <div style="flex:1"><div class="meta" style="margin-bottom:5px">종료일 (비워두면 계속)</div><input type="date" id="rt_end"></div></div>
+    <div class="meta mt">시작일 이전 날짜에는 이 루틴이 나타나지 않아요. 지난 기록은 그대로 보존됩니다.</div>
+    <div class="row mt"><button class="addb" id="rt_add">${routineEdit?"수정 저장":"+ 추가"}</button>${routineEdit?`<button class="ghostb" style="flex:0 0 80px" onclick="rtCancel()">취소</button>`:""}</div>
+  </div></details>
+  <div class="card"><h2>${RTNAME[routineTab]} 루틴 <span class="meta" style="font-weight:400">· ${rows.length}개</span></h2><div id="rt_list"></div></div>`;
+  main.querySelectorAll(".sub-tabs button").forEach(b=>b.onclick=()=>{routineTab=b.dataset.rt;routineEdit=null;routineSel=new Set();rRoutines();});
+  document.getElementById("rt_add").onclick=rtAdd;
+  if(routineEdit){
+    const it=DB.routines.find(x=>x.id===routineEdit);
+    if(it){
+      document.getElementById("rt_title").value=it.title||"";
+      document.getElementById("rt_pri").value=it.pri||"";
+      document.getElementById("rt_time").value=it.time||"";
+      document.getElementById("rt_start").value=it.startDate||T();
+      document.getElementById("rt_end").value=it.endDate||"";
+      const dsel=document.getElementById("rt_day");
+      if(dsel)dsel.value=it.day==="last"?"last":it.day;
+    }
+  }
+  if(routineTab==="weekly")rtDrawWd();
+  drawRoutines();
+}
+function drawRoutines(){
+  const e=document.getElementById("rt_list");
+  if(!e)return;
+  const rows=DB.routines.filter(r=>r.freq===routineTab);
+  e.innerHTML=rows.length?rows.map(r=>{const p=priInfo(r.pri);
+    return `<div class="item" style="${r.paused?"opacity:.5":""}">
+      <span class="pdot" style="background:${p.c};margin-top:6px"></span>
+      <div class="bd" style="cursor:pointer" onclick="rtEdit('${r.id}')" title="클릭해서 수정">
+        <div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}${esc(r.title)}${r.paused?' <span class="pill">중지됨</span>':""}</div>
+        <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)} · ${rtPeriodLabel(r)}</div></div>
+      <button class="linklike" onclick="rtPause('${r.id}')" title="${r.paused?"다시 시작":"일시중지"}">${r.paused?"▶":"❚❚"}</button>
+      <button class="del" onclick="rtDel('${r.id}')">×</button></div>`;}).join("")
+    :`<div class="empty">등록된 ${RTNAME[routineTab]} 루틴이 없어요.</div>`;
+}
+function rtAdd(){
+  const title=val("rt_title");if(!title)return alert("업무 내용을 입력하세요.");
+  const start=document.getElementById("rt_start").value;
+  if(!start)return alert("시작일을 선택하세요.");
+  const end=document.getElementById("rt_end").value||null;
+  if(end&&end<start)return alert("종료일이 시작일보다 빠를 수 없어요.");
+  const o={freq:routineTab,title,
+    pri:parseInt(document.getElementById("rt_pri").value)||null,
+    time:normTime(document.getElementById("rt_time").value),
+    startDate:start,endDate:end};
+  if(routineTab==="weekly"){
+    if(!routineSel.size)return alert("반복 요일을 하나 이상 선택하세요.");
+    o.wd=[...routineSel].sort((a,b)=>a-b);
+  }
+  if(routineTab==="monthly"){
+    const d=document.getElementById("rt_day").value;
+    o.day=d==="last"?"last":parseInt(d);
+  }
+  if(routineEdit){const it=DB.routines.find(x=>x.id===routineEdit);if(it)Object.assign(it,o);}
+  else{o.id=uid();o.paused=false;o.createdAt=new Date().toISOString();DB.routines.push(o);}
+  routineEdit=null;routineSel=new Set();save();rRoutines();
+}
+window.rtCancel=()=>{routineEdit=null;routineSel=new Set();rRoutines();};
+window.rtEdit=(id)=>{const it=DB.routines.find(x=>x.id===id);if(!it)return;routineTab=it.freq;routineEdit=id;routineSel=new Set(it.wd||[]);rRoutines();window.scrollTo({top:0,behavior:"smooth"});};
+window.rtPause=(id)=>{const it=DB.routines.find(x=>x.id===id);if(!it)return;it.paused=!it.paused;save();rRoutines();};
+window.rtDel=(id)=>{
+  const it=DB.routines.find(x=>x.id===id);if(!it)return;
+  if(!confirm(`"${it.title}" 루틴을 삭제할까요?\n지난 날짜의 완료 기록도 함께 지워집니다.\n기록을 남기려면 '일시중지'나 종료일을 쓰세요.`))return;
+  DB.routines=DB.routines.filter(x=>x.id!==id);
+  purgeRdone(id);
+  if(routineEdit===id){routineEdit=null;routineSel=new Set();}
+  save();rRoutines();
+};
+window.rtPick=()=>{const h=document.getElementById("rt_h").value;if(h==="")return;document.getElementById("rt_time").value=h+":"+(document.getElementById("rt_m").value||"00");};
+window.rtToggleWd=(i)=>{routineSel.has(i)?routineSel.delete(i):routineSel.add(i);rtDrawWd();};
+function rtDrawWd(){document.querySelectorAll(".rtwd").forEach(b=>{const on=routineSel.has(+b.dataset.d);b.style.background=on?"var(--accent)":"var(--input)";b.style.color=on?"var(--on-accent)":(+b.dataset.d===0?"#ff6b6b":+b.dataset.d===6?"#6f9de0":"var(--muted)");b.style.borderColor=on?"var(--accent)":"var(--line)";});}
 
 /* ===== 2) 캘린더 ===== */
 let calY,calM,calSel=null;
@@ -958,16 +1304,25 @@ function rRetro(){
     .filter(([d,v])=>d.slice(0,4)===String(retroYear)&&v.retro&&v.retro.trim())
     .sort((a,b)=>b[0].localeCompare(a[0]));
   const years=[...new Set(Object.keys(DB.dayinfo).map(d=>d.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
-  main.innerHTML=`<h1 class="page-h">회고</h1><p class="page-sub">일정 화면에서 적은 회고를 연도별로 모아봐요.</p>
+  const today=T();
+  const todayRetro=((DB.dayinfo[today]||{}).retro)||"";
+  const u=dayUnits(today);
+  main.innerHTML=`<h1 class="page-h">회고</h1><p class="page-sub">오늘 회고를 바로 적고, 지난 회고를 연도별로 모아봐요.</p>
+  <div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <h2 style="flex:1;margin:0">오늘 회고 <span class="meta" style="font-weight:400">· ${fmt(today)}</span></h2>
+      ${u.total?`<span class="meta">오늘 달성 ${u.done}/${u.total} · ${u.rate}%</span>`:""}</div>
+    <textarea id="retroToday" class="ta-grow mt" rows="3" placeholder="오늘 하루를 돌아보며 한 줄이라도 남겨보세요" onchange="saveTodayRetro(this.value)">${esc(todayRetro)}</textarea>
+    <div class="meta mt">일정 화면 맨 아래 회고 칸과 같은 곳에 저장돼요.</div></div>
   <div class="card"><div class="row" style="align-items:center">
       <select class="n2" onchange="setRetroYear(this.value)" style="flex:0 0 120px">${years.map(y=>`<option value="${y}" ${y===String(retroYear)?"selected":""}>${y}년</option>`).join("")}</select>
       <span style="flex:1"></span>
       <span class="meta">${entries.length}개</span></div></div>
   <div class="card"><h2>${retroYear}년 회고</h2>${entries.length?entries.map(([d,v])=>`
     <div class="item"><div class="bd"><div class="meta" style="color:var(--accent)">${fmt(d)}</div>
-      <div style="white-space:pre-wrap;margin-top:3px">${esc(v.retro)}</div></div></div>`).join(""):'<div class="empty">이 해에 작성한 회고가 없어요.<br>일정 화면 맨 아래 회고 칸에 적으면 여기에 모여요.</div>'}</div>`;
+      <div style="white-space:pre-wrap;margin-top:3px">${esc(v.retro)}</div></div></div>`).join(""):'<div class="empty">이 해에 작성한 회고가 없어요.<br>위 칸이나 일정 화면 회고 칸에 적으면 여기에 모여요.</div>'}</div>`;
 }
 window.setRetroYear=(v)=>{retroYear=v;rRetro();};
+window.saveTodayRetro=(v)=>{const d=T();if(!DB.dayinfo[d])DB.dayinfo[d]={};DB.dayinfo[d].retro=v;save();rRetro();};
 
 /* ===== 계정관리 (계정정보 · 장소 · 은행) ===== */
 let acctTab="accounts";
@@ -1227,22 +1582,79 @@ function noteDetail(){
     <div class="detail-body">${esc(d.content)}</div></div>`;
 }
 
-/* ===== 백업 (하루 1회 자동 · 30일 보관) ===== */
-function snapshotData(){const c={...DB};delete c.backups;return JSON.stringify(c);}
-function fmtDT(iso){const x=new Date(iso);return `${x.getMonth()+1}월 ${x.getDate()}일 (${DOW[x.getDay()]}) ${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`;}
-function pruneBackups(){DB.backups.sort((a,b)=>b.ts.localeCompare(a.ts));if(DB.backups.length>30)DB.backups=DB.backups.slice(0,30);}
-function autoBackup(){DB.backups=DB.backups||[];const today=T();if(!DB.backups.some(b=>b.ts.slice(0,10)===today)){DB.backups.push({id:uid(),ts:new Date().toISOString(),data:snapshotData()});pruneBackups();save();}}
-function rBackup(){
-  const list=[...(DB.backups||[])].sort((a,b)=>b.ts.localeCompare(a.ts));
-  main.innerHTML=`<h1 class="page-h">백업</h1><p class="page-sub">앱을 열 때 하루 1회 자동 저장 · 최근 30일 보관</p>
-  <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">저장된 버전</h2><button class="ghostb" onclick="backupNow()">지금 백업</button></div>
-    <div class="mt">${list.length?list.map(b=>`<div class="item"><div class="bd"><div class="t">${fmtDT(b.ts)}</div><div class="meta">${(b.data.length/1024).toFixed(1)} KB</div></div>
-      <button class="ghostb" style="padding:6px 12px" onclick="restoreBackup('${b.id}')">복원</button>
-      <button class="del" onclick="delBackup('${b.id}')">×</button></div>`).join(""):'<div class="empty">백업이 아직 없어요.</div>'}</div></div>`;
+/* ═══════════════════════════════════════════════════════════════
+   백업 — 별도 테이블(app_backups)에 저장
+   예전에는 스냅샷이 app_data 블롭 안에 함께 들어 있어서,
+   체크박스 하나 누를 때마다 수 MB를 통째로 업로드해야 했다.
+   (실측: 전체 5.5MB 중 97%가 백업이었다)
+   이제 백업은 별도 테이블로 빠지고, 일상 저장 페이로드에서 제외된다.
+   ═══════════════════════════════════════════════════════════════ */
+const BACKUP_KEEP=60;      /* 보관 개수 */
+const BACKUP_EVERY_H=6;    /* 자동 스냅샷 최소 간격(시간) */
+function snapshotData(){const c={...DB};delete c.backups;delete c.trash;return JSON.stringify(c);}
+function fmtDT(iso){const x=new Date(String(iso).replace(" ","T"));return `${x.getMonth()+1}월 ${x.getDate()}일 (${DOW[x.getDay()]}) ${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`;}
+
+async function bkList(){
+  if(!sb||!currentUser)return [];
+  const r=await sb.from("app_backups").select("id,ts,guard").eq("user_id",currentUser.id).order("ts",{ascending:false});
+  if(r.error){console.warn("[backup] 목록 조회 실패",r.error);return null;}
+  return r.data||[];
 }
-window.backupNow=()=>{DB.backups=DB.backups||[];DB.backups.push({id:uid(),ts:new Date().toISOString(),data:snapshotData()});pruneBackups();save();rBackup();};
-window.delBackup=(id)=>{if(!confirm("이 백업을 삭제할까요?"))return;DB.backups=DB.backups.filter(b=>b.id!==id);save();rBackup();};
-window.restoreBackup=(id)=>{const b=(DB.backups||[]).find(x=>x.id===id);if(!b)return;if(!confirm(fmtDT(b.ts)+" 시점으로 복원할까요? 현재 데이터가 이 버전으로 덮어써져요."))return;const d=JSON.parse(b.data);Object.keys(d).forEach(k=>{DB[k]=d[k];});save();alert("복원됐어요.");location.reload();};
+async function bkInsert(guard){
+  if(!sb||!currentUser)return false;
+  const r=await sb.from("app_backups").insert({id:uid(),user_id:currentUser.id,ts:new Date().toISOString(),data:snapshotData(),guard:!!guard});
+  if(r.error){console.warn("[backup] 저장 실패",r.error);return false;}
+  await bkPrune();
+  return true;
+}
+async function bkPrune(){
+  const list=await bkList();
+  if(!list||list.length<=BACKUP_KEEP)return;
+  const old=list.slice(BACKUP_KEEP).map(b=>b.id);
+  if(old.length)await sb.from("app_backups").delete().in("id",old);
+}
+/* 앱을 열 때, 마지막 백업이 오래됐으면 새로 뜬다 */
+async function autoBackup(){
+  const list=await bkList();
+  if(list===null)return;                 /* 조회 실패 시 아무 것도 하지 않는다 */
+  const last=list.length?new Date(String(list[0].ts).replace(" ","T")).getTime():0;
+  if(Date.now()-last >= BACKUP_EVERY_H*3600*1000)await bkInsert(false);
+}
+function pruneBackups(){/* 테이블 기반으로 이전됨 (bkPrune) */}
+
+function rBackup(){
+  main.innerHTML=`<h1 class="page-h">백업</h1><p class="page-sub">앱을 열 때 ${BACKUP_EVERY_H}시간 간격으로 자동 저장 · 최근 ${BACKUP_KEEP}개 보관</p>
+  <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">저장된 버전</h2><button class="ghostb" onclick="backupNow()">지금 백업</button></div>
+    <div class="mt" id="bklist"><div class="empty">불러오는 중...</div></div></div>`;
+  drawBackups();
+}
+async function drawBackups(){
+  let el=document.getElementById("bklist");
+  if(!el)return;
+  const list=await bkList();
+  el=document.getElementById("bklist");
+  if(!el)return;                         /* 그 사이 다른 페이지로 넘어갔으면 중단 */
+  if(list===null){el.innerHTML='<div class="empty" style="color:var(--bad)">백업 목록을 불러오지 못했어요.</div>';return;}
+  el.innerHTML=list.length?list.map(b=>`<div class="item"><div class="bd"><div class="t">${fmtDT(b.ts)}${b.guard?' <span class="pill">자동보호</span>':""}</div></div>
+    <button class="ghostb" style="padding:6px 12px" onclick="restoreBackup('${b.id}')">복원</button>
+    <button class="del" onclick="delBackup('${b.id}')">×</button></div>`).join(""):'<div class="empty">백업이 아직 없어요.</div>';
+}
+window.backupNow=async()=>{const ok=await bkInsert(false);if(!ok)alert("백업에 실패했어요.");drawBackups();};
+window.delBackup=async(id)=>{
+  if(!confirm("이 백업을 삭제할까요?"))return;
+  const r=await sb.from("app_backups").delete().eq("id",id);
+  if(r.error)alert("삭제에 실패했어요.");
+  drawBackups();
+};
+window.restoreBackup=async(id)=>{
+  const r=await sb.from("app_backups").select("ts,data").eq("id",id).maybeSingle();
+  if(r.error||!r.data)return alert("백업을 불러오지 못했어요.");
+  if(!confirm(fmtDT(r.data.ts)+" 시점으로 복원할까요? 현재 데이터가 이 버전으로 덮어써져요."))return;
+  let d;
+  try{d=JSON.parse(r.data.data);}catch(e){return alert("백업 데이터를 읽지 못했어요.");}
+  Object.keys(d).forEach(k=>{DB[k]=d[k];});
+  save();alert("복원됐어요.");location.reload();
+};
 
 /* ===== 공통 ===== */
 window.tg=(arr,i,f)=>{DB[arr][i][f]=!DB[arr][i][f];save();render();};
@@ -1251,12 +1663,11 @@ let rz,lastW=window.innerWidth;window.addEventListener("resize",()=>{if(window.i
 window.addEventListener("resize",()=>{const L=document.querySelector(".layout");if(window.innerWidth<=760){L.classList.remove("collapsed");}else{const a=document.querySelector("aside");a.classList.remove("open");const bd=document.getElementById("backdrop");if(bd)bd.classList.remove("show");}});
 document.addEventListener("click",e=>{const t=e.target;if(t.tagName==="INPUT"&&(t.type==="date"||t.type==="time")){try{t.showPicker&&t.showPicker();}catch(_){}}});
 
-/* ===== Supabase 로그인 + 데이터 로드 ===== */
-async function boot(pw){
-  const {data,error}=await sb.auth.signInWithPassword({email:USER_EMAIL,password:pw});
-  if(error)return "badpw";
-  currentUser=data.user;
-  const ARR=["schedules","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups"];
+/* ===== 앱 부팅 (로그인은 상단 인증 코어가 담당) =====
+   인증 코어가 로그인에 성공한 뒤 이 함수를 호출한다.
+   반환값: "ok" | "loadfail" */
+window.__appBoot=async function(){
+  const ARR=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups"];
   let loaded=false,loadFailed=false;
   try{const r=await sb.from("app_data").select("data").eq("user_id",currentUser.id).maybeSingle();
     if(r.error){loadFailed=true;}
@@ -1267,22 +1678,14 @@ async function boot(pw){
   if(!loaded){ARR.forEach(k=>{DB[k]=[];});DB.dayinfo={};DB.monthmemo={};}
   else{["dayinfo","monthmemo"].forEach(k=>{if(!DB[k])DB[k]={};});ARR.forEach(k=>{if(!DB[k])DB[k]=[];});}
   dataReady=true;
+  purgeOrphanRdone();          // 삭제된 루틴의 완료기록 청소
   document.getElementById("lock").style.display="none";
   {const gs=document.getElementById("gsearch");if(gs)gs.style.display="block";}
-  autoBackup();
+  try{Promise.resolve(autoBackup()).catch(e=>console.warn("autoBackup",e));}catch(e){console.warn("autoBackup",e);}
   render();
   if(window.lucide)lucide.createIcons();
   return "ok";
-}
-(function(){
-  const inp=document.getElementById("lockpw"),btn=document.getElementById("lockbtn"),msg=document.getElementById("lockmsg");
-  const go=async()=>{btn.disabled=true;msg.textContent="확인 중...";const r=await boot(inp.value);
-    if(r==="ok")return;
-    msg.textContent = r==="loadfail" ? "데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요." : "비밀번호가 틀렸어요.";
-    if(r!=="loadfail")inp.value="";
-    btn.disabled=false;inp.focus();};
-  btn.onclick=go;inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});inp.focus();
-})();
+};
 if(window.lucide)lucide.createIcons();
 
 /* ================================================================
@@ -1355,7 +1758,9 @@ if(window.lucide)lucide.createIcons();
   }
 
   /* ---- 컬럼 구성 ---- */
-  const ARRAY_COLS=["schedules","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups","trash"];
+  /* backups 는 별도 테이블로 빠졌으므로 병합 대상에서 제외한다
+     (남겨두면 백업 파일 가져오기 때 블롭 안으로 다시 들어온다) */
+  const ARRAY_COLS=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","trash"];
   const MAP_COLS=["dayinfo","monthmemo"];
 
   let baseState=null, baseVersion=null, _mt=null, _busy=false, _pending=false;
@@ -1406,7 +1811,9 @@ if(window.lucide)lucide.createIcons();
     toTrash(res.deleted);
     if(res.suspicious){
       console.warn("[safe] 대량삭제 차단기 작동 → 서버 데이터 보존");
-      try{ DB.backups=DB.backups||[]; const sd=Object.assign({},sData); delete sd.backups; delete sd.trash; DB.backups.push({id:uid(), ts:nowISO(), data:JSON.stringify(sd), _guard:true}); pruneBackups(); }catch(e){}
+      try{ const sd=Object.assign({},sData); delete sd.backups; delete sd.trash;
+           if(sb&&currentUser)sb.from("app_backups").insert({id:uid(),user_id:currentUser.id,ts:nowISO(),data:JSON.stringify(sd),guard:true}).then(null,e=>console.warn("[safe] guard backup",e));
+      }catch(e){}
     }
   }
 
@@ -1438,16 +1845,10 @@ if(window.lucide)lucide.createIcons();
     }
   },700); };
 
-  /* ---- 백업 강댔: 보전 60개 + 6시간 간격 스냅샷 ---- */
-  pruneBackups = function(){ DB.backups=DB.backups||[]; DB.backups.sort((a,b)=>b.ts.localeCompare(a.ts)); if(DB.backups.length>60) DB.backups=DB.backups.slice(0,60); };
-  autoBackup = function(){
-    DB.backups=DB.backups||[];
-    const last=DB.backups.reduce((m,b)=>Math.max(m, b.ts?new Date(b.ts).getTime():0), 0);
-    if(Date.now()-last >= 6*3600*1000){
-      DB.backups.push({id:uid(), ts:nowISO(), data:snapshotData()});
-      pruneBackups(); save();
-    }
-  };
+  /* ---- 백업: 별도 테이블(app_backups)로 이전됨 ----
+     예전에는 여기서 pruneBackups/autoBackup 을 블롭 기반 버전으로 덮어썼다.
+     이제 위쪽 테이블 기반 구현을 그대로 쓰므로 덮어쓰지 않는다.
+     (덮어쓰면 백업이 다시 app_data 블롭 안으로 들어가 용량이 폭증한다) */
 
   /* ---- 백업 파일 내보내기 / 가져오기(병합) ---- */
   window.exportBackupFile=function(){
