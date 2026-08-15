@@ -694,39 +694,64 @@ function weekCol(d){
 }
 const byPri=(a,b)=>(a.s.done-b.s.done)||(priRank(a.s.priority)-priRank(b.s.priority));
 const byTime=(a,b)=>(a.s.done-b.s.done)||((a.s.time||"99:99").localeCompare(b.s.time||"99:99"));
-function taskRows(items){
-  return items.length?items.map(({s,i})=>{const p=priInfo(s.priority);
-    if(i===editSchedIdx){
-      return `<div class="item" style="display:block">
-        <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" class="mobwide" value="${esc(s.title)}" placeholder="업무 내용"></div>
-        <div class="row mt"><select id="epri" class="n1"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
-        <div class="row mt"><button class="addb" onclick="schedSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="schedEditCancel()">취소</button></div></div>`;
-    }
-    return `<div class="item ${s.done?"done":""}">
-      <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
-      <div class="bd" style="cursor:pointer" onclick="schedEdit(${i})" title="클릭해서 수정"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div>
-        <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
-      <button class="del" onclick="rm('schedules',${i})">×</button></div>`;}).join(""):'<div class="empty">이 날 업무가 없어요.</div>';
+function taskRow(s,i){
+  const p=priInfo(s.priority);
+  if(i===editSchedIdx){
+    return `<div class="item" style="display:block">
+      <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" class="mobwide" value="${esc(s.title)}" placeholder="업무 내용"></div>
+      <div class="row mt"><select id="epri" class="n1"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
+      <div class="row mt"><button class="addb" onclick="schedSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="schedEditCancel()">취소</button></div></div>`;
+  }
+  return `<div class="item ${s.done?"done":""}">
+    <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+    <div class="bd" style="cursor:pointer" onclick="schedEdit(${i})" title="클릭해서 수정"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div>
+      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
+    <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
+}
+function routineRow(r,done){
+  const p=priInfo(r.pri);
+  return `<div class="item ${done?"done":""}">
+    <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+    <div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div>
+      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
+    <button class="linklike" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">건너뛰기</button>
+    <button class="del" onclick="goPage('routines')" title="루틴 관리로 이동" style="color:var(--muted)">›</button></div>`;
 }
 let todaySort="time",editSchedIdx=null;
 function drawDay(){
   const el=document.getElementById("tlist");
   if(!el)return;
-  const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===selDay);
-  const rts=routinesForDate(selDay);
   const rd=rdoneOf(selDay);
-  let html="";
-  if(rts.length){
-    html+=`<div class="meta" style="font-weight:600;color:var(--accent-2);margin:0 0 6px">🔁 반복 루틴 <span style="font-weight:400">· ${rts.filter(r=>rd[r.id]).length}/${rts.length}</span></div>`;
-    html+=rts.map(r=>{const done=!!rd[r.id];const p=priInfo(r.pri);
-      return `<div class="item ${done?"done":""}">
-        <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
-        <div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div>
-          <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
-        <button class="linklike" onclick="goPage('routines')" title="루틴 관리">›</button></div>`;}).join("");
+  const skipped=routinesSkipped(selDay);
+
+  /* 일반 업무와 루틴을 한 목록으로 합쳐, 위쪽 정렬 토글(우선순위순/시간순)을
+     똑같이 적용한다. 루틴이라고 위에 고정되지 않는다. */
+  const units=[];
+  DB.schedules.forEach((s,i)=>{
+    if(s.date===selDay)units.push({kind:"task",s,i,done:!!s.done,time:s.time||"",pri:s.priority});
+  });
+  routinesForDate(selDay).forEach(r=>{
+    units.push({kind:"routine",r,done:!!rd[r.id],time:r.time||"",pri:r.pri});
+  });
+  const cmp = todaySort==="time"
+    ? (a,b)=>(a.done-b.done)||((a.time||"99:99").localeCompare(b.time||"99:99"))
+    : (a,b)=>(a.done-b.done)||(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99"));
+  units.sort(cmp);
+
+  let html = units.length
+    ? units.map(u=>u.kind==="task"?taskRow(u.s,u.i):routineRow(u.r,u.done)).join("")
+    : '<div class="empty">이 날 업무가 없어요.</div>';
+
+  if(skipped.length){
     html+=`<div style="height:12px"></div>`;
+    /* 그날만 뺀 루틴 — 되돌릴 수 있게 남겨둔다 */
+    html+=`<div class="meta" style="margin:0 0 6px;color:var(--muted)">건너뛴 루틴 · ${skipped.length}건 <span style="color:#6a6a6a">(달성률에서 제외됨)</span></div>`;
+    html+=skipped.map(r=>`<div class="item" style="opacity:.5">
+      <span class="pdot" style="background:${priInfo(r.pri).c};margin-top:8px"></span>
+      <div class="bd"><div class="t" style="text-decoration:line-through">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}</div>
+        <div class="meta">${rtRecurLabel(r)}</div></div>
+      <button class="linklike" onclick="routineUnskip('${r.id}')" title="이 날 다시 하기">되돌리기</button></div>`).join("");
   }
-  html+=taskRows([...items].sort(todaySort==="time"?byTime:byPri));
   el.innerHTML=html;
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
@@ -751,8 +776,8 @@ let routineTab="daily", routineSel=new Set(), routineEdit=null;
 
 function lastDomOf(ds){const d=new Date(ds+"T00:00:00");return new Date(d.getFullYear(),d.getMonth()+1,0).getDate();}
 
-/* 해당 날짜에 표시할 루틴 목록 */
-function routinesForDate(ds){
+/* 반복 규칙상 그 날짜에 해당하는 루틴 (그날만 건너뛴 것도 포함) */
+function routinesMatching(ds){
   const list=DB.routines||[];
   if(!list.length||!ds)return [];
   const dt=new Date(ds+"T00:00:00");
@@ -770,7 +795,19 @@ function routinesForDate(ds){
     return false;
   }).slice().sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
 }
+/* 실제로 그 날 할 루틴 = 규칙에 해당하되, 그날만 건너뛴 것은 제외.
+   건너뛴 루틴은 달성률 분모에서도 빠진다 (안 하는 날이니 당연). */
+function routinesForDate(ds){
+  const skip=rskipOf(ds);
+  return routinesMatching(ds).filter(r=>!skip[r.id]);
+}
+/* 그날만 건너뛴 루틴 목록 */
+function routinesSkipped(ds){
+  const skip=rskipOf(ds);
+  return routinesMatching(ds).filter(r=>skip[r.id]);
+}
 function rdoneOf(ds){return ((DB.dayinfo[ds]||{}).rdone)||{};}
+function rskipOf(ds){return ((DB.dayinfo[ds]||{}).rskip)||{};}
 
 /* 일정 + 루틴을 합친 그 날의 달성 현황 — 앱 안 모든 달성률의 단일 기준 */
 function dayUnits(ds){
@@ -795,16 +832,43 @@ window.routineToggle=(id,ds)=>{
   save();render();   /* 현재 페이지를 다시 그린다 (일정·대시보드 어디서 눌러도 동작) */
 };
 
+/* 그날 하루만 이 루틴을 빼기 (공휴일·쉬는 날 등).
+   루틴 자체는 그대로 남아 다른 날에는 계속 나온다. */
+window.routineSkip=(id,ds)=>{
+  const d=ds||selDay;
+  if(!DB.dayinfo[d])DB.dayinfo[d]={};
+  const di=DB.dayinfo[d];
+  if(!di.rskip)di.rskip={};
+  di.rskip[id]=true;
+  if(di.rdone)delete di.rdone[id];   /* 건너뛴 건 완료가 아니다 */
+  save();render();
+};
+window.routineUnskip=(id,ds)=>{
+  const d=ds||selDay;
+  const di=DB.dayinfo[d];
+  if(di&&di.rskip){delete di.rskip[id];}
+  save();render();
+};
+
 /* 완료기록 청소 — 블롭이 무한정 커지는 것을 막는다 */
-function purgeRdone(id){Object.values(DB.dayinfo||{}).forEach(v=>{if(v&&v.rdone)delete v.rdone[id];});}
+function purgeRdone(id){
+  Object.values(DB.dayinfo||{}).forEach(v=>{
+    if(!v)return;
+    if(v.rdone)delete v.rdone[id];
+    if(v.rskip)delete v.rskip[id];
+  });
+}
 function purgeOrphanRdone(){
   const alive=new Set((DB.routines||[]).map(r=>r.id));
   let n=0;
   Object.values(DB.dayinfo||{}).forEach(v=>{
-    if(!v||!v.rdone)return;
-    Object.keys(v.rdone).forEach(id=>{if(!alive.has(id)){delete v.rdone[id];n++;}});
+    if(!v)return;
+    ["rdone","rskip"].forEach(k=>{
+      if(!v[k])return;
+      Object.keys(v[k]).forEach(id=>{if(!alive.has(id)){delete v[k][id];n++;}});
+    });
   });
-  if(n)console.log("[루틴] 고아 완료기록 "+n+"건 정리");
+  if(n)console.log("[루틴] 고아 기록 "+n+"건 정리");
 }
 
 function rtRecurLabel(r){
