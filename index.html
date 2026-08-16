@@ -692,8 +692,8 @@ function weekCol(d){
     ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
     ${rtHtml}${taskHtml||(rts.length?"":'<div class="wempty">—</div>')}</div>`;
 }
-const byPri=(a,b)=>(a.s.done-b.s.done)||(priRank(a.s.priority)-priRank(b.s.priority));
-const byTime=(a,b)=>(a.s.done-b.s.done)||((a.s.time||"99:99").localeCompare(b.s.time||"99:99"));
+/* done 이 undefined 인 옛 데이터에서도 NaN 비교가 나오지 않도록 !! 로 정규화한다 */
+const byPri=(a,b)=>((!!a.s.done)-(!!b.s.done))||(priRank(a.s.priority)-priRank(b.s.priority));
 function taskRow(s,i){
   const p=priInfo(s.priority);
   if(i===editSchedIdx){
@@ -740,7 +740,7 @@ function drawDay(){
 
   let html = units.length
     ? units.map(u=>u.kind==="task"?taskRow(u.s,u.i):routineRow(u.r,u.done)).join("")
-    : '<div class="empty">이 날 업무가 없어요.</div>';
+    : (skipped.length?"":'<div class="empty">이 날 업무가 없어요.</div>');
 
   if(skipped.length){
     html+=`<div style="height:12px"></div>`;
