@@ -231,6 +231,27 @@
     .mobwide{flex:1 1 100%!important}
   }
   .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
+
+  /* ===== 제자리 수정(인라인 편집) =====
+     글자가 있던 자리에 투명한 입력칸을 깔아, 수정 모드로 들어가도
+     줄 수·글자 위치가 그대로 유지되게 한다. 저장 버튼은 두지 않고
+     입력할 때마다 바로 저장한다(Enter/Esc/바깥클릭으로 종료). */
+  .ie{background:transparent;border:1px solid transparent;border-radius:6px;
+      padding:0 4px;margin:-1px -5px;color:var(--ink);font-family:inherit;
+      font-size:inherit;line-height:inherit;font-weight:inherit;width:100%;min-width:0;
+      height:auto;appearance:none;-webkit-appearance:none}
+  .ie:hover{border-color:var(--line)}
+  .ie:focus{border-color:var(--accent);background:var(--input);outline:none}
+  .ie::placeholder{color:#6a6a6a}
+  .ie-row{display:flex;align-items:center;gap:9px;min-width:0}
+  .ie-time{flex:0 0 72px;color:var(--muted);font-weight:600}
+  .ie-title{flex:1;min-width:0;font-weight:500}
+  .ie-pri{flex:0 0 96px}
+  .ie-note{flex:1;min-width:0}
+  .ie-hint{flex:1;min-width:0;font-size:12px;color:#7a7a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item.editing{background:#242426;border-radius:9px}
+  /* 모바일 사파리 자동확대 방지 — 작은 글씨 줄만 16px로 올린다 */
+  @media(max-width:760px){.ie-pri,.ie-note{font-size:16px}}
   .detail-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
   .editb{background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 8px;align-self:center}
   .editb:hover{color:var(--accent)}
@@ -704,7 +725,7 @@ function rSchedule(){
 }
 window.pickTime=()=>{const h=document.getElementById("shour").value;if(h==="")return;const m=document.getElementById("smin").value||"00";document.getElementById("stime").value=h+":"+m;};
 function normTime(s){s=(s||"").trim();if(!s)return"";s=s.replace(/[^0-9:]/g,"");let h,m,mm=s.match(/^(\d{1,2}):(\d{1,2})$/);if(mm){h=+mm[1];m=+mm[2];}else if(/^\d{3,4}$/.test(s)){h=+s.slice(0,s.length-2);m=+s.slice(-2);}else if(/^\d{1,2}$/.test(s)){h=+s;m=0;}else return"";if(h>23||m>59)return"";return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
-window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;rSchedule();};
+window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;editRtId=null;rSchedule();};
 
 /* ===== 주간일정 좌우 드래그 패닝 =====
    .week-scroll 안을 마우스로 끌면 좌우로 밀린다. 스크롤바는 CSS로 숨겨둠.
@@ -747,7 +768,7 @@ window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()
   document.addEventListener("pointerup",end);
   document.addEventListener("pointercancel",end);
 })();
-window.selectDay=(d)=>{selDay=d;editSchedIdx=null;rSchedule();};
+window.selectDay=(d)=>{selDay=d;editSchedIdx=null;editRtId=null;rSchedule();};
 window.setMain=(v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay].main=v;save();};
 window.setDayField=(f,v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay][f]=v;save();};
 function weekCol(d){
@@ -769,10 +790,21 @@ const byPri=(a,b)=>((!!a.s.done)-(!!b.s.done))||(priRank(a.s.priority)-priRank(b
 function taskRow(s,i){
   const p=priInfo(s.priority);
   if(i===editSchedIdx){
-    return `<div class="item" style="display:block">
-      <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" class="mobwide" value="${esc(s.title)}" placeholder="업무 내용"></div>
-      <div class="row mt"><select id="epri" class="n1"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
-      <div class="row mt"><button class="addb" onclick="schedSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="schedEditCancel()">취소</button></div></div>`;
+    /* 수정 모드 — 평소 행과 뼈대(체크박스·본문 2줄·삭제버튼)가 완전히 같다.
+       글자 자리에 .ie 입력칸만 깔리므로 줄 수도 위치도 바뀌지 않는다. */
+    return `<div class="item editing" data-edit="1">
+      <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+      <div class="bd">
+        <div class="t ie-row">
+          <input class="ie ie-time" value="${esc(s.time||"")}" placeholder="시간" inputmode="numeric" onchange="schedField(${i},'time',this)" onkeydown="ieKey(event)">
+          <input class="ie ie-title" value="${esc(s.title)}" placeholder="업무 내용" onchange="schedField(${i},'title',this)" onkeydown="ieKey(event)" data-focus="1">
+        </div>
+        <div class="meta ie-row">
+          <select class="ie ie-pri" onchange="schedField(${i},'priority',this)" onkeydown="ieKey(event)"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select>
+          <input class="ie ie-note" value="${esc(s.note||"")}" placeholder="비고" onchange="schedField(${i},'note',this)" onkeydown="ieKey(event)">
+        </div>
+      </div>
+      <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
   }
   return `<div class="item ${s.done?"done":""}">
     <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
@@ -782,14 +814,31 @@ function taskRow(s,i){
 }
 function routineRow(r,done){
   const p=priInfo(r.pri);
+  const ovd=!!roverOf(selDay)[r.id];
+  if(editRtId===r.id){
+    /* 루틴도 평소 행과 뼈대가 같다. 수정분은 이 날짜에만 적용되고 루틴 원본은 그대로. */
+    return `<div class="item editing" data-edit="1">
+      <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+      <div class="bd">
+        <div class="t ie-row">
+          <input class="ie ie-time" value="${esc(r.time||"")}" placeholder="시간" inputmode="numeric" onchange="rtDayField('${r.id}','time',this)" onkeydown="ieKey(event)">
+          <input class="ie ie-title" value="${esc(r.title)}" placeholder="업무 내용" onchange="rtDayField('${r.id}','title',this)" onkeydown="ieKey(event)" data-focus="1">
+        </div>
+        <div class="meta ie-row">
+          <select class="ie ie-pri" onchange="rtDayField('${r.id}','pri',this)" onkeydown="ieKey(event)"><option value=""${!r.pri?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${r.pri==n?" selected":""}>${n}순위</option>`).join("")}</select>
+          <span class="ie-hint">이 날짜만 적용 · 루틴 원본은 그대로${ovd?` <button class="linklike" onclick="rtDayReset('${r.id}')">되돌리기</button>`:""}</span>
+        </div>
+      </div>
+      <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기">×</button></div>`;
+  }
   return `<div class="item ${done?"done":""}">
     <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
-    <div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div>
+    <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}')" title="클릭해서 이 날짜만 수정"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span>${ovd?` <span class="pill" style="background:#3a2d12;color:#e0a649">수정됨</span>`:""}</div>
       <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
     <button class="linklike" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">건너뛰기</button>
     <button class="del" onclick="goPage('routines')" title="루틴 관리로 이동" style="color:var(--muted)">›</button></div>`;
 }
-let todaySort="time",editSchedIdx=null;
+let todaySort="time",editSchedIdx=null,editRtId=null;
 function drawDay(){
   const el=document.getElementById("tlist");
   if(!el)return;
@@ -825,12 +874,82 @@ function drawDay(){
       <button class="linklike" onclick="routineUnskip('${r.id}')" title="이 날 다시 하기">되돌리기</button></div>`).join("");
   }
   el.innerHTML=html;
+  /* 수정 모드로 들어왔으면 제목칸에 커서를 둔다 (스크롤은 건드리지 않는다) */
+  const f=el.querySelector('[data-focus="1"]');
+  if(f){try{f.focus({preventScroll:true});const n=f.value.length;if(f.setSelectionRange)f.setSelectionRange(n,n);}catch(_){}}
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
-window.goToday=()=>{selDay=T();editSchedIdx=null;rSchedule();};
-window.schedEdit=(i)=>{editSchedIdx=i;drawDay();};
-window.schedEditCancel=()=>{editSchedIdx=null;drawDay();};
-window.schedSave=(i)=>{const s=DB.schedules[i];if(!s)return;s.time=normTime(document.getElementById("etime").value);const t=document.getElementById("etitle").value.trim();if(t)s.title=t;s.priority=parseInt(document.getElementById("epri").value)||null;s.note=document.getElementById("enote").value.trim();editSchedIdx=null;save();rSchedule();};
+window.goToday=()=>{selDay=T();editSchedIdx=null;editRtId=null;rSchedule();};
+window.schedEdit=(i)=>{editSchedIdx=i;editRtId=null;drawDay();ieArm();};
+window.schedEditCancel=()=>{ieExit();};
+
+/* ---- 제자리 수정 공통 ----
+   입력칸마다 onchange 로 바로 저장한다(= 저장 버튼이 필요 없다).
+   입력 중에는 다시 그리지 않으므로 포커스가 튀거나 줄이 재정렬되지 않고,
+   수정 모드를 빠져나갈 때 한 번만 다시 그린다. */
+window.ieKey=(e)=>{
+  if(e.key==="Enter"){e.preventDefault();if(e.target.blur)e.target.blur();ieExit();}
+  else if(e.key==="Escape"){e.preventDefault();ieExit();}
+};
+let ieOutside=null;
+function ieArm(){
+  if(ieOutside)return;
+  /* 수정 모드로 들어오게 한 클릭 자체가 바깥클릭으로 잡히지 않도록 한 틱 미룬다 */
+  setTimeout(function(){
+    if(editSchedIdx===null&&editRtId===null)return;
+    ieOutside=function(ev){
+      if(ev.target&&ev.target.closest&&ev.target.closest('[data-edit="1"]'))return;
+      ieExit();
+    };
+    document.addEventListener("mousedown",ieOutside,true);
+  },0);
+}
+function ieDisarm(){ if(ieOutside){document.removeEventListener("mousedown",ieOutside,true);ieOutside=null;} }
+window.ieExit=()=>{
+  ieDisarm();
+  if(editSchedIdx===null&&editRtId===null)return;
+  editSchedIdx=null;editRtId=null;
+  rSchedule();
+};
+window.schedField=(i,f,el)=>{
+  const s=DB.schedules[i];if(!s)return;
+  if(f==="time"){s.time=normTime(el.value);el.value=s.time;}
+  else if(f==="title"){const t=el.value.trim();if(t)s.title=t;else el.value=s.title;}
+  else if(f==="priority"){s.priority=parseInt(el.value)||null;}
+  else if(f==="note"){s.note=el.value.trim();}
+  save();
+};
+
+/* ---- 루틴: 그 날짜만 수정 (원본 루틴은 건드리지 않는다) ----
+   dayinfo[날짜].rover[루틴id] = {time?,title?,pri?} 형태로 바뀐 값만 저장한다.
+   원본과 같아지면 항목을 지워 블롭이 불어나지 않게 한다. */
+window.rtDayEdit=(id)=>{editRtId=id;editSchedIdx=null;drawDay();ieArm();};
+window.rtDayField=(id,f,el)=>{
+  const base=(DB.routines||[]).find(x=>x.id===id);if(!base)return;
+  if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};
+  const di=DB.dayinfo[selDay];
+  if(!di.rover)di.rover={};
+  const ov=di.rover[id]||(di.rover[id]={});
+  if(f==="time"){
+    const v=normTime(el.value);el.value=v;
+    if(v===(base.time||""))delete ov.time;else ov.time=v;
+  }else if(f==="title"){
+    const v=el.value.trim();
+    if(!v){el.value=base.title;delete ov.title;}
+    else if(v===base.title)delete ov.title;else ov.title=v;
+  }else if(f==="pri"){
+    const n=parseInt(el.value)||null;
+    if(n===(base.pri||null))delete ov.pri;else ov.pri=n;
+  }
+  if(!Object.keys(ov).length)delete di.rover[id];
+  if(!Object.keys(di.rover).length)delete di.rover;
+  save();
+};
+window.rtDayReset=(id)=>{
+  const di=DB.dayinfo[selDay];
+  if(di&&di.rover){delete di.rover[id];if(!Object.keys(di.rover).length)delete di.rover;}
+  save();ieExit();
+};
 
 /* ═══════════════════════════════════════════════════════════════
    루틴업무 — 일간·주간·월간 반복 업무
@@ -854,6 +973,7 @@ function routinesMatching(ds){
   if(!list.length||!ds)return [];
   const dt=new Date(ds+"T00:00:00");
   const dow=dt.getDay(), dom=dt.getDate(), lastDom=lastDomOf(ds);
+  const ov=roverOf(ds);
   return list.filter(r=>{
     if(r.paused)return false;
     if(r.startDate&&ds<r.startDate)return false;   /* 시작일 이전엔 표시 안 함 */
@@ -865,7 +985,18 @@ function routinesMatching(ds){
       return dom===Math.min(parseInt(r.day)||1,lastDom);   /* 말일 보정 */
     }
     return false;
-  }).slice().sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
+  }).map(r=>applyRover(r,ov[r.id]))
+    .sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
+}
+/* 그 날짜만의 수정분을 입힌 사본을 돌려준다. 원본 루틴은 절대 건드리지 않는다.
+   수정분이 없으면 원본을 그대로 쓴다(불필요한 복사 방지). */
+function applyRover(r,ov){
+  if(!ov)return r;
+  const o=Object.assign({},r);
+  if(ov.time!==undefined)o.time=ov.time;
+  if(ov.title!==undefined)o.title=ov.title;
+  if(ov.pri!==undefined)o.pri=ov.pri;
+  return o;
 }
 /* 실제로 그 날 할 루틴 = 규칙에 해당하되, 그날만 건너뛴 것은 제외.
    건너뛴 루틴은 달성률 분모에서도 빠진다 (안 하는 날이니 당연). */
@@ -880,6 +1011,8 @@ function routinesSkipped(ds){
 }
 function rdoneOf(ds){return ((DB.dayinfo[ds]||{}).rdone)||{};}
 function rskipOf(ds){return ((DB.dayinfo[ds]||{}).rskip)||{};}
+/* 그 날짜만 적용되는 루틴 수정분 */
+function roverOf(ds){return ((DB.dayinfo[ds]||{}).rover)||{};}
 
 /* 일정 + 루틴을 합친 그 날의 달성 현황 — 앱 안 모든 달성률의 단일 기준 */
 function dayUnits(ds){
@@ -928,6 +1061,7 @@ function purgeRdone(id){
     if(!v)return;
     if(v.rdone)delete v.rdone[id];
     if(v.rskip)delete v.rskip[id];
+    if(v.rover)delete v.rover[id];
   });
 }
 function purgeOrphanRdone(){
@@ -935,7 +1069,7 @@ function purgeOrphanRdone(){
   let n=0;
   Object.values(DB.dayinfo||{}).forEach(v=>{
     if(!v)return;
-    ["rdone","rskip"].forEach(k=>{
+    ["rdone","rskip","rover"].forEach(k=>{
       if(!v[k])return;
       Object.keys(v[k]).forEach(id=>{if(!alive.has(id)){delete v[k][id];n++;}});
     });
