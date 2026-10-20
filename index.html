@@ -674,7 +674,7 @@ function rSchedule(){
       <button onclick="weekMove(${-step})">${mob?"‹ 이전날":"‹ 이전주"}</button>
       <div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0">${label}</h2><button class="ghostb" onclick="goToday()" style="padding:4px 13px;font-size:12.5px">오늘</button></div>
       <button onclick="weekMove(${step})">${mob?"다음날 ›":"다음주 ›"}</button></div>
-    <div class="week-scroll"><div class="week-grid" style="grid-template-columns:repeat(${days.length},minmax(${mob?"100%":"170px"},1fr))">${days.map(weekCol).join("")}</div></div>
+    <div class="week-scroll"><div class="week-grid" style="grid-template-columns:repeat(${days.length},minmax(${mob?"100%":"190px"},1fr))">${days.map(weekCol).join("")}</div></div>
     <div style="display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:var(--muted)"><span>이번주 달성률 <b style="color:var(--accent)">${weekRate}%</b></span><span>${dayLabel} 달성률 <b style="color:var(--accent)">${dayRate}%</b></span></div></div>
   ${staleHtml}
   ${overloadHtml}
@@ -1392,7 +1392,7 @@ function drawC(){
         ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`}</div></div>`;}).join("");
     drawSummary();drawRpt();return;
   }
-  e.innerHTML=`<table class="tbl fixed"><tr><th>성함</th><th>대행분야</th><th>클라이언트</th><th>문의시트</th><th>포스팅</th><th>재계약</th><th>분납일</th><th></th></tr>
+  e.innerHTML=`<table class="tbl fixed"><tr><th style="width:25%">성함</th><th style="width:11%">대행분야</th><th style="width:12%">클라이언트</th><th style="width:12%">문의시트</th><th style="width:15%">포스팅</th><th style="width:10%">재계약</th><th style="width:10%">분납일</th><th style="width:5%"></th></tr>
     ${DB.clients.map((c,i)=>{
       if(i===editClientIdx)return `<tr><td colspan="8">${cliForm(c,i)}</td></tr>`;
       return `<tr draggable="true" ondragstart="cliDragStart(event,${i})" ondragover="cliDragOver(event)" ondrop="cliDrop(event,${i})" ondragend="cliDragEnd()">
