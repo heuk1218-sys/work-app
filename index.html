@@ -337,6 +337,7 @@
       <div class="nav-sec">업무</div>
       <button data-p="clients"><i class="ico" data-lucide="users"></i><span class="lab">클라이언트</span></button>
       <button data-p="costs"><i class="ico" data-lucide="wallet"></i><span class="lab">비용관리</span></button>
+      <button data-p="feedback"><i class="ico" data-lucide="message-square-quote"></i><span class="lab">피드백</span></button>
       <div class="nav-sec">기록 · 관리</div>
       <button data-p="retro"><i class="ico" data-lucide="history"></i><span class="lab">회고</span></button>
       <button data-p="books"><i class="ico" data-lucide="book-open"></i><span class="lab">독서노트</span></button>
@@ -467,7 +468,7 @@ const DB={
   notes:[{id:uid(),date:T(),title:"첫 노트",content:"자유롭게 기록하는 공간이에요."}]
 };
 if(!DB.books)DB.books=[];
-if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];if(!DB.routines)DB.routines=[];
+if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];if(!DB.routines)DB.routines=[];if(!DB.feedback)DB.feedback=[];
 let _saveT,dataReady=false;function save(){clearTimeout(_saveT);_saveT=setTimeout(()=>{if(sb&&currentUser&&dataReady)sb.from("app_data").upsert({user_id:currentUser.id,data:DB,updated_at:new Date().toISOString()}).then(null,e=>console.warn("save",e));},700);}
 function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function fmt(d){if(!d)return"";const x=new Date(d+"T00:00:00");const w=["일","월","화","수","목","금","토"];return `${x.getMonth()+1}월 ${x.getDate()}일 (${w[x.getDay()]})`;}
@@ -489,7 +490,7 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
   closeMenu();
 });
 document.getElementById("logout").onclick=async()=>{if(confirm("로그아웃할까요?")){await sb.auth.signOut();location.reload();}};
-const PAGES={dashboard:rDashboard,schedule:rSchedule,routines:rRoutines,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,accounts:rAccounts,backup:rBackup};
+const PAGES={dashboard:rDashboard,schedule:rSchedule,routines:rRoutines,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,feedback:rFeedback,accounts:rAccounts,backup:rBackup};
 /* 한 페이지가 죽어도 앱 전체가 멈추지 않도록 렌더를 격리한다 */
 function render(){
   const fn=PAGES[page];
@@ -541,12 +542,13 @@ const G_PROV={
   costs:()=>(DB.costs||[]).map(c=>({keys:[c.item,c.comment],t:c.item,g:"비용관리",date:"",go:()=>{gNav("costs");rCosts();}})),
   books:()=>(DB.books||[]).map(b=>({keys:[b.title,b.genre,b.note],t:b.title,g:"독서노트 · "+b.year,date:String(b.year||""),go:()=>{gNav("books");bookYear=String(b.year);bookStatus="all";bookOpen(b.id);}})),
   notes:()=>(DB.notes||[]).map(n=>({keys:[n.title,n.content],t:n.title||"(무제)",g:"노트 · "+fmt(n.date),date:n.date,go:()=>{gNav("notes");noteYear=n.date.slice(0,4);noteOpen(n.id);}})),
+  feedback:()=>(DB.feedback||[]).map(n=>({keys:[n.title,n.content],t:n.title||"(무제)",g:"피드백 · "+fmt(n.date),date:n.date,go:()=>{gNav("feedback");fbYear=n.date.slice(0,4);fbOpen(n.id);}})),
   retro:()=>Object.keys(DB.dayinfo||{}).filter(d=>(DB.dayinfo[d]||{}).retro).map(d=>({keys:[DB.dayinfo[d].retro],t:(DB.dayinfo[d].retro||"").slice(0,40),g:"회고 · "+fmt(d),date:d,go:()=>{gNav("retro");try{retroYear=d.slice(0,4);}catch(e){}rRetro();}})),
   accounts:()=>{const a=[];(DB.accounts||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 계정",date:"",go:()=>{gNav("accounts");rAccounts();}}));(DB.places||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 장소",date:"",go:()=>{gNav("accounts");rAccounts();}}));(DB.banks||[]).forEach(x=>a.push({keys:[x.title],t:x.title||"(무제)",g:"계정관리 · 은행",date:"",go:()=>{gNav("accounts");rAccounts();}}));return a;}
 };
-const G_ALL=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","books","notes","retro","accounts"];
-const G_SCOPE={schedule:["schedules"],routines:["routines"],calendar:["schedules"],diary:["diary"],goals:["goals"],faith:["prayers","qt","sermons"],clients:["clients"],costs:["costs"],books:["books"],notes:["notes"],retro:["retro"],accounts:["accounts"]};
-const G_NAME={schedule:"일정",routines:"루틴업무",calendar:"캘린더",diary:"일기",goals:"목표",faith:"교회",clients:"클라이언트",costs:"비용관리",books:"독서노트",notes:"노트",retro:"회고",accounts:"계정관리"};
+const G_ALL=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","books","notes","feedback","retro","accounts"];
+const G_SCOPE={schedule:["schedules"],routines:["routines"],calendar:["schedules"],diary:["diary"],goals:["goals"],faith:["prayers","qt","sermons"],clients:["clients"],costs:["costs"],books:["books"],notes:["notes"],feedback:["feedback"],retro:["retro"],accounts:["accounts"]};
+const G_NAME={schedule:"일정",routines:"루틴업무",calendar:"캘린더",diary:"일기",goals:"목표",faith:"교회",clients:"클라이언트",costs:"비용관리",books:"독서노트",notes:"노트",feedback:"피드백",retro:"회고",accounts:"계정관리"};
 function setSearchPlaceholder(){const q=document.getElementById("gq");if(!q)return;q.placeholder=(G_SCOPE[page]&&G_NAME[page])?G_NAME[page]+"에서 검색...":"전체 검색...";}
 function gScore(keys,q){let best=0;for(let i=0;i<keys.length;i++){const k=keys[i];if(!k)continue;const idx=k.toString().toLowerCase().indexOf(q);if(idx<0)continue;const sc=i===0?(idx===0?100:70):40;if(sc>best)best=sc;}return best;}
 function gSearch(q){
@@ -1390,7 +1392,8 @@ const IMG_KIND={
   note  :{bucket:NOTE_BUCKET , dir:"note/" , arr:"notes"  , label:"노트"},
   qt    :{bucket:NOTE_BUCKET , dir:"qt/"   , arr:"qt"     , label:"QT"},
   sermon:{bucket:NOTE_BUCKET , dir:"sermon/", arr:"sermons", label:"설교말씀"},
-  book  :{bucket:NOTE_BUCKET , dir:"book/" , arr:"books"  , label:"독서노트"}
+  book  :{bucket:NOTE_BUCKET , dir:"book/" , arr:"books"  , label:"독서노트"},
+  fb    :{bucket:NOTE_BUCKET , dir:"fb/"   , arr:"feedback", label:"피드백"}
 };
 /* 지금 편집 중인 글의 사진 상태 */
 let imgCtx={kind:null, draftId:null, cur:[], orig:[]};
@@ -1458,7 +1461,7 @@ async function signDiaryImg(path,bucket){
   const hit=imgCacheGet(path);
   if(hit)return hit;
   imgCacheDrop(path);          /* 만료된 항목이면 치우고 새로 받는다 */
-  const bk=bucket||(path.indexOf("/note/")>=0||path.indexOf("/qt/")>=0||
+  const bk=bucket||(path.indexOf("/note/")>=0||path.indexOf("/qt/")>=0||path.indexOf("/fb/")>=0||
                     path.indexOf("/sermon/")>=0||path.indexOf("/book/")>=0?NOTE_BUCKET:DIARY_BUCKET);
   try{
     const r=await sb.storage.from(bk).createSignedUrl(path,IMG_TTL_SEC);
@@ -2294,6 +2297,75 @@ function noteDetail(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   피드백 — 팀장회의 등 회의에서 나온 피드백 모음.
+   노트와 같은 포맷(연도 필터 · 목록 · 쓰기 · 보기 · # 제목 · 사진첨부)에
+   '어디서 나온 피드백인지'를 적는 출처 칸만 하나 더 뒀다.
+   ═══════════════════════════════════════════════════════════════ */
+let fbMode="list", fbSel=null, fbYear=null;
+function rFeedback(){
+  if(!DB.feedback)DB.feedback=[];
+  if(fbYear===null)fbYear=String(new Date().getFullYear());
+  if(fbMode==="write")return fbWrite();
+  if(fbMode==="detail")return fbDetail();
+  const years=[...new Set(DB.feedback.map(d=>d.date.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
+  const list=DB.feedback.filter(d=>d.date.slice(0,4)===String(fbYear)).sort((a,b)=>b.date.localeCompare(a.date));
+  main.innerHTML=`<h1 class="page-h">피드백</h1><p class="page-sub">회의에서 나온 피드백을 모아둬요.</p>
+  <div class="card"><div class="row" style="align-items:center">
+      <select class="n2" onchange="setFbYear(this.value)" style="flex:0 0 110px">${years.map(y=>`<option value="${y}" ${y===String(fbYear)?"selected":""}>${y}년</option>`).join("")}</select>
+      <span style="flex:1"></span>
+      <button class="addb" style="flex:0 0 120px" onclick="fbNew()">✏️ 피드백</button></div></div>
+  <div class="card"><h2>지난 피드백</h2>${list.length?list.map(d=>`
+    <div class="item link" style="cursor:pointer" onclick="fbOpen('${d.id}')">
+      <div class="bd"><div class="meta">${fmt(d.date)}${d.src?" · "+esc(d.src):""}</div><div class="t">${esc(d.title)}</div></div>
+      <span class="meta" style="align-self:center">›</span></div>`).join(""):'<div class="empty">이 해에 적은 피드백이 없어요.</div>'}</div>`;
+}
+window.setFbYear=(v)=>{fbYear=v;rFeedback();};
+window.fbNew=()=>{fbMode="write";fbSel=null;imgStart("fb",uid(),[]);rFeedback();};
+window.fbEdit=(id)=>{const d=DB.feedback.find(x=>x.id===id);fbMode="write";fbSel=id;imgStart("fb",id,d&&d.images);rFeedback();};
+window.fbOpen=(id)=>{fbMode="detail";fbSel=id;rFeedback();};
+window.fbBack=()=>{fbMode="list";fbSel=null;rFeedback();};
+window.fbCancel=async()=>{const back=fbSel;await imgDiscardNew();if(back)fbOpen(back);else fbBack();};
+window.fbDel=async(id)=>{
+  if(!confirm("이 피드백을 삭제할까요? (첨부한 사진도 같이 삭제됩니다)"))return;
+  const d=DB.feedback.find(x=>x.id===id);
+  await imgRemoveAll("fb",(d&&Array.isArray(d.images))?d.images:[]);
+  DB.feedback=DB.feedback.filter(x=>x.id!==id);save();fbBack();};
+function fbWrite(){
+  const ed=fbSel?DB.feedback.find(x=>x.id===fbSel):null;
+  if(imgCtx.kind!=="fb")imgStart("fb",ed?ed.id:uid(),ed&&ed.images);
+  main.innerHTML=`<h1 class="page-h">피드백 ${ed?"수정":"쓰기"}</h1><p class="page-sub">회의에서 나온 피드백을 모아둬요.</p>
+  <div class="card">
+    <div class="row"><input type="date" id="fb_d" class="n1" value="${ed?ed.date:T()}"><input id="fb_s" class="n2" style="flex:0 0 170px" placeholder="출처 (예: 팀장회의)" value="${ed?esc(ed.src||""):""}"><input id="fb_t" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
+    <textarea id="fb_c" class="mt ta-fill" rows="9" placeholder="나온 피드백을 적어보세요  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+    ${imgPickHtml()}
+    <div class="row mt"><button class="addb" id="fb_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="fbCancel()">취소</button></div></div>`;
+  drawImgEdit();
+  document.getElementById("fb_save").onclick=()=>{const c=val("fb_c");
+    if(!c&&!imgCtx.cur.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
+    const imgs=imgCtx.cur.slice();
+    let id;
+    if(ed){ed.date=val("fb_d")||ed.date;ed.src=val("fb_s");ed.title=val("fb_t")||"무제";ed.content=c;ed.images=imgs;id=ed.id;}
+    else{id=imgCtx.draftId||uid();DB.feedback.push({id:id,date:val("fb_d")||T(),src:val("fb_s"),title:val("fb_t")||"무제",content:c,images:imgs});}
+    fbYear=(val("fb_d")||T()).slice(0,4);
+    save();imgClear();fbOpen(id);};
+}
+function fbDetail(){
+  const d=DB.feedback.find(x=>x.id===fbSel);if(!d){fbBack();return;}
+  const imgs=Array.isArray(d.images)?d.images:[];
+  main.innerHTML=`<h1 class="page-h">피드백</h1>
+  <div class="card">
+    <div class="detail-head">
+      <button class="ghostb" onclick="fbBack()">‹ 목록</button>
+      <button class="ghostb" onclick="fbEdit('${d.id}')">수정</button>
+      <button class="ghostb danger" onclick="fbDel('${d.id}')">삭제</button></div>
+    <div class="meta">${fmt(d.date)}${d.src?" · "+esc(d.src):""}${imgs.length?` · 사진 ${imgs.length}장`:""}</div>
+    <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
+    <div class="detail-body">${mdBody(d.content)}</div>
+    ${imgViewHtml(imgs)}</div>`;
+  drawImgView("fb",imgs);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    백업 — 별도 테이블(app_backups)에 저장
    예전에는 스냅샷이 app_data 블롭 안에 함께 들어 있어서,
    체크박스 하나 누를 때마다 수 MB를 통째로 업로드해야 했다.
@@ -2378,7 +2450,7 @@ document.addEventListener("click",e=>{const t=e.target;if(t.tagName==="INPUT"&&(
    인증 코어가 로그인에 성공한 뒤 이 함수를 호출한다.
    반환값: "ok" | "loadfail" */
 window.__appBoot=async function(){
-  const ARR=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","backups"];
+  const ARR=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","backups"];
   let loaded=false,loadFailed=false;
   try{const r=await sb.from("app_data").select("data").eq("user_id",currentUser.id).maybeSingle();
     if(r.error){loadFailed=true;}
@@ -2471,7 +2543,7 @@ if(window.lucide)lucide.createIcons();
   /* ---- 컬럼 구성 ---- */
   /* backups 는 별도 테이블로 빠졌으므로 병합 대상에서 제외한다
      (남겨두면 백업 파일 가져오기 때 블롭 안으로 다시 들어온다) */
-  const ARRAY_COLS=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","books","accounts","places","banks","trash"];
+  const ARRAY_COLS=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","trash"];
   const MAP_COLS=["dayinfo","monthmemo"];
 
   let baseState=null, baseVersion=null, _mt=null, _busy=false, _pending=false;
