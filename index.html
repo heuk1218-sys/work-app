@@ -181,7 +181,13 @@
   .sort-toggle button{background:var(--input);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 11px;border-radius:7px}
   .sort-toggle button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 
-  .week-scroll{overflow-x:auto;margin:0 -2px}
+  /* 주간일정: 마우스로 끌어서 좌우 이동. 스크롤바는 숨긴다. */
+  .week-scroll{overflow-x:auto;margin:0 -2px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
+  .week-scroll::-webkit-scrollbar{width:0;height:0;display:none}
+  .week-scroll.dragging,.week-scroll.dragging .wcol{cursor:grabbing}
+  .week-scroll.dragging{user-select:none}
+  /* PC에서는 카드 안쪽 여백만큼 끌어내 '일정' 제목선과 왼쪽 끝을 맞춘다 */
+  @media(min-width:761px){.week-scroll{margin:0 -20px}}
   .week-grid{display:grid;gap:7px}
   .wcol{background:#2c2c2e;border:1px solid var(--line);border-radius:10px;padding:7px;min-height:104px;cursor:pointer}
   .wcol:hover{border-color:var(--accent)}
@@ -699,6 +705,48 @@ function rSchedule(){
 window.pickTime=()=>{const h=document.getElementById("shour").value;if(h==="")return;const m=document.getElementById("smin").value||"00";document.getElementById("stime").value=h+":"+m;};
 function normTime(s){s=(s||"").trim();if(!s)return"";s=s.replace(/[^0-9:]/g,"");let h,m,mm=s.match(/^(\d{1,2}):(\d{1,2})$/);if(mm){h=+mm[1];m=+mm[2];}else if(/^\d{3,4}$/.test(s)){h=+s.slice(0,s.length-2);m=+s.slice(-2);}else if(/^\d{1,2}$/.test(s)){h=+s;m=0;}else return"";if(h>23||m>59)return"";return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
 window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;rSchedule();};
+
+/* ===== 주간일정 좌우 드래그 패닝 =====
+   .week-scroll 안을 마우스로 끌면 좌우로 밀린다. 스크롤바는 CSS로 숨겨둠.
+   5px 넘게 움직였을 때만 '끌기'로 보고, 그 뒤 이어지는 click 은 삼켜서
+   날짜칸 선택(selectDay)이 잘못 발동하지 않게 한다.
+   document 에 한 번만 걸어두므로 rSchedule() 이 다시 그려도 계속 동작한다. */
+(function(){
+  let box=null,startX=0,startLeft=0,moved=false,pid=null;
+  const THRESH=5, SWALLOW_MS=350;
+  document.addEventListener("pointerdown",function(e){
+    if(e.button!==undefined&&e.button!==0)return;
+    const t=e.target;if(!t||!t.closest)return;
+    const s=t.closest(".week-scroll");if(!s)return;
+    if(s.scrollWidth<=s.clientWidth)return;        // 넘칠 때만 끌기 활성
+    box=s;startX=e.clientX;startLeft=s.scrollLeft;moved=false;pid=e.pointerId;
+  });
+  document.addEventListener("pointermove",function(e){
+    if(!box)return;
+    const dx=e.clientX-startX;
+    if(!moved){
+      if(Math.abs(dx)<THRESH)return;
+      moved=true;box.classList.add("dragging");
+      try{box.setPointerCapture(pid);}catch(_){}
+    }
+    box.scrollLeft=startLeft-dx;
+    if(e.cancelable)e.preventDefault();
+  });
+  function end(){
+    if(!box)return;
+    const b=box,was=moved;
+    try{b.releasePointerCapture(pid);}catch(_){}
+    b.classList.remove("dragging");
+    box=null;moved=false;pid=null;
+    if(was){                                        // 끌기 직후의 click 1회 무효화
+      const sw=function(ev){ev.stopPropagation();ev.preventDefault();};
+      b.addEventListener("click",sw,true);
+      setTimeout(function(){b.removeEventListener("click",sw,true);},SWALLOW_MS);
+    }
+  }
+  document.addEventListener("pointerup",end);
+  document.addEventListener("pointercancel",end);
+})();
 window.selectDay=(d)=>{selDay=d;editSchedIdx=null;rSchedule();};
 window.setMain=(v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay].main=v;save();};
 window.setDayField=(f,v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay][f]=v;save();};
