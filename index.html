@@ -1366,7 +1366,19 @@ window.diaryDel=async(id)=>{
 const DIARY_BUCKET="diary-images";      /* 일기 */
 const NOTE_BUCKET="note-images";        /* 노트·QT·설교말씀·독서노트 */
 const DIARY_MAXW=1280, DIARY_Q=0.7, DIARY_TARGET=200*1024;
-const diaryImgUrl={};     /* 경로 -> 표시용 URL (방금 올린 건 로컬 blob, 나머지는 signed) */
+
+/* 표시용 URL 캐시 — 경로 -> {url, exp, blob}
+   signed URL 은 1시간짜리라 그냥 캐시해두면 1시간 뒤 깨진 이미지가 된다.
+   50분이 지나면 만료로 보고 다시 발급한다. */
+const IMG_TTL_SEC=3600, IMG_REFRESH_MS=50*60*1000, IMG_BLOB_MS=24*60*60*1000;
+const imgUrlCache={};
+function imgCacheGet(p){const c=imgUrlCache[p];return (c&&Date.now()<c.exp)?c.url:null;}
+function imgCacheSet(p,url,ms,isBlob){imgUrlCache[p]={url:url,exp:Date.now()+ms,blob:!!isBlob};}
+function imgCacheDrop(p){
+  const c=imgUrlCache[p];
+  if(c&&c.blob){try{URL.revokeObjectURL(c.url);}catch(_){}}   /* 메모리 누수 방지 */
+  delete imgUrlCache[p];
+}
 
 /* 메뉴별 저장 위치.
    경로는 <유저ID>/<폴더>/<글ID>/<파일명>.jpg — 첫 칸이 항상 유저ID 라서
@@ -1383,6 +1395,16 @@ let imgCtx={kind:null, draftId:null, cur:[], orig:[]};
 function imgBucketOf(kind){return (IMG_KIND[kind]||IMG_KIND.diary).bucket;}
 /* 글 수정/작성 화면에 들어갈 때 호출 */
 function imgStart(kind,id,existing){
+  /* 저장도 취소도 않고 다른 글로 넘어간 경우 — 그때 올린 사진은 쓰이지 않으므로
+     Storage 에 고아로 남지 않게 치운다. (기다리지 않고 뒤에서 처리) */
+  if(imgCtx.kind&&(imgCtx.kind!==kind||imgCtx.draftId!==id)){
+    const added=imgCtx.cur.filter(p=>imgCtx.orig.indexOf(p)<0);
+    if(added.length){
+      const K0=IMG_KIND[imgCtx.kind];
+      try{sb.storage.from(K0.bucket).remove(added).then(null,e=>console.warn("[사진] 고아 정리 실패",e));}catch(e){}
+      added.forEach(imgCacheDrop);
+    }
+  }
   imgCtx={kind:kind, draftId:id||uid(), cur:Array.isArray(existing)?existing.slice():[],
           orig:Array.isArray(existing)?existing.slice():[]};
 }
@@ -1431,12 +1453,17 @@ async function compressToTarget(file){
   return blob;
 }
 async function signDiaryImg(path,bucket){
-  if(diaryImgUrl[path])return diaryImgUrl[path];
+  const hit=imgCacheGet(path);
+  if(hit)return hit;
+  imgCacheDrop(path);          /* 만료된 항목이면 치우고 새로 받는다 */
   const bk=bucket||(path.indexOf("/note/")>=0||path.indexOf("/qt/")>=0||
                     path.indexOf("/sermon/")>=0||path.indexOf("/book/")>=0?NOTE_BUCKET:DIARY_BUCKET);
   try{
-    const r=await sb.storage.from(bk).createSignedUrl(path,60*60);
-    if(r&&!r.error&&r.data&&r.data.signedUrl){diaryImgUrl[path]=r.data.signedUrl;return r.data.signedUrl;}
+    const r=await sb.storage.from(bk).createSignedUrl(path,IMG_TTL_SEC);
+    if(r&&!r.error&&r.data&&r.data.signedUrl){
+      imgCacheSet(path,r.data.signedUrl,IMG_REFRESH_MS,false);
+      return r.data.signedUrl;
+    }
     console.warn("[사진] signed URL 실패",path,r&&r.error);
   }catch(e){console.warn("[사진] signed URL 예외",e);}
   return null;
@@ -1462,7 +1489,7 @@ window.imgPick=async(input)=>{
       const up=await sb.storage.from(K.bucket).upload(path,blob,{contentType:"image/jpeg",upsert:false});
       if(up.error)throw up.error;
       imgCtx.cur.push(path);
-      diaryImgUrl[path]=URL.createObjectURL(blob);   /* 미리보기는 round-trip 없이 바로 */
+      imgCacheSet(path,URL.createObjectURL(blob),IMG_BLOB_MS,true);   /* 미리보기는 round-trip 없이 바로 */
       ok++;
     }catch(e){
       console.warn("[사진] 업로드 실패",e);
@@ -1480,7 +1507,7 @@ window.imgDel=async(i)=>{
   try{await sb.storage.from(K.bucket).remove([p]);}catch(e){console.warn("[사진] 삭제 실패",e);}
   imgCtx.cur.splice(i,1);
   const oi=imgCtx.orig.indexOf(p);if(oi>=0)imgCtx.orig.splice(oi,1);
-  delete diaryImgUrl[p];
+  imgCacheDrop(p);
   /* 이미 저장된 글이면 지운 사실을 바로 반영해 끊어진 참조가 남지 않게 한다 */
   const arr=DB[K.arr]||[];
   const rec=arr.find(x=>x.id===imgCtx.draftId);
@@ -1493,7 +1520,7 @@ async function imgDiscardNew(){
   if(added.length){
     const K=IMG_KIND[imgCtx.kind]||IMG_KIND.diary;
     try{await sb.storage.from(K.bucket).remove(added);}catch(e){console.warn("[사진] 취소 정리 실패",e);}
-    added.forEach(p=>{delete diaryImgUrl[p];});
+    added.forEach(imgCacheDrop);
   }
   imgClear();
 }
@@ -1502,7 +1529,7 @@ async function imgRemoveAll(kind,imgs){
   if(!imgs||!imgs.length)return;
   const K=IMG_KIND[kind]||IMG_KIND.diary;
   try{await sb.storage.from(K.bucket).remove(imgs);}catch(e){console.warn("[사진] 삭제 실패",e);}
-  imgs.forEach(p=>{delete diaryImgUrl[p];});
+  imgs.forEach(imgCacheDrop);
 }
 async function drawImgEdit(){
   const el=document.getElementById("imgedit");if(!el)return;
