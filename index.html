@@ -88,7 +88,9 @@
   }
   .backdrop{display:none}
   .backdrop.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
-  aside{width:210px;flex:0 0 210px;background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+  /* PC 좌측 메뉴 폭 — 210px 의 1.5배. 글자 크기는 그대로 둔다.
+     (모바일은 아래 미디어쿼리에서 width:90% 로 덮어쓰므로 영향 없음) */
+  aside{width:315px;flex:0 0 315px;background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column}
   aside nav{flex:1;overflow-y:auto;min-height:0}
   .side-foot{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
   aside .brand{font-size:20px;color:#fff;padding:6px 10px 16px;display:flex;align-items:center;gap:10px;font-weight:700}
