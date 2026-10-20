@@ -819,14 +819,15 @@ function rSchedule(){
   <div class="card"><h2>${dayLabel} 주요업무</h2>
     <textarea id="daymain" rows="2" placeholder="이 날의 핵심 일정·업무를 적어두세요 (예: 11시 스터디, 14시 회의)" onchange="setMain(this.value)">${esc((DB.dayinfo[selDay]||{}).main||"")}</textarea></div>
   <details class="acard"><summary>업무 추가</summary><div class="acbody">
-    <div class="row"><input type="date" id="sd" class="n1" value="${selDay}"><input id="stt" class="mobwide" placeholder="업무 내용"></div>
-    <div class="row mt"><input id="stime" class="n2" placeholder="시간 24h (예: 14:00)" inputmode="numeric" style="flex:1 1 120px">
-      <select id="shour" class="n2" onchange="pickTime()" style="flex:0 0 84px"><option value="">시</option>${[...Array(24)].map((_,h)=>`<option value="${String(h).padStart(2,"0")}">${String(h).padStart(2,"0")}시</option>`).join("")}</select>
-      <select id="smin" class="n2" onchange="pickTime()" style="flex:0 0 84px">${[0,5,10,15,20,25,30,35,40,45,50,55].map(m=>`<option value="${String(m).padStart(2,"0")}">${String(m).padStart(2,"0")}분</option>`).join("")}</select></div>
-    <div class="row mt"><select id="spri" class="n1">
-        <option value="" selected>우선순위 미지정</option><option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4">4순위</option></select>
+    <!-- 아래 '오늘 업무' 줄과 칸 순서·폭을 맞췄다: [시간][업무내용] / [우선순위][비고].
+         날짜는 오른쪽 끝, 시·분 드롭다운은 안 쓰게 돼서 뺐다. -->
+    <div class="row"><input id="stime" class="n2" placeholder="시간" inputmode="numeric" style="flex:0 0 92px">
+      <input id="stt" class="mobwide" placeholder="업무 내용">
+      <input type="date" id="sd" class="n1" value="${selDay}" title="날짜" style="flex:0 0 140px"></div>
+    <div class="row mt"><select id="spri" class="n2" style="flex:0 0 92px">
+        <option value="" selected>미지정</option><option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4">4순위</option></select>
       <input id="snote" class="mobwide" placeholder="비고 (선택)">
-      <button class="addb" id="sadd" style="flex:0 0 84px">+ 추가</button></div></div></details>
+      <button class="addb" id="sadd" style="flex:0 0 140px">+ 추가</button></div></div></details>
   <div class="card">
     <div style="display:flex;align-items:center;margin-bottom:12px"><h2 style="flex:1;margin:0">${dayLabel} 업무</h2>
       <div class="sort-toggle"><button class="${todaySort==="pri"?"on":""}" onclick="setTodaySort('pri')">우선순위순</button><button class="${todaySort==="time"?"on":""}" onclick="setTodaySort('time')">시간순</button></div></div>
@@ -840,7 +841,7 @@ function rSchedule(){
   };
   drawDay();
 }
-window.pickTime=()=>{const h=document.getElementById("shour").value;if(h==="")return;const m=document.getElementById("smin").value||"00";document.getElementById("stime").value=h+":"+m;};
+/* (시·분 드롭다운을 없애면서 pickTime() 도 제거했다 — 시간은 stime 칸에 직접 입력) */
 function normTime(s){s=(s||"").trim();if(!s)return"";s=s.replace(/[^0-9:]/g,"");let h,m,mm=s.match(/^(\d{1,2}):(\d{1,2})$/);if(mm){h=+mm[1];m=+mm[2];}else if(/^\d{3,4}$/.test(s)){h=+s.slice(0,s.length-2);m=+s.slice(-2);}else if(/^\d{1,2}$/.test(s)){h=+s;m=0;}else return"";if(h>23||m>59)return"";return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
 window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;editRtId=null;rSchedule();};
 
