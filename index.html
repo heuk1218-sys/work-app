@@ -24,6 +24,9 @@
     --card:#2c2c2e; --ink:#ffffff; --muted:#98989e; --line:#38383a;
     --accent:#0a84ff; --accent-2:#6cb6ff; --accent-soft:#0e2a45; --on-accent:#ffffff; --good:#30d158; --bad:#ff453a;
     --shadow:0 4px 18px rgba(0,0,0,.5); --input:#2c2c2e;
+    /* PC 본문 최대 폭. 이 숫자 하나만 고치면 좌우 폭이 바뀐다.
+       (1920 최대화 기준 기존 콘텐츠 폭 ≈1695px → 약 절반) */
+    --main-max:900px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
@@ -99,7 +102,7 @@
   details.acard[open]>summary::before{content:"− ";color:var(--accent)}
   details.acard .acbody{padding:0 20px 18px}
 
-  main{flex:1;padding:26px 34px 70px;max-width:none}
+  main{flex:1;padding:26px 34px 70px;width:100%;max-width:var(--main-max);margin:0 auto}
   .page-h{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;color:var(--ink)}
   .page-sub{color:var(--muted);font-size:15px;margin-bottom:22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.22);padding:18px 20px;margin-bottom:14px}
@@ -140,6 +143,27 @@
   .stat .s{background:var(--input);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
   .stat .s .lab{font-size:12px;color:var(--muted)}
   .stat .s .val{font-size:22px;font-weight:700;margin-top:3px;color:var(--accent)}
+
+  /* ===== 통계보고 월별 제공 체크 (O/X) ===== */
+  .rpt-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .rpt-head .ym{font-size:16px;font-weight:700;min-width:118px;text-align:center}
+  .rpt-nav{background:#2c2c2e;border:1px solid var(--line);color:var(--ink);padding:6px 12px;border-radius:8px;font-size:13px}
+  .rpt-nav:hover:not(:disabled){background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .rpt-nav:disabled{opacity:.35;cursor:not-allowed}
+  .rpt-spacer{flex:1}
+  .rpt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:0 20px}
+  .rpt-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .rpt-row .nm{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rpt-row .fd{flex:0 0 auto;font-size:11px;color:var(--muted)}
+  .oxb{flex:0 0 42px;width:42px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--input);color:var(--muted);font-weight:700;font-size:13px;line-height:1}
+  .oxb.on{background:var(--good);border-color:var(--good);color:#0b2a13}
+  .oxb.off:hover{border-color:var(--bad);color:var(--bad)}
+  .rpt-bar{height:7px;border-radius:5px;background:var(--line);overflow:hidden;margin:4px 0 12px}
+  .rpt-bar>i{display:block;height:100%;background:var(--good);border-radius:5px;transition:width .2s}
+  @media(max-width:760px){
+    .rpt-grid{grid-template-columns:1fr}
+    .rpt-head .ym{min-width:0;flex:1}
+  }
 
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .cal-head button{background:#2c2c2e;border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;color:var(--ink)}
@@ -692,41 +716,66 @@ function weekCol(d){
     ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
     ${rtHtml}${taskHtml||(rts.length?"":'<div class="wempty">—</div>')}</div>`;
 }
-const byPri=(a,b)=>(a.s.done-b.s.done)||(priRank(a.s.priority)-priRank(b.s.priority));
-const byTime=(a,b)=>(a.s.done-b.s.done)||((a.s.time||"99:99").localeCompare(b.s.time||"99:99"));
-function taskRows(items){
-  return items.length?items.map(({s,i})=>{const p=priInfo(s.priority);
-    if(i===editSchedIdx){
-      return `<div class="item" style="display:block">
-        <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" class="mobwide" value="${esc(s.title)}" placeholder="업무 내용"></div>
-        <div class="row mt"><select id="epri" class="n1"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
-        <div class="row mt"><button class="addb" onclick="schedSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="schedEditCancel()">취소</button></div></div>`;
-    }
-    return `<div class="item ${s.done?"done":""}">
-      <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
-      <div class="bd" style="cursor:pointer" onclick="schedEdit(${i})" title="클릭해서 수정"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div>
-        <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
-      <button class="del" onclick="rm('schedules',${i})">×</button></div>`;}).join(""):'<div class="empty">이 날 업무가 없어요.</div>';
+/* done 이 undefined 인 옛 데이터에서도 NaN 비교가 나오지 않도록 !! 로 정규화한다 */
+const byPri=(a,b)=>((!!a.s.done)-(!!b.s.done))||(priRank(a.s.priority)-priRank(b.s.priority));
+function taskRow(s,i){
+  const p=priInfo(s.priority);
+  if(i===editSchedIdx){
+    return `<div class="item" style="display:block">
+      <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" class="mobwide" value="${esc(s.title)}" placeholder="업무 내용"></div>
+      <div class="row mt"><select id="epri" class="n1"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
+      <div class="row mt"><button class="addb" onclick="schedSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="schedEditCancel()">취소</button></div></div>`;
+  }
+  return `<div class="item ${s.done?"done":""}">
+    <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+    <div class="bd" style="cursor:pointer" onclick="schedEdit(${i})" title="클릭해서 수정"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div>
+      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
+    <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
+}
+function routineRow(r,done){
+  const p=priInfo(r.pri);
+  return `<div class="item ${done?"done":""}">
+    <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+    <div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div>
+      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
+    <button class="linklike" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">건너뛰기</button>
+    <button class="del" onclick="goPage('routines')" title="루틴 관리로 이동" style="color:var(--muted)">›</button></div>`;
 }
 let todaySort="time",editSchedIdx=null;
 function drawDay(){
   const el=document.getElementById("tlist");
   if(!el)return;
-  const items=DB.schedules.map((s,i)=>({s,i})).filter(o=>o.s.date===selDay);
-  const rts=routinesForDate(selDay);
   const rd=rdoneOf(selDay);
-  let html="";
-  if(rts.length){
-    html+=`<div class="meta" style="font-weight:600;color:var(--accent-2);margin:0 0 6px">🔁 반복 루틴 <span style="font-weight:400">· ${rts.filter(r=>rd[r.id]).length}/${rts.length}</span></div>`;
-    html+=rts.map(r=>{const done=!!rd[r.id];const p=priInfo(r.pri);
-      return `<div class="item ${done?"done":""}">
-        <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
-        <div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div>
-          <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
-        <button class="linklike" onclick="goPage('routines')" title="루틴 관리">›</button></div>`;}).join("");
+  const skipped=routinesSkipped(selDay);
+
+  /* 일반 업무와 루틴을 한 목록으로 합쳐, 위쪽 정렬 토글(우선순위순/시간순)을
+     똑같이 적용한다. 루틴이라고 위에 고정되지 않는다. */
+  const units=[];
+  DB.schedules.forEach((s,i)=>{
+    if(s.date===selDay)units.push({kind:"task",s,i,done:!!s.done,time:s.time||"",pri:s.priority});
+  });
+  routinesForDate(selDay).forEach(r=>{
+    units.push({kind:"routine",r,done:!!rd[r.id],time:r.time||"",pri:r.pri});
+  });
+  const cmp = todaySort==="time"
+    ? (a,b)=>(a.done-b.done)||((a.time||"99:99").localeCompare(b.time||"99:99"))
+    : (a,b)=>(a.done-b.done)||(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99"));
+  units.sort(cmp);
+
+  let html = units.length
+    ? units.map(u=>u.kind==="task"?taskRow(u.s,u.i):routineRow(u.r,u.done)).join("")
+    : (skipped.length?"":'<div class="empty">이 날 업무가 없어요.</div>');
+
+  if(skipped.length){
     html+=`<div style="height:12px"></div>`;
+    /* 그날만 뺀 루틴 — 되돌릴 수 있게 남겨둔다 */
+    html+=`<div class="meta" style="margin:0 0 6px;color:var(--muted)">건너뛴 루틴 · ${skipped.length}건 <span style="color:#6a6a6a">(달성률에서 제외됨)</span></div>`;
+    html+=skipped.map(r=>`<div class="item" style="opacity:.5">
+      <span class="pdot" style="background:${priInfo(r.pri).c};margin-top:8px"></span>
+      <div class="bd"><div class="t" style="text-decoration:line-through">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}</div>
+        <div class="meta">${rtRecurLabel(r)}</div></div>
+      <button class="linklike" onclick="routineUnskip('${r.id}')" title="이 날 다시 하기">되돌리기</button></div>`).join("");
   }
-  html+=taskRows([...items].sort(todaySort==="time"?byTime:byPri));
   el.innerHTML=html;
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
@@ -751,8 +800,8 @@ let routineTab="daily", routineSel=new Set(), routineEdit=null;
 
 function lastDomOf(ds){const d=new Date(ds+"T00:00:00");return new Date(d.getFullYear(),d.getMonth()+1,0).getDate();}
 
-/* 해당 날짜에 표시할 루틴 목록 */
-function routinesForDate(ds){
+/* 반복 규칙상 그 날짜에 해당하는 루틴 (그날만 건너뛴 것도 포함) */
+function routinesMatching(ds){
   const list=DB.routines||[];
   if(!list.length||!ds)return [];
   const dt=new Date(ds+"T00:00:00");
@@ -770,7 +819,19 @@ function routinesForDate(ds){
     return false;
   }).slice().sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
 }
+/* 실제로 그 날 할 루틴 = 규칙에 해당하되, 그날만 건너뛴 것은 제외.
+   건너뛴 루틴은 달성률 분모에서도 빠진다 (안 하는 날이니 당연). */
+function routinesForDate(ds){
+  const skip=rskipOf(ds);
+  return routinesMatching(ds).filter(r=>!skip[r.id]);
+}
+/* 그날만 건너뛴 루틴 목록 */
+function routinesSkipped(ds){
+  const skip=rskipOf(ds);
+  return routinesMatching(ds).filter(r=>skip[r.id]);
+}
 function rdoneOf(ds){return ((DB.dayinfo[ds]||{}).rdone)||{};}
+function rskipOf(ds){return ((DB.dayinfo[ds]||{}).rskip)||{};}
 
 /* 일정 + 루틴을 합친 그 날의 달성 현황 — 앱 안 모든 달성률의 단일 기준 */
 function dayUnits(ds){
@@ -795,16 +856,43 @@ window.routineToggle=(id,ds)=>{
   save();render();   /* 현재 페이지를 다시 그린다 (일정·대시보드 어디서 눌러도 동작) */
 };
 
+/* 그날 하루만 이 루틴을 빼기 (공휴일·쉬는 날 등).
+   루틴 자체는 그대로 남아 다른 날에는 계속 나온다. */
+window.routineSkip=(id,ds)=>{
+  const d=ds||selDay;
+  if(!DB.dayinfo[d])DB.dayinfo[d]={};
+  const di=DB.dayinfo[d];
+  if(!di.rskip)di.rskip={};
+  di.rskip[id]=true;
+  if(di.rdone)delete di.rdone[id];   /* 건너뛴 건 완료가 아니다 */
+  save();render();
+};
+window.routineUnskip=(id,ds)=>{
+  const d=ds||selDay;
+  const di=DB.dayinfo[d];
+  if(di&&di.rskip){delete di.rskip[id];}
+  save();render();
+};
+
 /* 완료기록 청소 — 블롭이 무한정 커지는 것을 막는다 */
-function purgeRdone(id){Object.values(DB.dayinfo||{}).forEach(v=>{if(v&&v.rdone)delete v.rdone[id];});}
+function purgeRdone(id){
+  Object.values(DB.dayinfo||{}).forEach(v=>{
+    if(!v)return;
+    if(v.rdone)delete v.rdone[id];
+    if(v.rskip)delete v.rskip[id];
+  });
+}
 function purgeOrphanRdone(){
   const alive=new Set((DB.routines||[]).map(r=>r.id));
   let n=0;
   Object.values(DB.dayinfo||{}).forEach(v=>{
-    if(!v||!v.rdone)return;
-    Object.keys(v.rdone).forEach(id=>{if(!alive.has(id)){delete v.rdone[id];n++;}});
+    if(!v)return;
+    ["rdone","rskip"].forEach(k=>{
+      if(!v[k])return;
+      Object.keys(v[k]).forEach(id=>{if(!alive.has(id)){delete v[k][id];n++;}});
+    });
   });
-  if(n)console.log("[루틴] 고아 완료기록 "+n+"건 정리");
+  if(n)console.log("[루틴] 고아 기록 "+n+"건 정리");
 }
 
 function rtRecurLabel(r){
@@ -1223,11 +1311,13 @@ function rClients(){
     <div class="row mt"><input id="cs" placeholder="문의시트 링크 (선택, https://...)"><input id="ck" placeholder="클라이언트 링크 (선택, https://...)"></div>
     <button class="addb mt" id="cadd">+ 고객 추가</button></div></details>
   <div class="card"><h2>고객 목록</h2><div id="clist"></div></div>
+  <div class="card"><h2>통계보고 제공 현황</h2><div id="crpt"></div></div>
   <div class="card"><h2>요약</h2><div id="csummary"></div></div>`;
   document.getElementById("cadd").onclick=()=>{const n=val("cn");if(!n)return alert("성함을 입력하세요.");
     DB.clients.push({name:n,field:document.getElementById("cf").value,cycle:val("cc"),recontract:val("cr"),note:val("ci"),sheet:val("cs"),clink:val("ck")});save();drawC();
     ["cn","cc","cr","ci","cs","ck"].forEach(id=>document.getElementById(id).value="");};
   editClientIdx=null;
+  if(!rptYM)rptYM=rptYMDefault();
   drawC();
 }
 let editClientIdx=null;
@@ -1242,7 +1332,7 @@ function cliForm(c,i){
 }
 function drawC(){
   const e=document.getElementById("clist");
-  if(!DB.clients.length){e.innerHTML='<div class="empty">등록된 고객이 없어요.</div>';drawSummary();return;}
+  if(!DB.clients.length){e.innerHTML='<div class="empty">등록된 고객이 없어요.</div>';drawSummary();drawRpt();return;}
   if(isMobile()){
     e.innerHTML=DB.clients.map((c,i)=>{
       if(i===editClientIdx)return `<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px">${cliForm(c,i)}</div>`;
@@ -1252,7 +1342,7 @@ function drawC(){
       <div class="meta" style="line-height:1.9">
         ${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">클라이언트 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋클라이언트</button>`} &nbsp;
         ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`}</div></div>`;}).join("");
-    drawSummary();return;
+    drawSummary();drawRpt();return;
   }
   e.innerHTML=`<table class="tbl fixed"><tr><th>성함</th><th>대행분야</th><th>클라이언트</th><th>문의시트</th><th>포스팅</th><th>재계약</th><th>분납일</th><th></th></tr>
     ${DB.clients.map((c,i)=>{
@@ -1266,7 +1356,7 @@ function drawC(){
       <td class="meta" style="cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(recDisp(c.recontract))}</td>
       <td class="meta" style="cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(c.note||"")}</td>
       <td style="text-align:right"><button class="del" onclick="delClient(${i})">×</button></td></tr>`;}).join("")}</table>`;
-  drawSummary();
+  drawSummary();drawRpt();
 }
 function weeklyPosts(cycle){
   if(!cycle)return 0;
@@ -1303,6 +1393,75 @@ function drawSummary(){
     <div class="meta">📌 ${curM}월 재계약 대상: ${due.length?due.map(c=>esc(c.name)).join(", "):"없음"}</div>
     <div class="meta" style="margin-top:4px">📌 ${nextM}월 재계약 대상: ${dueNext.length?dueNext.map(c=>esc(c.name)).join(", "):"없음"}</div>`;
 }
+/* ===== 통계보고 월별 제공 체크 =====
+   데이터: 각 고객 레코드에 report = {"2026-11":1, ...} (제공한 달만 1로 보관)
+   2026-11 이전 달은 열지 않는다. */
+const RPT_START="2026-11";
+let rptYM=null;
+function ymOf(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function rptYMDefault(){const n=ymOf(new Date());return n<RPT_START?RPT_START:n;}
+function ymShift(ym,delta){
+  const p=ym.split("-");let y=+p[0],m=+p[1]+delta;
+  while(m<1){m+=12;y--;}
+  while(m>12){m-=12;y++;}
+  return y+"-"+String(m).padStart(2,"0");
+}
+function ymLabel(ym){const p=ym.split("-");return p[0]+"년 "+(+p[1])+"월";}
+function rptDone(c,ym){return !!(c&&c.report&&c.report[ym]);}
+function drawRpt(){
+  const el=document.getElementById("crpt");if(!el)return;
+  if(!rptYM)rptYM=rptYMDefault();
+  const ym=rptYM,cs=DB.clients||[];
+  const done=cs.filter(c=>rptDone(c,ym)),undone=cs.filter(c=>!rptDone(c,ym));
+  const pct=cs.length?Math.round(done.length/cs.length*100):0;
+  el.innerHTML=`
+    <div class="rpt-head">
+      <button class="rpt-nav" onclick="rptNav(-1)" ${ym<=RPT_START?"disabled":""} title="이전 달">◀</button>
+      <span class="ym">${ymLabel(ym)}</span>
+      <button class="rpt-nav" onclick="rptNav(1)" title="다음 달">▶</button>
+      <button class="rpt-nav" onclick="rptThis()" ${ym===rptYMDefault()?"disabled":""}>이번 달</button>
+      <span class="rpt-spacer"></span>
+      <button class="rpt-nav" onclick="rptAll(1)">전체 O</button>
+      <button class="rpt-nav" onclick="rptAll(0)">전체 X</button>
+    </div>
+    <div class="stat">
+      <div class="s"><div class="lab">제공 완료</div><div class="val">${done.length}명</div></div>
+      <div class="s"><div class="lab">미제공</div><div class="val">${undone.length}명</div></div>
+      <div class="s"><div class="lab">전체</div><div class="val">${cs.length}명</div></div>
+      <div class="s"><div class="lab">진행률</div><div class="val">${pct}%</div></div>
+    </div>
+    <div class="rpt-bar"><i style="width:${pct}%"></i></div>
+    ${cs.length?`<div class="rpt-grid">${cs.map((c,i)=>{
+      const on=rptDone(c,ym);
+      return `<div class="rpt-row">
+        <button class="oxb ${on?"on":"off"}" onclick="rptToggle(${i})" title="클릭해서 ${on?"미제공":"제공"}으로 변경">${on?"O":"X"}</button>
+        <span class="nm">${esc(c.name||"")}</span>
+        <span class="fd">${esc(c.field||"")}</span>
+      </div>`;}).join("")}</div>
+    <div class="meta" style="margin-top:12px">📌 ${ymLabel(ym)} 미제공: ${undone.length?undone.map(c=>esc(c.name)).join(", "):"없음 ✅"}</div>`
+    :`<div class="empty">등록된 고객이 없어요.</div>`}`;
+}
+window.rptNav=(d)=>{const n=ymShift(rptYM,d);if(n<RPT_START)return;rptYM=n;drawRpt();};
+window.rptThis=()=>{rptYM=rptYMDefault();drawRpt();};
+window.rptToggle=(i)=>{
+  const c=DB.clients[i];if(!c)return;
+  if(!c.report||typeof c.report!=="object")c.report={};
+  if(c.report[rptYM])delete c.report[rptYM];else c.report[rptYM]=1;
+  c.updatedAt=new Date().toISOString();
+  save();drawRpt();
+};
+window.rptAll=(v)=>{
+  const cs=DB.clients||[];if(!cs.length)return;
+  if(!confirm(ymLabel(rptYM)+" 전체를 "+(v?"제공(O)":"미제공(X)")+"으로 바꿀까요?"))return;
+  const t=new Date().toISOString();
+  cs.forEach(c=>{
+    if(!c.report||typeof c.report!=="object")c.report={};
+    if(v)c.report[rptYM]=1;else delete c.report[rptYM];
+    c.updatedAt=t;
+  });
+  save();drawRpt();
+};
+
 window.setSheet=(i)=>{const u=prompt("문의시트 링크를 붙여넣으세요 (https://...)",DB.clients[i].sheet||"");if(u!==null){DB.clients[i].sheet=u.trim();save();drawC();}};
 window.setClink=(i)=>{const u=prompt("클라이언트 링크를 붙여넣으세요 (https://...)",DB.clients[i].clink||"");if(u!==null){DB.clients[i].clink=u.trim();save();drawC();}};
 window.delClient=(i)=>{DB.clients.splice(i,1);editClientIdx=null;save();drawC();};
