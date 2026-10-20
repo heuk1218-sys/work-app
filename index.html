@@ -24,6 +24,9 @@
     --card:#2c2c2e; --ink:#ffffff; --muted:#98989e; --line:#38383a;
     --accent:#0a84ff; --accent-2:#6cb6ff; --accent-soft:#0e2a45; --on-accent:#ffffff; --good:#30d158; --bad:#ff453a;
     --shadow:0 4px 18px rgba(0,0,0,.5); --input:#2c2c2e;
+    /* PC 본문 최대 폭. 이 숫자 하나만 고치면 좌우 폭이 바뀐다.
+       (1920 최대화 기준 기존 콘텐츠 폭 ≈1695px) */
+    --main-max:1100px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
@@ -32,9 +35,17 @@
   input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--input);color:var(--ink);width:100%}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
   /* 게시판(노트·일기·QT·설교·독서) 본문이 화면을 꽉 채우고, 내용에 맞춰 늘어나며 페이지 전체가 스크롤되도록 */
-  .ta-fill{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px);resize:none;overflow:hidden}
+  /* 글 쓸 때(textarea)와 다 쓴 뒤(.detail-body)의 글씨 크기·줄간격을 똑같이 맞춘다 */
+  .ta-fill{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px);resize:none;overflow:hidden;
+           font-size:16px;line-height:1.8}
   .ta-grow{resize:none;overflow:hidden;min-height:62px}
-  .detail-body{white-space:pre-wrap;line-height:1.8;min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px)}
+  .detail-body{white-space:normal;line-height:1.8;min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px)}
+  /* # / ## / ### 로 만든 제목 */
+  .md-p{white-space:pre-wrap}
+  .md-h1{font-size:25px;font-weight:700;letter-spacing:-.02em;margin:22px 0 8px;line-height:1.4}
+  .md-h2{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:18px 0 7px;line-height:1.45}
+  .md-h3{font-size:17px;font-weight:600;margin:15px 0 6px;line-height:1.5;color:var(--accent-2)}
+  .detail-body>:first-child{margin-top:0}
   @media(max-width:760px){
     .ta-fill{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
     .detail-body{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
@@ -77,7 +88,9 @@
   }
   .backdrop{display:none}
   .backdrop.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
-  aside{width:210px;flex:0 0 210px;background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+  /* PC 좌측 메뉴 폭 — 210px 의 1.5배. 글자 크기는 그대로 둔다.
+     (모바일은 아래 미디어쿼리에서 width:90% 로 덮어쓰므로 영향 없음) */
+  aside{width:315px;flex:0 0 315px;background:var(--side);color:var(--side-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column}
   aside nav{flex:1;overflow-y:auto;min-height:0}
   .side-foot{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
   aside .brand{font-size:20px;color:#fff;padding:6px 10px 16px;display:flex;align-items:center;gap:10px;font-weight:700}
@@ -99,7 +112,7 @@
   details.acard[open]>summary::before{content:"− ";color:var(--accent)}
   details.acard .acbody{padding:0 20px 18px}
 
-  main{flex:1;padding:26px 34px 70px;max-width:none}
+  main{flex:1;padding:26px 34px 70px;width:100%;max-width:var(--main-max);margin:0 auto}
   .page-h{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;color:var(--ink)}
   .page-sub{color:var(--muted);font-size:15px;margin-bottom:22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.22);padding:18px 20px;margin-bottom:14px}
@@ -141,6 +154,27 @@
   .stat .s .lab{font-size:12px;color:var(--muted)}
   .stat .s .val{font-size:22px;font-weight:700;margin-top:3px;color:var(--accent)}
 
+  /* ===== 통계보고 월별 제공 체크 (O/X) ===== */
+  .rpt-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .rpt-head .ym{font-size:16px;font-weight:700;min-width:118px;text-align:center}
+  .rpt-nav{background:#2c2c2e;border:1px solid var(--line);color:var(--ink);padding:6px 12px;border-radius:8px;font-size:13px}
+  .rpt-nav:hover:not(:disabled){background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .rpt-nav:disabled{opacity:.35;cursor:not-allowed}
+  .rpt-spacer{flex:1}
+  .rpt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:0 20px}
+  .rpt-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .rpt-row .nm{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rpt-row .fd{flex:0 0 auto;font-size:11px;color:var(--muted)}
+  .oxb{flex:0 0 42px;width:42px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--input);color:var(--muted);font-weight:700;font-size:13px;line-height:1}
+  .oxb.on{background:var(--good);border-color:var(--good);color:#0b2a13}
+  .oxb.off:hover{border-color:var(--bad);color:var(--bad)}
+  .rpt-bar{height:7px;border-radius:5px;background:var(--line);overflow:hidden;margin:4px 0 12px}
+  .rpt-bar>i{display:block;height:100%;background:var(--good);border-radius:5px;transition:width .2s}
+  @media(max-width:760px){
+    .rpt-grid{grid-template-columns:1fr}
+    .rpt-head .ym{min-width:0;flex:1}
+  }
+
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .cal-head button{background:#2c2c2e;border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;color:var(--ink)}
   .cal-head button:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
@@ -157,7 +191,13 @@
   .sort-toggle button{background:var(--input);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:5px 11px;border-radius:7px}
   .sort-toggle button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 
-  .week-scroll{overflow-x:auto;margin:0 -2px}
+  /* 주간일정: 마우스로 끌어서 좌우 이동. 스크롤바는 숨긴다. */
+  .week-scroll{overflow-x:auto;margin:0 -2px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
+  .week-scroll::-webkit-scrollbar{width:0;height:0;display:none}
+  .week-scroll.dragging,.week-scroll.dragging .wcol{cursor:grabbing}
+  .week-scroll.dragging{user-select:none}
+  /* PC에서는 카드 안쪽 여백만큼 끌어내 '일정' 제목선과 왼쪽 끝을 맞춘다 */
+  @media(min-width:761px){.week-scroll{margin:0 -20px}}
   .week-grid{display:grid;gap:7px}
   .wcol{background:#2c2c2e;border:1px solid var(--line);border-radius:10px;padding:7px;min-height:104px;cursor:pointer}
   .wcol:hover{border-color:var(--accent)}
@@ -201,6 +241,45 @@
     .mobwide{flex:1 1 100%!important}
   }
   .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
+
+  /* ===== 제자리 수정(인라인 편집) =====
+     글자가 있던 자리에 투명한 입력칸을 깔아, 수정 모드로 들어가도
+     줄 수·글자 위치가 그대로 유지되게 한다. 저장 버튼은 두지 않고
+     입력할 때마다 바로 저장한다(Enter/Esc/바깥클릭으로 종료). */
+  .ie{background:transparent;border:1px solid transparent;border-radius:6px;
+      padding:0 4px;margin:-1px -5px;color:var(--ink);font-family:inherit;
+      font-size:inherit;line-height:inherit;font-weight:inherit;width:100%;min-width:0;
+      height:auto;appearance:none;-webkit-appearance:none}
+  .ie:hover{border-color:var(--line)}
+  .ie:focus{border-color:var(--accent);background:var(--input);outline:none}
+  .ie::placeholder{color:#6a6a6a}
+  .ie-row{display:flex;align-items:center;gap:9px;min-width:0}
+  .ie-time{flex:0 0 72px;color:var(--muted);font-weight:600}
+  .ie-title{flex:1;min-width:0;font-weight:500}
+  /* 시간칸과 같은 폭이어야 아래 '비고'가 위 '업무내용'과 왼쪽 끝이 맞는다 */
+  .ie-pri{flex:0 0 72px}
+  .ie-note{flex:1;min-width:0}
+  .ie-hint{flex:1;min-width:0;font-size:12px;color:#7a7a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item.editing{background:#242426;border-radius:9px}
+
+  /* ===== 일기 첨부 사진 ===== */
+  .dimg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+  .dimg{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#161618;aspect-ratio:1/1}
+  .dimg img{width:100%;height:100%;object-fit:cover;display:block}
+  .dimg-x{position:absolute;top:5px;right:5px;width:25px;height:25px;border-radius:50%;
+          background:rgba(0,0,0,.66);color:#fff;font-size:15px;line-height:1;border:none;padding:0}
+  .dimg-x:hover{background:var(--bad)}
+  /* 일기 보기 화면 — 그 자리에서 크게 본다.
+     1장이면 좌우 꽉 차게, 2장 이상이면 한 줄에 최대 2장. 모바일은 항상 1장씩. */
+  .dimg-view{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+  .dimg-view.multi{grid-template-columns:1fr 1fr}
+  @media(max-width:760px){.dimg-view.multi{grid-template-columns:1fr}}
+  .dimg-v{display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#161618}
+  .dimg-v img{width:100%;height:auto;display:block}
+  .dimg-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .dimg-stat{font-size:12.5px;color:var(--accent-2)}
+  /* 모바일 사파리 자동확대 방지 — 작은 글씨 줄만 16px로 올린다 */
+  @media(max-width:760px){.ie-pri,.ie-note{font-size:16px}}
   .detail-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
   .editb{background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 8px;align-self:center}
   .editb:hover{color:var(--accent)}
@@ -426,6 +505,21 @@ function render(){
 }
 /* 텍스트영역 자동 늘어남: 내용에 맞춰 커지고 페이지가 통째로 스크롤됨 */
 function autoGrow(ta){if(!ta)return;ta.style.height="auto";ta.style.height=(ta.scrollHeight+2)+"px";}
+/* 본문 렌더러 — 줄 맨 앞의 #, ##, ### 만 제목으로 바꾼다.
+   그 외 문자는 전부 esc() 로 이스케이프하므로 HTML 주입 위험이 없다.
+   제목이 아닌 줄들은 묶어서 .md-p(줄바꿈 보존) 안에 넣는다. */
+function mdBody(t){
+  const lines=String(t==null?"":t).split("\n");
+  let out="",buf=[];
+  const flush=()=>{ if(buf.length){ out+=`<div class="md-p">${esc(buf.join("\n"))}</div>`; buf=[]; } };
+  for(const ln of lines){
+    const m=/^(#{1,3})[ \t]+(.*)$/.exec(ln);
+    if(m){ flush(); out+=`<div class="md-h${m[1].length}">${esc(m[2])}</div>`; }
+    else buf.push(ln);
+  }
+  flush();
+  return out;
+}
 function sizeGrow(root){(root||document).querySelectorAll("textarea.ta-fill,textarea.ta-grow").forEach(autoGrow);}
 document.addEventListener("input",e=>{if(e.target&&e.target.matches&&e.target.matches("textarea.ta-fill,textarea.ta-grow"))autoGrow(e.target);});
 
@@ -644,7 +738,7 @@ function rSchedule(){
       <button onclick="weekMove(${-step})">${mob?"‹ 이전날":"‹ 이전주"}</button>
       <div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0">${label}</h2><button class="ghostb" onclick="goToday()" style="padding:4px 13px;font-size:12.5px">오늘</button></div>
       <button onclick="weekMove(${step})">${mob?"다음날 ›":"다음주 ›"}</button></div>
-    <div class="week-scroll"><div class="week-grid" style="grid-template-columns:repeat(${days.length},minmax(${mob?"100%":"130px"},1fr))">${days.map(weekCol).join("")}</div></div>
+    <div class="week-scroll"><div class="week-grid" style="grid-template-columns:repeat(${days.length},minmax(${mob?"100%":"190px"},1fr))">${days.map(weekCol).join("")}</div></div>
     <div style="display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:var(--muted)"><span>이번주 달성률 <b style="color:var(--accent)">${weekRate}%</b></span><span>${dayLabel} 달성률 <b style="color:var(--accent)">${dayRate}%</b></span></div></div>
   ${staleHtml}
   ${overloadHtml}
@@ -674,8 +768,50 @@ function rSchedule(){
 }
 window.pickTime=()=>{const h=document.getElementById("shour").value;if(h==="")return;const m=document.getElementById("smin").value||"00";document.getElementById("stime").value=h+":"+m;};
 function normTime(s){s=(s||"").trim();if(!s)return"";s=s.replace(/[^0-9:]/g,"");let h,m,mm=s.match(/^(\d{1,2}):(\d{1,2})$/);if(mm){h=+mm[1];m=+mm[2];}else if(/^\d{3,4}$/.test(s)){h=+s.slice(0,s.length-2);m=+s.slice(-2);}else if(/^\d{1,2}$/.test(s)){h=+s;m=0;}else return"";if(h>23||m>59)return"";return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
-window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;rSchedule();};
-window.selectDay=(d)=>{selDay=d;editSchedIdx=null;rSchedule();};
+window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;editRtId=null;rSchedule();};
+
+/* ===== 주간일정 좌우 드래그 패닝 =====
+   .week-scroll 안을 마우스로 끌면 좌우로 밀린다. 스크롤바는 CSS로 숨겨둠.
+   5px 넘게 움직였을 때만 '끌기'로 보고, 그 뒤 이어지는 click 은 삼켜서
+   날짜칸 선택(selectDay)이 잘못 발동하지 않게 한다.
+   document 에 한 번만 걸어두므로 rSchedule() 이 다시 그려도 계속 동작한다. */
+(function(){
+  let box=null,startX=0,startLeft=0,moved=false,pid=null;
+  const THRESH=5, SWALLOW_MS=350;
+  document.addEventListener("pointerdown",function(e){
+    if(e.button!==undefined&&e.button!==0)return;
+    const t=e.target;if(!t||!t.closest)return;
+    const s=t.closest(".week-scroll");if(!s)return;
+    if(s.scrollWidth<=s.clientWidth)return;        // 넘칠 때만 끌기 활성
+    box=s;startX=e.clientX;startLeft=s.scrollLeft;moved=false;pid=e.pointerId;
+  });
+  document.addEventListener("pointermove",function(e){
+    if(!box)return;
+    const dx=e.clientX-startX;
+    if(!moved){
+      if(Math.abs(dx)<THRESH)return;
+      moved=true;box.classList.add("dragging");
+      try{box.setPointerCapture(pid);}catch(_){}
+    }
+    box.scrollLeft=startLeft-dx;
+    if(e.cancelable)e.preventDefault();
+  });
+  function end(){
+    if(!box)return;
+    const b=box,was=moved;
+    try{b.releasePointerCapture(pid);}catch(_){}
+    b.classList.remove("dragging");
+    box=null;moved=false;pid=null;
+    if(was){                                        // 끌기 직후의 click 1회 무효화
+      const sw=function(ev){ev.stopPropagation();ev.preventDefault();};
+      b.addEventListener("click",sw,true);
+      setTimeout(function(){b.removeEventListener("click",sw,true);},SWALLOW_MS);
+    }
+  }
+  document.addEventListener("pointerup",end);
+  document.addEventListener("pointercancel",end);
+})();
+window.selectDay=(d)=>{selDay=d;editSchedIdx=null;editRtId=null;rSchedule();};
 window.setMain=(v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay].main=v;save();};
 window.setDayField=(f,v)=>{if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};DB.dayinfo[selDay][f]=v;save();};
 function weekCol(d){
@@ -697,10 +833,21 @@ const byPri=(a,b)=>((!!a.s.done)-(!!b.s.done))||(priRank(a.s.priority)-priRank(b
 function taskRow(s,i){
   const p=priInfo(s.priority);
   if(i===editSchedIdx){
-    return `<div class="item" style="display:block">
-      <div class="row"><input id="etime" class="n2" value="${esc(s.time||"")}" placeholder="시간 24h (예:14:00)" inputmode="numeric" style="flex:0 0 130px"><input id="etitle" class="mobwide" value="${esc(s.title)}" placeholder="업무 내용"></div>
-      <div class="row mt"><select id="epri" class="n1"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select><input id="enote" class="mobwide" value="${esc(s.note||"")}" placeholder="비고 (선택)"></div>
-      <div class="row mt"><button class="addb" onclick="schedSave(${i})">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="schedEditCancel()">취소</button></div></div>`;
+    /* 수정 모드 — 평소 행과 뼈대(체크박스·본문 2줄·삭제버튼)가 완전히 같다.
+       글자 자리에 .ie 입력칸만 깔리므로 줄 수도 위치도 바뀌지 않는다. */
+    return `<div class="item editing" data-edit="1">
+      <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+      <div class="bd">
+        <div class="t ie-row">
+          <input class="ie ie-time" value="${esc(s.time||"")}" placeholder="시간" inputmode="numeric" onchange="schedField(${i},'time',this)" onkeydown="ieKey(event)">
+          <input class="ie ie-title" value="${esc(s.title)}" placeholder="업무 내용" onchange="schedField(${i},'title',this)" onkeydown="ieKey(event)" data-focus="1">
+        </div>
+        <div class="meta ie-row">
+          <select class="ie ie-pri" onchange="schedField(${i},'priority',this)" onkeydown="ieKey(event)"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select>
+          <input class="ie ie-note" value="${esc(s.note||"")}" placeholder="비고" onchange="schedField(${i},'note',this)" onkeydown="ieKey(event)">
+        </div>
+      </div>
+      <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
   }
   return `<div class="item ${s.done?"done":""}">
     <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
@@ -710,14 +857,31 @@ function taskRow(s,i){
 }
 function routineRow(r,done){
   const p=priInfo(r.pri);
+  const ovd=!!roverOf(selDay)[r.id];
+  if(editRtId===r.id){
+    /* 루틴도 평소 행과 뼈대가 같다. 수정분은 이 날짜에만 적용되고 루틴 원본은 그대로. */
+    return `<div class="item editing" data-edit="1">
+      <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+      <div class="bd">
+        <div class="t ie-row">
+          <input class="ie ie-time" value="${esc(r.time||"")}" placeholder="시간" inputmode="numeric" onchange="rtDayField('${r.id}','time',this)" onkeydown="ieKey(event)">
+          <input class="ie ie-title" value="${esc(r.title)}" placeholder="업무 내용" onchange="rtDayField('${r.id}','title',this)" onkeydown="ieKey(event)" data-focus="1">
+        </div>
+        <div class="meta ie-row">
+          <select class="ie ie-pri" onchange="rtDayField('${r.id}','pri',this)" onkeydown="ieKey(event)"><option value=""${!r.pri?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${r.pri==n?" selected":""}>${n}순위</option>`).join("")}</select>
+          <span class="ie-hint">이 날짜만 적용 · 루틴 원본은 그대로${ovd?` <button class="linklike" onclick="rtDayReset('${r.id}')">되돌리기</button>`:""}</span>
+        </div>
+      </div>
+      <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기">×</button></div>`;
+  }
   return `<div class="item ${done?"done":""}">
     <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
-    <div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div>
+    <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}')" title="클릭해서 이 날짜만 수정"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span>${ovd?` <span class="pill" style="background:#3a2d12;color:#e0a649">수정됨</span>`:""}</div>
       <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
     <button class="linklike" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">건너뛰기</button>
     <button class="del" onclick="goPage('routines')" title="루틴 관리로 이동" style="color:var(--muted)">›</button></div>`;
 }
-let todaySort="time",editSchedIdx=null;
+let todaySort="time",editSchedIdx=null,editRtId=null;
 function drawDay(){
   const el=document.getElementById("tlist");
   if(!el)return;
@@ -753,12 +917,82 @@ function drawDay(){
       <button class="linklike" onclick="routineUnskip('${r.id}')" title="이 날 다시 하기">되돌리기</button></div>`).join("");
   }
   el.innerHTML=html;
+  /* 수정 모드로 들어왔으면 제목칸에 커서를 둔다 (스크롤은 건드리지 않는다) */
+  const f=el.querySelector('[data-focus="1"]');
+  if(f){try{f.focus({preventScroll:true});const n=f.value.length;if(f.setSelectionRange)f.setSelectionRange(n,n);}catch(_){}}
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
-window.goToday=()=>{selDay=T();editSchedIdx=null;rSchedule();};
-window.schedEdit=(i)=>{editSchedIdx=i;drawDay();};
-window.schedEditCancel=()=>{editSchedIdx=null;drawDay();};
-window.schedSave=(i)=>{const s=DB.schedules[i];if(!s)return;s.time=normTime(document.getElementById("etime").value);const t=document.getElementById("etitle").value.trim();if(t)s.title=t;s.priority=parseInt(document.getElementById("epri").value)||null;s.note=document.getElementById("enote").value.trim();editSchedIdx=null;save();rSchedule();};
+window.goToday=()=>{selDay=T();editSchedIdx=null;editRtId=null;rSchedule();};
+window.schedEdit=(i)=>{editSchedIdx=i;editRtId=null;drawDay();ieArm();};
+window.schedEditCancel=()=>{ieExit();};
+
+/* ---- 제자리 수정 공통 ----
+   입력칸마다 onchange 로 바로 저장한다(= 저장 버튼이 필요 없다).
+   입력 중에는 다시 그리지 않으므로 포커스가 튀거나 줄이 재정렬되지 않고,
+   수정 모드를 빠져나갈 때 한 번만 다시 그린다. */
+window.ieKey=(e)=>{
+  if(e.key==="Enter"){e.preventDefault();if(e.target.blur)e.target.blur();ieExit();}
+  else if(e.key==="Escape"){e.preventDefault();ieExit();}
+};
+let ieOutside=null;
+function ieArm(){
+  if(ieOutside)return;
+  /* 수정 모드로 들어오게 한 클릭 자체가 바깥클릭으로 잡히지 않도록 한 틱 미룬다 */
+  setTimeout(function(){
+    if(editSchedIdx===null&&editRtId===null)return;
+    ieOutside=function(ev){
+      if(ev.target&&ev.target.closest&&ev.target.closest('[data-edit="1"]'))return;
+      ieExit();
+    };
+    document.addEventListener("mousedown",ieOutside,true);
+  },0);
+}
+function ieDisarm(){ if(ieOutside){document.removeEventListener("mousedown",ieOutside,true);ieOutside=null;} }
+window.ieExit=()=>{
+  ieDisarm();
+  if(editSchedIdx===null&&editRtId===null)return;
+  editSchedIdx=null;editRtId=null;
+  rSchedule();
+};
+window.schedField=(i,f,el)=>{
+  const s=DB.schedules[i];if(!s)return;
+  if(f==="time"){s.time=normTime(el.value);el.value=s.time;}
+  else if(f==="title"){const t=el.value.trim();if(t)s.title=t;else el.value=s.title;}
+  else if(f==="priority"){s.priority=parseInt(el.value)||null;}
+  else if(f==="note"){s.note=el.value.trim();}
+  save();
+};
+
+/* ---- 루틴: 그 날짜만 수정 (원본 루틴은 건드리지 않는다) ----
+   dayinfo[날짜].rover[루틴id] = {time?,title?,pri?} 형태로 바뀐 값만 저장한다.
+   원본과 같아지면 항목을 지워 블롭이 불어나지 않게 한다. */
+window.rtDayEdit=(id)=>{editRtId=id;editSchedIdx=null;drawDay();ieArm();};
+window.rtDayField=(id,f,el)=>{
+  const base=(DB.routines||[]).find(x=>x.id===id);if(!base)return;
+  if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};
+  const di=DB.dayinfo[selDay];
+  if(!di.rover)di.rover={};
+  const ov=di.rover[id]||(di.rover[id]={});
+  if(f==="time"){
+    const v=normTime(el.value);el.value=v;
+    if(v===(base.time||""))delete ov.time;else ov.time=v;
+  }else if(f==="title"){
+    const v=el.value.trim();
+    if(!v){el.value=base.title;delete ov.title;}
+    else if(v===base.title)delete ov.title;else ov.title=v;
+  }else if(f==="pri"){
+    const n=parseInt(el.value)||null;
+    if(n===(base.pri||null))delete ov.pri;else ov.pri=n;
+  }
+  if(!Object.keys(ov).length)delete di.rover[id];
+  if(!Object.keys(di.rover).length)delete di.rover;
+  save();
+};
+window.rtDayReset=(id)=>{
+  const di=DB.dayinfo[selDay];
+  if(di&&di.rover){delete di.rover[id];if(!Object.keys(di.rover).length)delete di.rover;}
+  save();ieExit();
+};
 
 /* ═══════════════════════════════════════════════════════════════
    루틴업무 — 일간·주간·월간 반복 업무
@@ -782,6 +1016,7 @@ function routinesMatching(ds){
   if(!list.length||!ds)return [];
   const dt=new Date(ds+"T00:00:00");
   const dow=dt.getDay(), dom=dt.getDate(), lastDom=lastDomOf(ds);
+  const ov=roverOf(ds);
   return list.filter(r=>{
     if(r.paused)return false;
     if(r.startDate&&ds<r.startDate)return false;   /* 시작일 이전엔 표시 안 함 */
@@ -793,7 +1028,18 @@ function routinesMatching(ds){
       return dom===Math.min(parseInt(r.day)||1,lastDom);   /* 말일 보정 */
     }
     return false;
-  }).slice().sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
+  }).map(r=>applyRover(r,ov[r.id]))
+    .sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
+}
+/* 그 날짜만의 수정분을 입힌 사본을 돌려준다. 원본 루틴은 절대 건드리지 않는다.
+   수정분이 없으면 원본을 그대로 쓴다(불필요한 복사 방지). */
+function applyRover(r,ov){
+  if(!ov)return r;
+  const o=Object.assign({},r);
+  if(ov.time!==undefined)o.time=ov.time;
+  if(ov.title!==undefined)o.title=ov.title;
+  if(ov.pri!==undefined)o.pri=ov.pri;
+  return o;
 }
 /* 실제로 그 날 할 루틴 = 규칙에 해당하되, 그날만 건너뛴 것은 제외.
    건너뛴 루틴은 달성률 분모에서도 빠진다 (안 하는 날이니 당연). */
@@ -808,6 +1054,8 @@ function routinesSkipped(ds){
 }
 function rdoneOf(ds){return ((DB.dayinfo[ds]||{}).rdone)||{};}
 function rskipOf(ds){return ((DB.dayinfo[ds]||{}).rskip)||{};}
+/* 그 날짜만 적용되는 루틴 수정분 */
+function roverOf(ds){return ((DB.dayinfo[ds]||{}).rover)||{};}
 
 /* 일정 + 루틴을 합친 그 날의 달성 현황 — 앱 안 모든 달성률의 단일 기준 */
 function dayUnits(ds){
@@ -856,6 +1104,7 @@ function purgeRdone(id){
     if(!v)return;
     if(v.rdone)delete v.rdone[id];
     if(v.rskip)delete v.rskip[id];
+    if(v.rover)delete v.rover[id];
   });
 }
 function purgeOrphanRdone(){
@@ -863,7 +1112,7 @@ function purgeOrphanRdone(){
   let n=0;
   Object.values(DB.dayinfo||{}).forEach(v=>{
     if(!v)return;
-    ["rdone","rskip"].forEach(k=>{
+    ["rdone","rskip","rover"].forEach(k=>{
       if(!v[k])return;
       Object.keys(v[k]).forEach(id=>{if(!alive.has(id)){delete v[k][id];n++;}});
     });
@@ -1046,37 +1295,265 @@ function rDiary(){
 }
 window.setDiaryYear=(v)=>{diaryYear=v;rDiary();};
 window.setDiaryMonth=(v)=>{diaryMonth=v;rDiary();};
-window.diaryNew=()=>{diaryMode="write";diarySel=null;rDiary();};
+window.diaryNew=()=>{diaryMode="write";diarySel=null;imgStart("diary",uid(),[]);rDiary();};
 window.diaryOpen=(id)=>{diaryMode="detail";diarySel=id;rDiary();};
-window.diaryEdit=(id)=>{diaryMode="write";diarySel=id;rDiary();};
+window.diaryEdit=(id)=>{
+  const d=DB.diary.find(x=>x.id===id);
+  diaryMode="write";diarySel=id;
+  imgStart("diary",id,d&&d.images);
+  rDiary();
+};
 window.diaryBack=()=>{diaryMode="list";diarySel=null;rDiary();};
+/* 취소 — 수정 중이던 글로 돌아간다(목록으로 나가지 않는다).
+   이번 편집에서 새로 올린 사진은 쓰이지 않으므로 Storage 에서 지운다. */
+window.diaryCancel=async()=>{
+  const back=diarySel;
+  await imgDiscardNew();
+  if(back)diaryOpen(back); else diaryBack();
+};
 function diaryWrite(){
   const ed=diarySel?DB.diary.find(x=>x.id===diarySel):null;
+  if(imgCtx.kind!=="diary")imgStart("diary",ed?ed.id:uid(),ed&&ed.images);
   main.innerHTML=`<h1 class="page-h">일기 ${ed?"수정":"쓰기"}</h1><p class="page-sub">오늘 하루를 기록해요.</p>
   <div class="card">
     <div class="row"><input type="date" id="dd" class="n1" value="${ed?ed.date:T()}"><input id="dt" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
-    <textarea id="dc" class="mt ta-fill" rows="9" placeholder="오늘 하루는 어땠나요?">${ed?esc(ed.content):""}</textarea>
-    <div class="row mt"><button class="addb" id="dsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="diaryBack()">취소</button></div></div>`;
+    <textarea id="dc" class="mt ta-fill" rows="9" placeholder="오늘 하루는 어땠나요?  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+    ${imgPickHtml()}
+    <div class="row mt"><button class="addb" id="dsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="diaryCancel()">취소</button></div></div>`;
+  drawImgEdit();
   document.getElementById("dsave").onclick=()=>{
-    const c=val("dc");if(!c)return alert("내용을 입력하세요.");
-    if(ed){ed.date=val("dd")||ed.date;ed.title=val("dt")||"무제";ed.content=c;}
-    else DB.diary.push({id:uid(),date:val("dd")||T(),title:val("dt")||"무제",content:c});
-    save();diaryBack();
+    const c=val("dc");
+    if(!c&&!imgCtx.cur.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
+    const imgs=imgCtx.cur.slice();
+    let id;
+    if(ed){ed.date=val("dd")||ed.date;ed.title=val("dt")||"무제";ed.content=c;ed.images=imgs;id=ed.id;}
+    else{id=imgCtx.draftId||uid();DB.diary.push({id:id,date:val("dd")||T(),title:val("dt")||"무제",content:c,images:imgs});}
+    save();imgClear();
+    diaryOpen(id);          /* 목록이 아니라 방금 쓴 글로 */
   };
 }
 function diaryDetail(){
   const d=DB.diary.find(x=>x.id===diarySel);if(!d){diaryBack();return;}
+  const imgs=Array.isArray(d.images)?d.images:[];
   main.innerHTML=`<h1 class="page-h">일기</h1>
   <div class="card">
     <div class="detail-head">
       <button class="ghostb" onclick="diaryBack()">‹ 목록</button>
       <button class="ghostb" onclick="diaryEdit('${d.id}')">수정</button>
       <button class="ghostb danger" onclick="diaryDel('${d.id}')">삭제</button></div>
-    <div class="meta">${fmt(d.date)}</div>
+    <div class="meta">${fmt(d.date)}${imgs.length?` · 사진 ${imgs.length}장`:""}</div>
     <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
-    <div class="detail-body">${esc(d.content)}</div></div>`;
+    <div class="detail-body">${mdBody(d.content)}</div>
+    ${imgViewHtml(imgs)}</div>`;
+  drawImgView("diary",imgs);
 }
-window.diaryDel=(id)=>{if(!confirm("이 일기를 삭제할까요?"))return;DB.diary=DB.diary.filter(x=>x.id!==id);save();diaryBack();};
+window.diaryDel=async(id)=>{
+  if(!confirm("이 일기를 삭제할까요? (첨부한 사진도 같이 삭제됩니다)"))return;
+  const d=DB.diary.find(x=>x.id===id);
+  await imgRemoveAll("diary",(d&&Array.isArray(d.images))?d.images:[]);
+  DB.diary=DB.diary.filter(x=>x.id!==id);save();diaryBack();
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   일기 첨부 사진 — Supabase Storage (비공개 버킷)
+   · 이미지 바이너리는 app_data(DB) 에 절대 넣지 않는다. 경로 문자열만 넣는다.
+   · 경로 형식: <유저ID>/<일기ID>/<파일명>.jpg
+   · 올리기 전에 canvas 로 리사이즈·압축 (가로 1280px / JPEG 0.7 / 약 200KB)
+   · 비공개 버킷이므로 볼 때는 signed URL 을 발급해서 쓴다
+   · 일기나 사진을 지우면 Storage 파일도 함께 지운다
+   기존 save()/app_data/mergeArray 로직은 건드리지 않는다.
+   ═══════════════════════════════════════════════════════════════ */
+const DIARY_BUCKET="diary-images";      /* 일기 */
+const NOTE_BUCKET="note-images";        /* 노트·QT·설교말씀·독서노트 */
+const DIARY_MAXW=1280, DIARY_Q=0.7, DIARY_TARGET=200*1024;
+
+/* 표시용 URL 캐시 — 경로 -> {url, exp, blob}
+   signed URL 은 1시간짜리라 그냥 캐시해두면 1시간 뒤 깨진 이미지가 된다.
+   50분이 지나면 만료로 보고 다시 발급한다. */
+const IMG_TTL_SEC=3600, IMG_REFRESH_MS=50*60*1000, IMG_BLOB_MS=24*60*60*1000;
+const imgUrlCache={};
+function imgCacheGet(p){const c=imgUrlCache[p];return (c&&Date.now()<c.exp)?c.url:null;}
+function imgCacheSet(p,url,ms,isBlob){imgUrlCache[p]={url:url,exp:Date.now()+ms,blob:!!isBlob};}
+function imgCacheDrop(p){
+  const c=imgUrlCache[p];
+  if(c&&c.blob){try{URL.revokeObjectURL(c.url);}catch(_){}}   /* 메모리 누수 방지 */
+  delete imgUrlCache[p];
+}
+
+/* 메뉴별 저장 위치.
+   경로는 <유저ID>/<폴더>/<글ID>/<파일명>.jpg — 첫 칸이 항상 유저ID 라서
+   "본인 폴더만" RLS 정책이 그대로 적용된다. */
+const IMG_KIND={
+  diary :{bucket:DIARY_BUCKET, dir:""      , arr:"diary"  , label:"일기"},
+  note  :{bucket:NOTE_BUCKET , dir:"note/" , arr:"notes"  , label:"노트"},
+  qt    :{bucket:NOTE_BUCKET , dir:"qt/"   , arr:"qt"     , label:"QT"},
+  sermon:{bucket:NOTE_BUCKET , dir:"sermon/", arr:"sermons", label:"설교말씀"},
+  book  :{bucket:NOTE_BUCKET , dir:"book/" , arr:"books"  , label:"독서노트"}
+};
+/* 지금 편집 중인 글의 사진 상태 */
+let imgCtx={kind:null, draftId:null, cur:[], orig:[]};
+function imgBucketOf(kind){return (IMG_KIND[kind]||IMG_KIND.diary).bucket;}
+/* 글 수정/작성 화면에 들어갈 때 호출 */
+function imgStart(kind,id,existing){
+  /* 저장도 취소도 않고 다른 글로 넘어간 경우 — 그때 올린 사진은 쓰이지 않으므로
+     Storage 에 고아로 남지 않게 치운다. (기다리지 않고 뒤에서 처리) */
+  if(imgCtx.kind&&(imgCtx.kind!==kind||imgCtx.draftId!==id)){
+    const added=imgCtx.cur.filter(p=>imgCtx.orig.indexOf(p)<0);
+    if(added.length){
+      const K0=IMG_KIND[imgCtx.kind];
+      try{sb.storage.from(K0.bucket).remove(added).then(null,e=>console.warn("[사진] 고아 정리 실패",e));}catch(e){}
+      added.forEach(imgCacheDrop);
+    }
+  }
+  imgCtx={kind:kind, draftId:id||uid(), cur:Array.isArray(existing)?existing.slice():[],
+          orig:Array.isArray(existing)?existing.slice():[]};
+}
+function imgClear(){imgCtx={kind:null,draftId:null,cur:[],orig:[]};}
+/* 편집 화면에 넣을 '사진 첨부' 블록 HTML */
+function imgPickHtml(){
+  return `<div class="dimg-pick">
+      <button class="ghostb" type="button" onclick="document.getElementById('imgfile').click()">＋ 사진 첨부</button>
+      <input type="file" id="imgfile" accept="image/*" multiple style="display:none" onchange="imgPick(this)">
+      <span class="meta">올리기 전에 자동으로 줄여서 저장해요 (가로 최대 1280px)</span>
+      <span class="dimg-stat" id="imgstat"></span></div>
+    <div id="imgedit" class="dimg-grid"></div>`;
+}
+/* 보기 화면에 넣을 사진 영역 HTML — 1장이면 꽉 차게, 2장 이상이면 한 줄에 2장 */
+function imgViewHtml(imgs){
+  return (imgs&&imgs.length)?`<div id="imgview" class="dimg-view${imgs.length>1?" multi":""}"></div>`:"";
+}
+
+function compressImage(file,maxW,quality){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      if(!w||!h){reject(new Error("이미지 크기를 읽지 못했어요"));return;}
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      const cv=document.createElement("canvas");cv.width=w;cv.height=h;
+      const cx=cv.getContext("2d");
+      cx.fillStyle="#ffffff";cx.fillRect(0,0,w,h);   /* 투명 PNG 가 검게 나오는 것 방지 */
+      cx.drawImage(img,0,0,w,h);
+      cv.toBlob(b=>{b?resolve(b):reject(new Error("압축에 실패했어요"));},"image/jpeg",quality);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("이미지를 열지 못했어요"));};
+    img.src=url;
+  });
+}
+/* 목표 용량에 닿을 때까지 품질(그래도 크면 가로폭)을 단계적으로 낮춘다 */
+async function compressToTarget(file){
+  let q=DIARY_Q, w=DIARY_MAXW;
+  let blob=await compressImage(file,w,q);
+  for(let i=0;i<3&&blob.size>DIARY_TARGET*1.2;i++){
+    q=Math.max(0.4,q-0.12);
+    if(blob.size>DIARY_TARGET*2.2)w=Math.max(900,Math.round(w*0.85));
+    blob=await compressImage(file,w,q);
+  }
+  return blob;
+}
+async function signDiaryImg(path,bucket){
+  const hit=imgCacheGet(path);
+  if(hit)return hit;
+  imgCacheDrop(path);          /* 만료된 항목이면 치우고 새로 받는다 */
+  const bk=bucket||(path.indexOf("/note/")>=0||path.indexOf("/qt/")>=0||
+                    path.indexOf("/sermon/")>=0||path.indexOf("/book/")>=0?NOTE_BUCKET:DIARY_BUCKET);
+  try{
+    const r=await sb.storage.from(bk).createSignedUrl(path,IMG_TTL_SEC);
+    if(r&&!r.error&&r.data&&r.data.signedUrl){
+      imgCacheSet(path,r.data.signedUrl,IMG_REFRESH_MS,false);
+      return r.data.signedUrl;
+    }
+    console.warn("[사진] signed URL 실패",path,r&&r.error);
+  }catch(e){console.warn("[사진] signed URL 예외",e);}
+  return null;
+}
+window.imgPick=async(input)=>{
+  const files=Array.prototype.slice.call(input.files||[]);
+  input.value="";
+  if(!files.length)return;
+  if(!(typeof sb!=="undefined"&&sb&&currentUser)){alert("로그인 후에 사진을 올릴 수 있어요.");return;}
+  if(!imgCtx.kind){console.warn("[사진] 편집 맥락이 없음");return;}
+  const K=IMG_KIND[imgCtx.kind];
+  if(!imgCtx.draftId)imgCtx.draftId=uid();
+  const st=document.getElementById("imgstat");
+  let ok=0;
+  for(let n=0;n<files.length;n++){
+    const f=files[n];
+    if(!/^image\//.test(f.type||"")){console.warn("[사진] 이미지가 아님",f.name);continue;}
+    if(st)st.textContent=`올리는 중... ${n+1}/${files.length}`;
+    try{
+      const blob=await compressToTarget(f);
+      const name=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+".jpg";
+      const path=currentUser.id+"/"+K.dir+imgCtx.draftId+"/"+name;
+      const up=await sb.storage.from(K.bucket).upload(path,blob,{contentType:"image/jpeg",upsert:false});
+      if(up.error)throw up.error;
+      imgCtx.cur.push(path);
+      imgCacheSet(path,URL.createObjectURL(blob),IMG_BLOB_MS,true);   /* 미리보기는 round-trip 없이 바로 */
+      ok++;
+    }catch(e){
+      console.warn("[사진] 업로드 실패",e);
+      alert("사진 업로드에 실패했어요: "+((e&&e.message)||e));
+    }
+  }
+  if(st)st.textContent=ok?`${ok}장 올렸어요`:"";
+  drawImgEdit();
+  if(ok&&st)setTimeout(()=>{if(st)st.textContent="";},2500);
+};
+window.imgDel=async(i)=>{
+  const p=imgCtx.cur[i];if(!p)return;
+  if(!confirm("이 사진을 삭제할까요?"))return;
+  const K=IMG_KIND[imgCtx.kind]||IMG_KIND.diary;
+  try{await sb.storage.from(K.bucket).remove([p]);}catch(e){console.warn("[사진] 삭제 실패",e);}
+  imgCtx.cur.splice(i,1);
+  const oi=imgCtx.orig.indexOf(p);if(oi>=0)imgCtx.orig.splice(oi,1);
+  imgCacheDrop(p);
+  /* 이미 저장된 글이면 지운 사실을 바로 반영해 끊어진 참조가 남지 않게 한다 */
+  const arr=DB[K.arr]||[];
+  const rec=arr.find(x=>x.id===imgCtx.draftId);
+  if(rec){rec.images=imgCtx.cur.slice();save();}
+  drawImgEdit();
+};
+/* 편집 중 올린 사진 중 저장되지 않은 것들을 Storage 에서 치운다 (취소 시) */
+async function imgDiscardNew(){
+  const added=imgCtx.cur.filter(p=>imgCtx.orig.indexOf(p)<0);
+  if(added.length){
+    const K=IMG_KIND[imgCtx.kind]||IMG_KIND.diary;
+    try{await sb.storage.from(K.bucket).remove(added);}catch(e){console.warn("[사진] 취소 정리 실패",e);}
+    added.forEach(imgCacheDrop);
+  }
+  imgClear();
+}
+/* 글을 지울 때 그 글의 사진도 함께 지운다 */
+async function imgRemoveAll(kind,imgs){
+  if(!imgs||!imgs.length)return;
+  const K=IMG_KIND[kind]||IMG_KIND.diary;
+  try{await sb.storage.from(K.bucket).remove(imgs);}catch(e){console.warn("[사진] 삭제 실패",e);}
+  imgs.forEach(imgCacheDrop);
+}
+async function drawImgEdit(){
+  const el=document.getElementById("imgedit");if(!el)return;
+  if(!imgCtx.cur.length){el.innerHTML="";return;}
+  const bk=imgBucketOf(imgCtx.kind);
+  el.innerHTML=imgCtx.cur.map((p,i)=>
+    `<div class="dimg"><img alt="첨부 사진 ${i+1}" data-p="${esc(p)}"><button class="dimg-x" type="button" onclick="imgDel(${i})" title="이 사진 삭제">×</button></div>`).join("");
+  const imgs=el.querySelectorAll("img");
+  for(let i=0;i<imgs.length;i++){
+    const u=await signDiaryImg(imgs[i].getAttribute("data-p"),bk);
+    if(u)imgs[i].src=u;
+  }
+}
+async function drawImgView(kind,paths){
+  const el=document.getElementById("imgview");if(!el||!paths||!paths.length)return;
+  const bk=imgBucketOf(kind);
+  el.innerHTML=paths.map((p,i)=>
+    `<a class="dimg-v" data-p="${esc(p)}" target="_blank" rel="noopener" title="원본 크기로 열기"><img alt="사진 ${i+1}" loading="lazy"></a>`).join("");
+  const as=el.querySelectorAll("a");
+  for(let i=0;i<as.length;i++){
+    const u=await signDiaryImg(as[i].getAttribute("data-p"),bk);
+    if(u){as[i].href=u;as[i].querySelector("img").src=u;}
+  }
+}
 
 /* ===== 4) 목표 (카테고리 없음 · 진행바 1줄 · 설명) ===== */
 let goalOpen={};
@@ -1184,26 +1661,35 @@ function renderQT(){
   const fb=document.getElementById("fbody");
   if(qtMode==="write"){
     const ed=qtSel?DB.qt.find(x=>x.id===qtSel):null;
+    if(imgCtx.kind!=="qt")imgStart("qt",ed?ed.id:uid(),ed&&ed.images);
     fb.innerHTML=`<div class="card"><h2>말씀 기록 ${ed?"수정":"쓰기"}</h2>
       <div class="row"><input type="date" id="qd" class="n1" value="${ed?ed.date:T()}"><input id="qv" placeholder="말씀 (예: 시편 23편)" value="${ed?esc(ed.title):""}"></div>
-      <textarea id="qn" class="mt ta-fill" rows="7" placeholder="묵상 내용">${ed?esc(ed.content):""}</textarea>
-      <div class="row mt"><button class="addb" id="qsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="qtBack()">취소</button></div></div>`;
-    document.getElementById("qsave").onclick=()=>{const v=val("qv"),n=val("qn");if(!v&&!n)return alert("내용을 입력하세요.");
-      if(ed){ed.date=val("qd")||ed.date;ed.title=v||"말씀";ed.content=n;}
-      else DB.qt.push({id:uid(),date:val("qd")||T(),title:v||"말씀",content:n});
-      save();qtBack();};
+      <textarea id="qn" class="mt ta-fill" rows="7" placeholder="묵상 내용  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+      ${imgPickHtml()}
+      <div class="row mt"><button class="addb" id="qsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="qtCancel()">취소</button></div></div>`;
+    drawImgEdit();
+    document.getElementById("qsave").onclick=()=>{const v=val("qv"),n=val("qn");
+      if(!v&&!n&&!imgCtx.cur.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
+      const imgs=imgCtx.cur.slice();
+      let id;
+      if(ed){ed.date=val("qd")||ed.date;ed.title=v||"말씀";ed.content=n;ed.images=imgs;id=ed.id;}
+      else{id=imgCtx.draftId||uid();DB.qt.push({id:id,date:val("qd")||T(),title:v||"말씀",content:n,images:imgs});}
+      save();imgClear();qtOpen(id);};
     return;
   }
   if(qtMode==="detail"){
     const q=DB.qt.find(x=>x.id===qtSel);if(!q){qtMode="list";return renderQT();}
+    const imgs=Array.isArray(q.images)?q.images:[];
     fb.innerHTML=`<div class="card">
       <div class="detail-head">
         <button class="ghostb" onclick="qtBack()">‹ 목록</button>
         <button class="ghostb" onclick="qtEdit('${q.id}')">수정</button>
         <button class="ghostb danger" onclick="qtDel('${q.id}')">삭제</button></div>
-      <div class="meta">${fmt(q.date)}</div>
+      <div class="meta">${fmt(q.date)}${imgs.length?` · 사진 ${imgs.length}장`:""}</div>
       <h2 style="font-size:20px;margin:4px 0 12px">${esc(q.title)}</h2>
-      <div class="detail-body">${esc(q.content)}</div></div>`;
+      <div class="detail-body">${mdBody(q.content)}</div>
+      ${imgViewHtml(imgs)}</div>`;
+    drawImgView("qt",imgs);
     return;
   }
   if(qtYear===null)qtYear=String(new Date().getFullYear());
@@ -1221,11 +1707,16 @@ function renderQT(){
 }
 window.setQtYear=(v)=>{qtYear=v;rFaith();};
 window.setQtMonth=(v)=>{qtMonth=v;rFaith();};
-window.qtNew=()=>{qtMode="write";qtSel=null;rFaith();};
-window.qtEdit=(id)=>{qtMode="write";qtSel=id;rFaith();};
+window.qtNew=()=>{qtMode="write";qtSel=null;imgStart("qt",uid(),[]);rFaith();};
+window.qtEdit=(id)=>{const q=DB.qt.find(x=>x.id===id);qtMode="write";qtSel=id;imgStart("qt",id,q&&q.images);rFaith();};
 window.qtOpen=(id)=>{qtMode="detail";qtSel=id;rFaith();};
 window.qtBack=()=>{qtMode="list";qtSel=null;rFaith();};
-window.qtDel=(id)=>{if(!confirm("이 기록을 삭제할까요?"))return;DB.qt=DB.qt.filter(x=>x.id!==id);save();qtBack();};
+window.qtCancel=async()=>{const back=qtSel;await imgDiscardNew();if(back)qtOpen(back);else qtBack();};
+window.qtDel=async(id)=>{
+  if(!confirm("이 기록을 삭제할까요? (첨부한 사진도 같이 삭제됩니다)"))return;
+  const q=DB.qt.find(x=>x.id===id);
+  await imgRemoveAll("qt",(q&&Array.isArray(q.images))?q.images:[]);
+  DB.qt=DB.qt.filter(x=>x.id!==id);save();qtBack();};
 
 /* ----- 설교말씀 (연도별, 월 구분 없음) ----- */
 let sermonMode="list", sermonSel=null, sermonYear=null;
@@ -1234,28 +1725,36 @@ function renderSermon(){
   if(sermonYear===null)sermonYear=String(new Date().getFullYear());
   if(sermonMode==="write"){
     const ed=sermonSel?DB.sermons.find(x=>x.id===sermonSel):null;
+    if(imgCtx.kind!=="sermon")imgStart("sermon",ed?ed.id:uid(),ed&&ed.images);
     fb.innerHTML=`<div class="card"><h2>설교말씀 ${ed?"수정":"쓰기"}</h2>
       <div class="row"><input type="date" id="sd" class="n1" value="${ed?ed.date:T()}"><input id="stt" placeholder="설교 제목" value="${ed?esc(ed.title):""}"></div>
       <div class="row mt"><input id="sref" placeholder="본문 (예: 출 25:31-40)" value="${ed?esc(ed.ref||""):""}"><input id="ssp" placeholder="인도자 (예: 이원규 목사님)" value="${ed?esc(ed.speaker||""):""}"></div>
-      <textarea id="scont" class="mt ta-fill" rows="7" placeholder="설교 내용·은혜 받은 점 (선택)">${ed?esc(ed.content||""):""}</textarea>
-      <div class="row mt"><button class="addb" id="ssave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="sermonBack()">취소</button></div></div>`;
+      <textarea id="scont" class="mt ta-fill" rows="7" placeholder="설교 내용·은혜 받은 점 (선택)  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content||""):""}</textarea>
+      ${imgPickHtml()}
+      <div class="row mt"><button class="addb" id="ssave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="sermonCancel()">취소</button></div></div>`;
+    drawImgEdit();
     document.getElementById("ssave").onclick=()=>{const t=val("stt");if(!t)return alert("설교 제목을 입력하세요.");
-      if(ed){ed.date=val("sd")||ed.date;ed.title=t;ed.ref=val("sref");ed.speaker=val("ssp");ed.content=val("scont");}
-      else DB.sermons.push({id:uid(),date:val("sd")||T(),title:t,ref:val("sref"),speaker:val("ssp"),content:val("scont")});
-      sermonYear=(val("sd")||T()).slice(0,4);save();sermonBack();};
+      const imgs=imgCtx.cur.slice();
+      let id;
+      if(ed){ed.date=val("sd")||ed.date;ed.title=t;ed.ref=val("sref");ed.speaker=val("ssp");ed.content=val("scont");ed.images=imgs;id=ed.id;}
+      else{id=imgCtx.draftId||uid();DB.sermons.push({id:id,date:val("sd")||T(),title:t,ref:val("sref"),speaker:val("ssp"),content:val("scont"),images:imgs});}
+      sermonYear=(val("sd")||T()).slice(0,4);save();imgClear();sermonOpen(id);};
     return;
   }
   if(sermonMode==="detail"){
     const s=DB.sermons.find(x=>x.id===sermonSel);if(!s){sermonMode="list";return renderSermon();}
+    const imgs=Array.isArray(s.images)?s.images:[];
     fb.innerHTML=`<div class="card">
       <div class="detail-head">
         <button class="ghostb" onclick="sermonBack()">‹ 목록</button>
         <button class="ghostb" onclick="sermonEdit('${s.id}')">수정</button>
         <button class="ghostb danger" onclick="sermonDel('${s.id}')">삭제</button></div>
-      <div class="meta">${fmt(s.date)}${s.speaker?" · "+esc(s.speaker):""}</div>
+      <div class="meta">${fmt(s.date)}${s.speaker?" · "+esc(s.speaker):""}${imgs.length?` · 사진 ${imgs.length}장`:""}</div>
       <h2 style="font-size:20px;margin:4px 0 6px">${esc(s.title)}</h2>
       ${s.ref?`<div class="meta" style="margin-bottom:10px">본문: ${esc(s.ref)}</div>`:""}
-      <div class="detail-body">${esc(s.content||"")}</div></div>`;
+      <div class="detail-body">${mdBody(s.content||"")}</div>
+      ${imgViewHtml(imgs)}</div>`;
+    drawImgView("sermon",imgs);
     return;
   }
   const years=[...new Set(DB.sermons.map(s=>s.date.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
@@ -1272,11 +1771,16 @@ function renderSermon(){
         <span class="meta" style="align-self:center">›</span></div>`).join(""):'<div class="empty">이 해에 설교 기록이 없어요.</div>'}</div>`;
 }
 window.setSermonYear=(v)=>{sermonYear=v;rFaith();};
-window.sermonNew=()=>{sermonMode="write";sermonSel=null;rFaith();};
-window.sermonEdit=(id)=>{sermonMode="write";sermonSel=id;rFaith();};
+window.sermonNew=()=>{sermonMode="write";sermonSel=null;imgStart("sermon",uid(),[]);rFaith();};
+window.sermonEdit=(id)=>{const s=DB.sermons.find(x=>x.id===id);sermonMode="write";sermonSel=id;imgStart("sermon",id,s&&s.images);rFaith();};
 window.sermonOpen=(id)=>{sermonMode="detail";sermonSel=id;rFaith();};
 window.sermonBack=()=>{sermonMode="list";sermonSel=null;rFaith();};
-window.sermonDel=(id)=>{if(!confirm("이 기록을 삭제할까요?"))return;DB.sermons=DB.sermons.filter(x=>x.id!==id);save();sermonBack();};
+window.sermonCancel=async()=>{const back=sermonSel;await imgDiscardNew();if(back)sermonOpen(back);else sermonBack();};
+window.sermonDel=async(id)=>{
+  if(!confirm("이 기록을 삭제할까요? (첨부한 사진도 같이 삭제됩니다)"))return;
+  const s=DB.sermons.find(x=>x.id===id);
+  await imgRemoveAll("sermon",(s&&Array.isArray(s.images))?s.images:[]);
+  DB.sermons=DB.sermons.filter(x=>x.id!==id);save();sermonBack();};
 
 /* ===== 6) 클라이언트 (문의시트 링크 연동) ===== */
 function rClients(){
@@ -1287,11 +1791,13 @@ function rClients(){
     <div class="row mt"><input id="cs" placeholder="문의시트 링크 (선택, https://...)"><input id="ck" placeholder="클라이언트 링크 (선택, https://...)"></div>
     <button class="addb mt" id="cadd">+ 고객 추가</button></div></details>
   <div class="card"><h2>고객 목록</h2><div id="clist"></div></div>
+  <div class="card"><h2>통계보고 제공 현황</h2><div id="crpt"></div></div>
   <div class="card"><h2>요약</h2><div id="csummary"></div></div>`;
   document.getElementById("cadd").onclick=()=>{const n=val("cn");if(!n)return alert("성함을 입력하세요.");
     DB.clients.push({name:n,field:document.getElementById("cf").value,cycle:val("cc"),recontract:val("cr"),note:val("ci"),sheet:val("cs"),clink:val("ck")});save();drawC();
     ["cn","cc","cr","ci","cs","ck"].forEach(id=>document.getElementById(id).value="");};
   editClientIdx=null;
+  if(!rptYM)rptYM=rptYMDefault();
   drawC();
 }
 let editClientIdx=null;
@@ -1306,7 +1812,7 @@ function cliForm(c,i){
 }
 function drawC(){
   const e=document.getElementById("clist");
-  if(!DB.clients.length){e.innerHTML='<div class="empty">등록된 고객이 없어요.</div>';drawSummary();return;}
+  if(!DB.clients.length){e.innerHTML='<div class="empty">등록된 고객이 없어요.</div>';drawSummary();drawRpt();return;}
   if(isMobile()){
     e.innerHTML=DB.clients.map((c,i)=>{
       if(i===editClientIdx)return `<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px">${cliForm(c,i)}</div>`;
@@ -1316,9 +1822,9 @@ function drawC(){
       <div class="meta" style="line-height:1.9">
         ${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">클라이언트 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋클라이언트</button>`} &nbsp;
         ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`}</div></div>`;}).join("");
-    drawSummary();return;
+    drawSummary();drawRpt();return;
   }
-  e.innerHTML=`<table class="tbl fixed"><tr><th>성함</th><th>대행분야</th><th>클라이언트</th><th>문의시트</th><th>포스팅</th><th>재계약</th><th>분납일</th><th></th></tr>
+  e.innerHTML=`<table class="tbl fixed"><tr><th style="width:25%">성함</th><th style="width:11%">대행분야</th><th style="width:12%">클라이언트</th><th style="width:12%">문의시트</th><th style="width:15%">포스팅</th><th style="width:10%">재계약</th><th style="width:10%">분납일</th><th style="width:5%"></th></tr>
     ${DB.clients.map((c,i)=>{
       if(i===editClientIdx)return `<tr><td colspan="8">${cliForm(c,i)}</td></tr>`;
       return `<tr draggable="true" ondragstart="cliDragStart(event,${i})" ondragover="cliDragOver(event)" ondrop="cliDrop(event,${i})" ondragend="cliDragEnd()">
@@ -1330,7 +1836,7 @@ function drawC(){
       <td class="meta" style="cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(recDisp(c.recontract))}</td>
       <td class="meta" style="cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(c.note||"")}</td>
       <td style="text-align:right"><button class="del" onclick="delClient(${i})">×</button></td></tr>`;}).join("")}</table>`;
-  drawSummary();
+  drawSummary();drawRpt();
 }
 function weeklyPosts(cycle){
   if(!cycle)return 0;
@@ -1367,6 +1873,75 @@ function drawSummary(){
     <div class="meta">📌 ${curM}월 재계약 대상: ${due.length?due.map(c=>esc(c.name)).join(", "):"없음"}</div>
     <div class="meta" style="margin-top:4px">📌 ${nextM}월 재계약 대상: ${dueNext.length?dueNext.map(c=>esc(c.name)).join(", "):"없음"}</div>`;
 }
+/* ===== 통계보고 월별 제공 체크 =====
+   데이터: 각 고객 레코드에 report = {"2026-11":1, ...} (제공한 달만 1로 보관)
+   2026-11 이전 달은 열지 않는다. */
+const RPT_START="2026-11";
+let rptYM=null;
+function ymOf(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function rptYMDefault(){const n=ymOf(new Date());return n<RPT_START?RPT_START:n;}
+function ymShift(ym,delta){
+  const p=ym.split("-");let y=+p[0],m=+p[1]+delta;
+  while(m<1){m+=12;y--;}
+  while(m>12){m-=12;y++;}
+  return y+"-"+String(m).padStart(2,"0");
+}
+function ymLabel(ym){const p=ym.split("-");return p[0]+"년 "+(+p[1])+"월";}
+function rptDone(c,ym){return !!(c&&c.report&&c.report[ym]);}
+function drawRpt(){
+  const el=document.getElementById("crpt");if(!el)return;
+  if(!rptYM)rptYM=rptYMDefault();
+  const ym=rptYM,cs=DB.clients||[];
+  const done=cs.filter(c=>rptDone(c,ym)),undone=cs.filter(c=>!rptDone(c,ym));
+  const pct=cs.length?Math.round(done.length/cs.length*100):0;
+  el.innerHTML=`
+    <div class="rpt-head">
+      <button class="rpt-nav" onclick="rptNav(-1)" ${ym<=RPT_START?"disabled":""} title="이전 달">◀</button>
+      <span class="ym">${ymLabel(ym)}</span>
+      <button class="rpt-nav" onclick="rptNav(1)" title="다음 달">▶</button>
+      <button class="rpt-nav" onclick="rptThis()" ${ym===rptYMDefault()?"disabled":""}>이번 달</button>
+      <span class="rpt-spacer"></span>
+      <button class="rpt-nav" onclick="rptAll(1)">전체 O</button>
+      <button class="rpt-nav" onclick="rptAll(0)">전체 X</button>
+    </div>
+    <div class="stat">
+      <div class="s"><div class="lab">제공 완료</div><div class="val">${done.length}명</div></div>
+      <div class="s"><div class="lab">미제공</div><div class="val">${undone.length}명</div></div>
+      <div class="s"><div class="lab">전체</div><div class="val">${cs.length}명</div></div>
+      <div class="s"><div class="lab">진행률</div><div class="val">${pct}%</div></div>
+    </div>
+    <div class="rpt-bar"><i style="width:${pct}%"></i></div>
+    ${cs.length?`<div class="rpt-grid">${cs.map((c,i)=>{
+      const on=rptDone(c,ym);
+      return `<div class="rpt-row">
+        <button class="oxb ${on?"on":"off"}" onclick="rptToggle(${i})" title="클릭해서 ${on?"미제공":"제공"}으로 변경">${on?"O":"X"}</button>
+        <span class="nm">${esc(c.name||"")}</span>
+        <span class="fd">${esc(c.field||"")}</span>
+      </div>`;}).join("")}</div>
+    <div class="meta" style="margin-top:12px">📌 ${ymLabel(ym)} 미제공: ${undone.length?undone.map(c=>esc(c.name)).join(", "):"없음 ✅"}</div>`
+    :`<div class="empty">등록된 고객이 없어요.</div>`}`;
+}
+window.rptNav=(d)=>{const n=ymShift(rptYM,d);if(n<RPT_START)return;rptYM=n;drawRpt();};
+window.rptThis=()=>{rptYM=rptYMDefault();drawRpt();};
+window.rptToggle=(i)=>{
+  const c=DB.clients[i];if(!c)return;
+  if(!c.report||typeof c.report!=="object")c.report={};
+  if(c.report[rptYM])delete c.report[rptYM];else c.report[rptYM]=1;
+  c.updatedAt=new Date().toISOString();
+  save();drawRpt();
+};
+window.rptAll=(v)=>{
+  const cs=DB.clients||[];if(!cs.length)return;
+  if(!confirm(ymLabel(rptYM)+" 전체를 "+(v?"제공(O)":"미제공(X)")+"으로 바꿀까요?"))return;
+  const t=new Date().toISOString();
+  cs.forEach(c=>{
+    if(!c.report||typeof c.report!=="object")c.report={};
+    if(v)c.report[rptYM]=1;else delete c.report[rptYM];
+    c.updatedAt=t;
+  });
+  save();drawRpt();
+};
+
 window.setSheet=(i)=>{const u=prompt("문의시트 링크를 붙여넣으세요 (https://...)",DB.clients[i].sheet||"");if(u!==null){DB.clients[i].sheet=u.trim();save();drawC();}};
 window.setClink=(i)=>{const u=prompt("클라이언트 링크를 붙여넣으세요 (https://...)",DB.clients[i].clink||"");if(u!==null){DB.clients[i].clink=u.trim();save();drawC();}};
 window.delClient=(i)=>{DB.clients.splice(i,1);editClientIdx=null;save();drawC();};
@@ -1564,39 +2139,52 @@ function rBooks(){
 }
 window.setBookYear=(v)=>{bookYear=v;rBooks();};
 window.setBookStatus=(v)=>{bookStatus=v;rBooks();};
-window.bookNew=()=>{bookMode="write";bookSel=null;rBooks();};
+window.bookNew=()=>{bookMode="write";bookSel=null;imgStart("book",uid(),[]);rBooks();};
 window.bookOpen=(id)=>{bookMode="detail";bookSel=id;rBooks();};
-window.bookEdit=(id)=>{bookMode="write";bookSel=id;rBooks();};
+window.bookEdit=(id)=>{const b=DB.books.find(x=>x.id===id);bookMode="write";bookSel=id;imgStart("book",id,b&&b.images);rBooks();};
 window.bookBack=()=>{bookMode="list";bookSel=null;rBooks();};
-window.bookDel=(id)=>{if(!confirm("이 독서노트를 삭제할까요?"))return;DB.books=DB.books.filter(x=>x.id!==id);save();bookBack();};
+window.bookCancel=async()=>{const back=bookSel;await imgDiscardNew();if(back)bookOpen(back);else bookBack();};
+window.bookDel=async(id)=>{
+  if(!confirm("이 독서노트를 삭제할까요? (첨부한 사진도 같이 삭제됩니다)"))return;
+  const b=DB.books.find(x=>x.id===id);
+  await imgRemoveAll("book",(b&&Array.isArray(b.images))?b.images:[]);
+  DB.books=DB.books.filter(x=>x.id!==id);save();bookBack();};
 function bookWrite(){
   const b=bookSel?DB.books.find(x=>x.id===bookSel):null;
+  if(imgCtx.kind!=="book")imgStart("book",b?b.id:uid(),b&&b.images);
   main.innerHTML=`<h1 class="page-h">${b?"독서노트 수정":"책 추가"}</h1><p class="page-sub">책 정보와 노트를 적어요.</p>
   <div class="card">
     <div class="row"><input id="bYear" class="n2" type="number" placeholder="연도" value="${b?esc(String(b.year)):new Date().getFullYear()}">
       <select id="bStatus" class="n2"><option ${b&&b.status==="읽는중"?"selected":""}>읽는중</option><option ${b&&b.status==="완료"?"selected":""}>완료</option></select>
       <input id="bGenre" class="n2" placeholder="장르" value="${b?esc(b.genre):""}"></div>
     <input id="bTitle" class="mt" placeholder="책 제목" value="${b?esc(b.title):""}">
-    <textarea id="bNote" class="mt ta-fill" rows="8" placeholder="노트 내용">${b?esc(b.note):""}</textarea>
-    <div class="row mt"><button class="addb" id="bSave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="bookBack()">취소</button></div></div>`;
+    <textarea id="bNote" class="mt ta-fill" rows="8" placeholder="노트 내용  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${b?esc(b.note):""}</textarea>
+    ${imgPickHtml()}
+    <div class="row mt"><button class="addb" id="bSave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="bookCancel()">취소</button></div></div>`;
+  drawImgEdit();
   document.getElementById("bSave").onclick=()=>{
     const t=val("bTitle");if(!t)return alert("책 제목을 입력하세요.");
-    const data={year:val("bYear")||String(new Date().getFullYear()),status:document.getElementById("bStatus").value,genre:val("bGenre"),title:t,note:val("bNote")};
-    if(b){Object.assign(b,data);}else{DB.books.push({id:uid(),...data});}
-    save();bookBack();
+    const data={year:val("bYear")||String(new Date().getFullYear()),status:document.getElementById("bStatus").value,genre:val("bGenre"),title:t,note:val("bNote"),images:imgCtx.cur.slice()};
+    let id;
+    if(b){Object.assign(b,data);id=b.id;}else{id=imgCtx.draftId||uid();DB.books.push({id:id,...data});}
+    bookYear=String(data.year);
+    save();imgClear();bookOpen(id);
   };
 }
 function bookDetail(){
   const b=DB.books.find(x=>x.id===bookSel);if(!b){bookBack();return;}
+  const imgs=Array.isArray(b.images)?b.images:[];
   main.innerHTML=`<h1 class="page-h">독서노트</h1>
   <div class="card">
     <div class="detail-head">
       <button class="ghostb" onclick="bookBack()">‹ 목록</button>
       <button class="ghostb" onclick="bookEdit('${b.id}')">수정</button>
       <button class="ghostb danger" onclick="bookDel('${b.id}')">삭제</button></div>
-    <div class="meta">${esc(String(b.year))}년 · <span class="pill">${esc(b.status)}</span> ${b.genre?esc(b.genre):""}</div>
+    <div class="meta">${esc(String(b.year))}년 · <span class="pill">${esc(b.status)}</span> ${b.genre?esc(b.genre):""}${imgs.length?` · 사진 ${imgs.length}장`:""}</div>
     <h2 style="font-size:21px;margin:6px 0 12px">${esc(b.title)}</h2>
-    <div class="detail-body">${esc(b.note||"")}</div></div>`;
+    <div class="detail-body">${mdBody(b.note||"")}</div>
+    ${imgViewHtml(imgs)}</div>`;
+  drawImgView("book",imgs);
 }
 
 /* ===== 비용관리 (고정 비용) ===== */
@@ -1659,34 +2247,48 @@ function rNotes(){
       <span class="meta" style="align-self:center">›</span></div>`).join(""):'<div class="empty">이 해에 쓴 노트가 없어요.</div>'}</div>`;
 }
 window.setNoteYear=(v)=>{noteYear=v;rNotes();};
-window.noteNew=()=>{noteMode="write";noteSel=null;rNotes();};
-window.noteEdit=(id)=>{noteMode="write";noteSel=id;rNotes();};
+window.noteNew=()=>{noteMode="write";noteSel=null;imgStart("note",uid(),[]);rNotes();};
+window.noteEdit=(id)=>{const d=DB.notes.find(x=>x.id===id);noteMode="write";noteSel=id;imgStart("note",id,d&&d.images);rNotes();};
 window.noteOpen=(id)=>{noteMode="detail";noteSel=id;rNotes();};
 window.noteBack=()=>{noteMode="list";noteSel=null;rNotes();};
-window.noteDel=(id)=>{if(!confirm("이 노트를 삭제할까요?"))return;DB.notes=DB.notes.filter(x=>x.id!==id);save();noteBack();};
+window.noteCancel=async()=>{const back=noteSel;await imgDiscardNew();if(back)noteOpen(back);else noteBack();};
+window.noteDel=async(id)=>{
+  if(!confirm("이 노트를 삭제할까요? (첨부한 사진도 같이 삭제됩니다)"))return;
+  const d=DB.notes.find(x=>x.id===id);
+  await imgRemoveAll("note",(d&&Array.isArray(d.images))?d.images:[]);
+  DB.notes=DB.notes.filter(x=>x.id!==id);save();noteBack();};
 function noteWrite(){
   const ed=noteSel?DB.notes.find(x=>x.id===noteSel):null;
+  if(imgCtx.kind!=="note")imgStart("note",ed?ed.id:uid(),ed&&ed.images);
   main.innerHTML=`<h1 class="page-h">노트 ${ed?"수정":""}</h1><p class="page-sub">자유롭게 기록해요.</p>
   <div class="card">
     <div class="row"><input type="date" id="nt_d" class="n1" value="${ed?ed.date:T()}"><input id="nt_t" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
-    <textarea id="nt_c" class="mt ta-fill" rows="9" placeholder="내용을 적어보세요">${ed?esc(ed.content):""}</textarea>
-    <div class="row mt"><button class="addb" id="nt_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="noteBack()">취소</button></div></div>`;
-  document.getElementById("nt_save").onclick=()=>{const c=val("nt_c");if(!c)return alert("내용을 입력하세요.");
-    if(ed){ed.date=val("nt_d")||ed.date;ed.title=val("nt_t")||"무제";ed.content=c;}
-    else DB.notes.push({id:uid(),date:val("nt_d")||T(),title:val("nt_t")||"무제",content:c});
-    save();noteBack();};
+    <textarea id="nt_c" class="mt ta-fill" rows="9" placeholder="내용을 적어보세요  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+    ${imgPickHtml()}
+    <div class="row mt"><button class="addb" id="nt_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="noteCancel()">취소</button></div></div>`;
+  drawImgEdit();
+  document.getElementById("nt_save").onclick=()=>{const c=val("nt_c");
+    if(!c&&!imgCtx.cur.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
+    const imgs=imgCtx.cur.slice();
+    let id;
+    if(ed){ed.date=val("nt_d")||ed.date;ed.title=val("nt_t")||"무제";ed.content=c;ed.images=imgs;id=ed.id;}
+    else{id=imgCtx.draftId||uid();DB.notes.push({id:id,date:val("nt_d")||T(),title:val("nt_t")||"무제",content:c,images:imgs});}
+    save();imgClear();noteOpen(id);};
 }
 function noteDetail(){
   const d=DB.notes.find(x=>x.id===noteSel);if(!d){noteBack();return;}
+  const imgs=Array.isArray(d.images)?d.images:[];
   main.innerHTML=`<h1 class="page-h">노트</h1>
   <div class="card">
     <div class="detail-head">
       <button class="ghostb" onclick="noteBack()">‹ 목록</button>
       <button class="ghostb" onclick="noteEdit('${d.id}')">수정</button>
       <button class="ghostb danger" onclick="noteDel('${d.id}')">삭제</button></div>
-    <div class="meta">${fmt(d.date)}</div>
+    <div class="meta">${fmt(d.date)}${imgs.length?` · 사진 ${imgs.length}장`:""}</div>
     <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
-    <div class="detail-body">${esc(d.content)}</div></div>`;
+    <div class="detail-body">${mdBody(d.content)}</div>
+    ${imgViewHtml(imgs)}</div>`;
+  drawImgView("note",imgs);
 }
 
 /* ═══════════════════════════════════════════════════════════════
