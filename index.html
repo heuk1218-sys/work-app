@@ -46,6 +46,19 @@
   .md-h2{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:18px 0 7px;line-height:1.45}
   .md-h3{font-size:17px;font-weight:600;margin:15px 0 6px;line-height:1.5;color:var(--accent-2)}
   .detail-body>:first-child{margin-top:0}
+
+  /* ===== 제자리 # 적용 에디터 =====
+     textarea 대신 contenteditable 을 쓰되, 글자는 절대 건드리지 않고
+     줄(div)에 클래스만 붙였다 뗀다. 그래서 한글 조합 중에도 입력이 깨지지 않는다.
+     '# ' 기호는 지우지 않고 그대로 보여준다 — 저장되는 본문은 지금과 똑같은 평문이다. */
+  .mdedit{font-size:16px;line-height:1.8;white-space:pre-wrap;word-break:break-word;
+          border:1px solid var(--line);border-radius:4px;background:var(--input);color:var(--ink);
+          padding:9px 11px;outline:none;overflow-wrap:break-word}
+  .mdedit:focus{border-color:var(--accent)}
+  .mdedit>div{min-height:1.8em}
+  .mdedit .md-h1,.mdedit .md-h2,.mdedit .md-h3{margin:0}
+  .mdedit.is-empty:before{content:attr(data-ph);color:#6a6a6a;pointer-events:none}
+  .md-hint{font-size:12px;color:#7a7a7a;margin-top:6px}
   @media(max-width:760px){
     .ta-fill{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
     .detail-body{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
@@ -523,6 +536,63 @@ function mdBody(t){
   flush();
   return out;
 }
+/* ═══════════════════════════════════════════════════════════════
+   제자리 # 적용 에디터 (mdedit)
+   · contenteditable 한 줄 = div 하나. 줄마다 '# ' 로 시작하는지 보고
+     md-h1/h2/h3 클래스만 붙였다 뗀다. 텍스트는 손대지 않는다.
+   · 그래서 한글 조합(IME) 중에 글자가 사라지거나 겹치지 않는다.
+   · 저장할 때는 줄 텍스트를 \n 으로 이어 평문으로 꺼낸다 →
+     DB 에 들어가는 내용은 예전 textarea 시절과 완전히 동일하다.
+   ═══════════════════════════════════════════════════════════════ */
+function mdEditHtml(id,text,ph){
+  const lines=String(text==null?"":text).split("\n");
+  const body=lines.map(ln=>{
+    const m=/^(#{1,3})[ \t]+/.exec(ln);
+    const cls=m?` class="md-h${m[1].length}"`:"";
+    return `<div${cls}>${ln?esc(ln):"<br>"}</div>`;
+  }).join("");
+  return `<div id="${id}" class="mt ta-fill mdedit" contenteditable="true" spellcheck="false"
+            data-ph="${esc(ph||"")}" oninput="mdEditTouch(this)" onpaste="mdEditPaste(event,this)"
+            oncompositionend="mdEditStyle(this)" onblur="mdEditStyle(this)">${body}</div>
+          <div class="md-hint">줄 맨 앞에 # · ## · ### 를 쓰면 그 자리에서 바로 제목이 돼요</div>`;
+}
+/* 줄 단위로 클래스만 갱신 — 텍스트/커서는 건드리지 않는다 */
+function mdEditStyle(el){
+  if(!el)return;
+  const kids=el.children;
+  for(let i=0;i<kids.length;i++){
+    const d=kids[i];
+    if(d.nodeType!==1)continue;
+    const m=/^(#{1,3})[ \t]+/.exec(d.textContent||"");
+    const want=m?("md-h"+m[1].length):"";
+    if(d.className!==want)d.className=want;
+  }
+  el.classList.toggle("is-empty",mdEditGet(el)==="");
+}
+window.mdEditStyle=mdEditStyle;
+window.mdEditTouch=(el)=>{
+  /* 한글 조합 중에는 DOM 구조를 건드리지 않는다. 조합이 끝나면 compositionend 가 처리한다. */
+  mdEditStyle(el);
+};
+/* 붙여넣기는 평문으로만 — 서식/HTML 이 섞여 들어오는 것을 막는다 */
+window.mdEditPaste=(e,el)=>{
+  e.preventDefault();
+  const t=(e.clipboardData||window.clipboardData).getData("text/plain")||"";
+  document.execCommand("insertText",false,t);
+  setTimeout(()=>mdEditStyle(el),0);
+};
+/* 저장용 — 줄 텍스트를 평문으로 꺼낸다 */
+function mdEditGet(el){
+  if(typeof el==="string")el=document.getElementById(el);
+  if(!el)return "";
+  const out=[];
+  el.childNodes.forEach(n=>{
+    if(n.nodeType===3){out.push(n.nodeValue);}                       /* 떠 있는 텍스트 노드 */
+    else if(n.nodeType===1){out.push(n.tagName==="BR"?"":n.innerText.replace(/\n$/,""));}
+  });
+  return out.join("\n").replace(/ /g," ").replace(/\s+$/,"");
+}
+window.mdEditGet=mdEditGet;
 function sizeGrow(root){(root||document).querySelectorAll("textarea.ta-fill,textarea.ta-grow").forEach(autoGrow);}
 document.addEventListener("input",e=>{if(e.target&&e.target.matches&&e.target.matches("textarea.ta-fill,textarea.ta-grow"))autoGrow(e.target);});
 
@@ -1321,12 +1391,12 @@ function diaryWrite(){
   main.innerHTML=`<h1 class="page-h">일기 ${ed?"수정":"쓰기"}</h1><p class="page-sub">오늘 하루를 기록해요.</p>
   <div class="card">
     <div class="row"><input type="date" id="dd" class="n1" value="${ed?ed.date:T()}"><input id="dt" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
-    <textarea id="dc" class="mt ta-fill" rows="9" placeholder="오늘 하루는 어땠나요?  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+    ${mdEditHtml("dc",ed?ed.content:"","오늘 하루는 어땠나요?")}
     ${imgPickHtml()}
     <div class="row mt"><button class="addb" id="dsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="diaryCancel()">취소</button></div></div>`;
   drawImgEdit();
   document.getElementById("dsave").onclick=()=>{
-    const c=val("dc");
+    const c=mdEditGet("dc");
     if(!c&&!imgCtx.cur.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
     const imgs=imgCtx.cur.slice();
     let id;
@@ -1403,7 +1473,7 @@ function imgStart(kind,id,existing){
   /* 저장도 취소도 않고 다른 글로 넘어간 경우 — 그때 올린 사진은 쓰이지 않으므로
      Storage 에 고아로 남지 않게 치운다. (기다리지 않고 뒤에서 처리) */
   if(imgCtx.kind&&(imgCtx.kind!==kind||imgCtx.draftId!==id)){
-    const added=imgCtx.cur.filter(p=>imgCtx.orig.indexOf(p)<0);
+    const added=imgDeletable(imgCtx.cur.filter(p=>imgCtx.orig.indexOf(p)<0));
     if(added.length){
       const K0=IMG_KIND[imgCtx.kind];
       try{sb.storage.from(K0.bucket).remove(added).then(null,e=>console.warn("[사진] 고아 정리 실패",e));}catch(e){}
@@ -1519,9 +1589,29 @@ window.imgDel=async(i)=>{
   if(rec){rec.images=imgCtx.cur.slice();save();}
   drawImgEdit();
 };
+/* 안전장치 — 저장된 글이 아직 가리키고 있는 파일인지 확인한다.
+   '고아 정리'가 실제로는 멀쩡히 쓰이는 사진을 지워버리는 사고를 막는다.
+   (2026-10 팀장회의 피드백 사진 3장이 이렇게 사라졌다) */
+function imgIsReferenced(path){
+  for(const k in IMG_KIND){
+    const arr=DB[IMG_KIND[k].arr];
+    if(!Array.isArray(arr))continue;
+    for(const rec of arr){
+      if(rec&&Array.isArray(rec.images)&&rec.images.indexOf(path)>=0)return true;
+    }
+  }
+  return false;
+}
+/* 지워도 되는 것만 추린다 — 어떤 글도 참조하지 않는 파일만 */
+function imgDeletable(paths){
+  const safe=paths.filter(p=>!imgIsReferenced(p));
+  const kept=paths.length-safe.length;
+  if(kept)console.warn("[사진] 글이 참조 중이라 삭제하지 않음:",kept+"장");
+  return safe;
+}
 /* 편집 중 올린 사진 중 저장되지 않은 것들을 Storage 에서 치운다 (취소 시) */
 async function imgDiscardNew(){
-  const added=imgCtx.cur.filter(p=>imgCtx.orig.indexOf(p)<0);
+  const added=imgDeletable(imgCtx.cur.filter(p=>imgCtx.orig.indexOf(p)<0));
   if(added.length){
     const K=IMG_KIND[imgCtx.kind]||IMG_KIND.diary;
     try{await sb.storage.from(K.bucket).remove(added);}catch(e){console.warn("[사진] 취소 정리 실패",e);}
@@ -1669,11 +1759,11 @@ function renderQT(){
     if(imgCtx.kind!=="qt")imgStart("qt",ed?ed.id:uid(),ed&&ed.images);
     fb.innerHTML=`<div class="card"><h2>말씀 기록 ${ed?"수정":"쓰기"}</h2>
       <div class="row"><input type="date" id="qd" class="n1" value="${ed?ed.date:T()}"><input id="qv" placeholder="말씀 (예: 시편 23편)" value="${ed?esc(ed.title):""}"></div>
-      <textarea id="qn" class="mt ta-fill" rows="7" placeholder="묵상 내용  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+      ${mdEditHtml("qn",ed?ed.content:"","묵상 내용")}
       ${imgPickHtml()}
       <div class="row mt"><button class="addb" id="qsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="qtCancel()">취소</button></div></div>`;
     drawImgEdit();
-    document.getElementById("qsave").onclick=()=>{const v=val("qv"),n=val("qn");
+    document.getElementById("qsave").onclick=()=>{const v=val("qv"),n=mdEditGet("qn");
       if(!v&&!n&&!imgCtx.cur.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
       const imgs=imgCtx.cur.slice();
       let id;
@@ -1734,15 +1824,15 @@ function renderSermon(){
     fb.innerHTML=`<div class="card"><h2>설교말씀 ${ed?"수정":"쓰기"}</h2>
       <div class="row"><input type="date" id="sd" class="n1" value="${ed?ed.date:T()}"><input id="stt" placeholder="설교 제목" value="${ed?esc(ed.title):""}"></div>
       <div class="row mt"><input id="sref" placeholder="본문 (예: 출 25:31-40)" value="${ed?esc(ed.ref||""):""}"><input id="ssp" placeholder="인도자 (예: 이원규 목사님)" value="${ed?esc(ed.speaker||""):""}"></div>
-      <textarea id="scont" class="mt ta-fill" rows="7" placeholder="설교 내용·은혜 받은 점 (선택)  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content||""):""}</textarea>
+      ${mdEditHtml("scont",ed?(ed.content||""):"","설교 내용·은혜 받은 점 (선택)")}
       ${imgPickHtml()}
       <div class="row mt"><button class="addb" id="ssave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="sermonCancel()">취소</button></div></div>`;
     drawImgEdit();
     document.getElementById("ssave").onclick=()=>{const t=val("stt");if(!t)return alert("설교 제목을 입력하세요.");
       const imgs=imgCtx.cur.slice();
       let id;
-      if(ed){ed.date=val("sd")||ed.date;ed.title=t;ed.ref=val("sref");ed.speaker=val("ssp");ed.content=val("scont");ed.images=imgs;id=ed.id;}
-      else{id=imgCtx.draftId||uid();DB.sermons.push({id:id,date:val("sd")||T(),title:t,ref:val("sref"),speaker:val("ssp"),content:val("scont"),images:imgs});}
+      if(ed){ed.date=val("sd")||ed.date;ed.title=t;ed.ref=val("sref");ed.speaker=val("ssp");ed.content=mdEditGet("scont");ed.images=imgs;id=ed.id;}
+      else{id=imgCtx.draftId||uid();DB.sermons.push({id:id,date:val("sd")||T(),title:t,ref:val("sref"),speaker:val("ssp"),content:mdEditGet("scont"),images:imgs});}
       sermonYear=(val("sd")||T()).slice(0,4);save();imgClear();sermonOpen(id);};
     return;
   }
@@ -2163,13 +2253,13 @@ function bookWrite(){
       <select id="bStatus" class="n2"><option ${b&&b.status==="읽는중"?"selected":""}>읽는중</option><option ${b&&b.status==="완료"?"selected":""}>완료</option></select>
       <input id="bGenre" class="n2" placeholder="장르" value="${b?esc(b.genre):""}"></div>
     <input id="bTitle" class="mt" placeholder="책 제목" value="${b?esc(b.title):""}">
-    <textarea id="bNote" class="mt ta-fill" rows="8" placeholder="노트 내용  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${b?esc(b.note):""}</textarea>
+    ${mdEditHtml("bNote",b?b.note:"","노트 내용")}
     ${imgPickHtml()}
     <div class="row mt"><button class="addb" id="bSave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="bookCancel()">취소</button></div></div>`;
   drawImgEdit();
   document.getElementById("bSave").onclick=()=>{
     const t=val("bTitle");if(!t)return alert("책 제목을 입력하세요.");
-    const data={year:val("bYear")||String(new Date().getFullYear()),status:document.getElementById("bStatus").value,genre:val("bGenre"),title:t,note:val("bNote"),images:imgCtx.cur.slice()};
+    const data={year:val("bYear")||String(new Date().getFullYear()),status:document.getElementById("bStatus").value,genre:val("bGenre"),title:t,note:mdEditGet("bNote"),images:imgCtx.cur.slice()};
     let id;
     if(b){Object.assign(b,data);id=b.id;}else{id=imgCtx.draftId||uid();DB.books.push({id:id,...data});}
     bookYear=String(data.year);
@@ -2268,11 +2358,11 @@ function noteWrite(){
   main.innerHTML=`<h1 class="page-h">노트 ${ed?"수정":""}</h1><p class="page-sub">자유롭게 기록해요.</p>
   <div class="card">
     <div class="row"><input type="date" id="nt_d" class="n1" value="${ed?ed.date:T()}"><input id="nt_t" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
-    <textarea id="nt_c" class="mt ta-fill" rows="9" placeholder="내용을 적어보세요  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+    ${mdEditHtml("nt_c",ed?ed.content:"","내용을 적어보세요")}
     ${imgPickHtml()}
     <div class="row mt"><button class="addb" id="nt_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="noteCancel()">취소</button></div></div>`;
   drawImgEdit();
-  document.getElementById("nt_save").onclick=()=>{const c=val("nt_c");
+  document.getElementById("nt_save").onclick=()=>{const c=mdEditGet("nt_c");
     if(!c&&!imgCtx.cur.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
     const imgs=imgCtx.cur.slice();
     let id;
@@ -2336,11 +2426,11 @@ function fbWrite(){
   main.innerHTML=`<h1 class="page-h">피드백 ${ed?"수정":"쓰기"}</h1><p class="page-sub">회의에서 나온 피드백을 모아둬요.</p>
   <div class="card">
     <div class="row"><input type="date" id="fb_d" class="n1" value="${ed?ed.date:T()}"><input id="fb_s" class="n2" style="flex:0 0 170px" placeholder="출처 (예: 팀장회의)" value="${ed?esc(ed.src||""):""}"><input id="fb_t" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
-    <textarea id="fb_c" class="mt ta-fill" rows="9" placeholder="나온 피드백을 적어보세요  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+    ${mdEditHtml("fb_c",ed?ed.content:"","나온 피드백을 적어보세요")}
     ${imgPickHtml()}
     <div class="row mt"><button class="addb" id="fb_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="fbCancel()">취소</button></div></div>`;
   drawImgEdit();
-  document.getElementById("fb_save").onclick=()=>{const c=val("fb_c");
+  document.getElementById("fb_save").onclick=()=>{const c=mdEditGet("fb_c");
     if(!c&&!imgCtx.cur.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
     const imgs=imgCtx.cur.slice();
     let id;
