@@ -35,9 +35,17 @@
   input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--input);color:var(--ink);width:100%}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
   /* 게시판(노트·일기·QT·설교·독서) 본문이 화면을 꽉 채우고, 내용에 맞춰 늘어나며 페이지 전체가 스크롤되도록 */
-  .ta-fill{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px);resize:none;overflow:hidden}
+  /* 글 쓸 때(textarea)와 다 쓴 뒤(.detail-body)의 글씨 크기·줄간격을 똑같이 맞춘다 */
+  .ta-fill{min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px);resize:none;overflow:hidden;
+           font-size:16px;line-height:1.8}
   .ta-grow{resize:none;overflow:hidden;min-height:62px}
-  .detail-body{white-space:pre-wrap;line-height:1.8;min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px)}
+  .detail-body{white-space:normal;line-height:1.8;min-height:calc(100vh - 330px);min-height:calc(100dvh - 330px)}
+  /* # / ## / ### 로 만든 제목 */
+  .md-p{white-space:pre-wrap}
+  .md-h1{font-size:25px;font-weight:700;letter-spacing:-.02em;margin:22px 0 8px;line-height:1.4}
+  .md-h2{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:18px 0 7px;line-height:1.45}
+  .md-h3{font-size:17px;font-weight:600;margin:15px 0 6px;line-height:1.5;color:var(--accent-2)}
+  .detail-body>:first-child{margin-top:0}
   @media(max-width:760px){
     .ta-fill{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
     .detail-body{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
@@ -246,10 +254,23 @@
   .ie-row{display:flex;align-items:center;gap:9px;min-width:0}
   .ie-time{flex:0 0 72px;color:var(--muted);font-weight:600}
   .ie-title{flex:1;min-width:0;font-weight:500}
-  .ie-pri{flex:0 0 96px}
+  /* 시간칸과 같은 폭이어야 아래 '비고'가 위 '업무내용'과 왼쪽 끝이 맞는다 */
+  .ie-pri{flex:0 0 72px}
   .ie-note{flex:1;min-width:0}
   .ie-hint{flex:1;min-width:0;font-size:12px;color:#7a7a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .item.editing{background:#242426;border-radius:9px}
+
+  /* ===== 일기 첨부 사진 ===== */
+  .dimg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+  .dimg{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#161618;aspect-ratio:1/1}
+  .dimg img{width:100%;height:100%;object-fit:cover;display:block}
+  .dimg-x{position:absolute;top:5px;right:5px;width:25px;height:25px;border-radius:50%;
+          background:rgba(0,0,0,.66);color:#fff;font-size:15px;line-height:1;border:none;padding:0}
+  .dimg-x:hover{background:var(--bad)}
+  .dimg-v{display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#161618}
+  .dimg-v img{width:100%;height:auto;display:block}
+  .dimg-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .dimg-stat{font-size:12.5px;color:var(--accent-2)}
   /* 모바일 사파리 자동확대 방지 — 작은 글씨 줄만 16px로 올린다 */
   @media(max-width:760px){.ie-pri,.ie-note{font-size:16px}}
   .detail-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
@@ -477,6 +498,21 @@ function render(){
 }
 /* 텍스트영역 자동 늘어남: 내용에 맞춰 커지고 페이지가 통째로 스크롤됨 */
 function autoGrow(ta){if(!ta)return;ta.style.height="auto";ta.style.height=(ta.scrollHeight+2)+"px";}
+/* 본문 렌더러 — 줄 맨 앞의 #, ##, ### 만 제목으로 바꾼다.
+   그 외 문자는 전부 esc() 로 이스케이프하므로 HTML 주입 위험이 없다.
+   제목이 아닌 줄들은 묶어서 .md-p(줄바꿈 보존) 안에 넣는다. */
+function mdBody(t){
+  const lines=String(t==null?"":t).split("\n");
+  let out="",buf=[];
+  const flush=()=>{ if(buf.length){ out+=`<div class="md-p">${esc(buf.join("\n"))}</div>`; buf=[]; } };
+  for(const ln of lines){
+    const m=/^(#{1,3})[ \t]+(.*)$/.exec(ln);
+    if(m){ flush(); out+=`<div class="md-h${m[1].length}">${esc(m[2])}</div>`; }
+    else buf.push(ln);
+  }
+  flush();
+  return out;
+}
 function sizeGrow(root){(root||document).querySelectorAll("textarea.ta-fill,textarea.ta-grow").forEach(autoGrow);}
 document.addEventListener("input",e=>{if(e.target&&e.target.matches&&e.target.matches("textarea.ta-fill,textarea.ta-grow"))autoGrow(e.target);});
 
@@ -1252,37 +1288,193 @@ function rDiary(){
 }
 window.setDiaryYear=(v)=>{diaryYear=v;rDiary();};
 window.setDiaryMonth=(v)=>{diaryMonth=v;rDiary();};
-window.diaryNew=()=>{diaryMode="write";diarySel=null;rDiary();};
+window.diaryNew=()=>{diaryMode="write";diarySel=null;diaryDraftId=uid();diaryOrigImgs=[];diaryEditImgs=[];rDiary();};
 window.diaryOpen=(id)=>{diaryMode="detail";diarySel=id;rDiary();};
-window.diaryEdit=(id)=>{diaryMode="write";diarySel=id;rDiary();};
+window.diaryEdit=(id)=>{
+  const d=DB.diary.find(x=>x.id===id);
+  diaryMode="write";diarySel=id;diaryDraftId=id;
+  diaryOrigImgs=(d&&Array.isArray(d.images))?d.images.slice():[];
+  diaryEditImgs=diaryOrigImgs.slice();
+  rDiary();
+};
 window.diaryBack=()=>{diaryMode="list";diarySel=null;rDiary();};
+/* 취소 — 수정 중이던 글로 돌아간다(목록으로 나가지 않는다).
+   이번 편집에서 새로 올린 사진은 쓰이지 않으므로 Storage 에서 지운다. */
+window.diaryCancel=async()=>{
+  const added=diaryEditImgs.filter(p=>diaryOrigImgs.indexOf(p)<0);
+  if(added.length){
+    try{await sb.storage.from(DIARY_BUCKET).remove(added);}catch(e){console.warn("[일기사진] 취소 정리 실패",e);}
+    added.forEach(p=>{delete diaryImgUrl[p];});
+  }
+  diaryEditImgs=[];diaryOrigImgs=[];
+  if(diarySel)diaryOpen(diarySel); else {diaryDraftId=null;diaryBack();}
+};
 function diaryWrite(){
   const ed=diarySel?DB.diary.find(x=>x.id===diarySel):null;
+  if(!diaryDraftId)diaryDraftId=ed?ed.id:uid();
   main.innerHTML=`<h1 class="page-h">일기 ${ed?"수정":"쓰기"}</h1><p class="page-sub">오늘 하루를 기록해요.</p>
   <div class="card">
     <div class="row"><input type="date" id="dd" class="n1" value="${ed?ed.date:T()}"><input id="dt" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
-    <textarea id="dc" class="mt ta-fill" rows="9" placeholder="오늘 하루는 어땠나요?">${ed?esc(ed.content):""}</textarea>
-    <div class="row mt"><button class="addb" id="dsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="diaryBack()">취소</button></div></div>`;
+    <textarea id="dc" class="mt ta-fill" rows="9" placeholder="오늘 하루는 어땠나요?  (줄 맨 앞에 # 또는 ## 를 쓰면 제목이 돼요)">${ed?esc(ed.content):""}</textarea>
+    <div class="dimg-pick">
+      <button class="ghostb" onclick="document.getElementById('dfile').click()">＋ 사진 첨부</button>
+      <input type="file" id="dfile" accept="image/*" multiple style="display:none" onchange="diaryPickImgs(this)">
+      <span class="meta">올리기 전에 자동으로 줄여서 저장해요 (가로 최대 1280px)</span>
+      <span class="dimg-stat" id="dimgstat"></span></div>
+    <div id="dimgs" class="dimg-grid"></div>
+    <div class="row mt"><button class="addb" id="dsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="diaryCancel()">취소</button></div></div>`;
+  drawDiaryImgs();
   document.getElementById("dsave").onclick=()=>{
-    const c=val("dc");if(!c)return alert("내용을 입력하세요.");
-    if(ed){ed.date=val("dd")||ed.date;ed.title=val("dt")||"무제";ed.content=c;}
-    else DB.diary.push({id:uid(),date:val("dd")||T(),title:val("dt")||"무제",content:c});
-    save();diaryBack();
+    const c=val("dc");
+    if(!c&&!diaryEditImgs.length)return alert("내용을 입력하거나 사진을 첨부하세요.");
+    let id;
+    if(ed){ed.date=val("dd")||ed.date;ed.title=val("dt")||"무제";ed.content=c;ed.images=diaryEditImgs.slice();id=ed.id;}
+    else{id=diaryDraftId||uid();DB.diary.push({id:id,date:val("dd")||T(),title:val("dt")||"무제",content:c,images:diaryEditImgs.slice()});}
+    save();
+    diaryDraftId=null;diaryEditImgs=[];diaryOrigImgs=[];
+    diaryOpen(id);          /* 목록이 아니라 방금 쓴 글로 */
   };
 }
 function diaryDetail(){
   const d=DB.diary.find(x=>x.id===diarySel);if(!d){diaryBack();return;}
+  const imgs=Array.isArray(d.images)?d.images:[];
   main.innerHTML=`<h1 class="page-h">일기</h1>
   <div class="card">
     <div class="detail-head">
       <button class="ghostb" onclick="diaryBack()">‹ 목록</button>
       <button class="ghostb" onclick="diaryEdit('${d.id}')">수정</button>
       <button class="ghostb danger" onclick="diaryDel('${d.id}')">삭제</button></div>
-    <div class="meta">${fmt(d.date)}</div>
+    <div class="meta">${fmt(d.date)}${imgs.length?` · 사진 ${imgs.length}장`:""}</div>
     <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
-    <div class="detail-body">${esc(d.content)}</div></div>`;
+    <div class="detail-body">${mdBody(d.content)}</div>
+    ${imgs.length?`<div id="dview" class="dimg-grid"></div>`:""}</div>`;
+  if(imgs.length)drawDiaryView(imgs);
 }
-window.diaryDel=(id)=>{if(!confirm("이 일기를 삭제할까요?"))return;DB.diary=DB.diary.filter(x=>x.id!==id);save();diaryBack();};
+window.diaryDel=async(id)=>{
+  if(!confirm("이 일기를 삭제할까요? (첨부한 사진도 같이 삭제됩니다)"))return;
+  const d=DB.diary.find(x=>x.id===id);
+  const imgs=(d&&Array.isArray(d.images))?d.images:[];
+  if(imgs.length){
+    try{await sb.storage.from(DIARY_BUCKET).remove(imgs);}catch(e){console.warn("[일기사진] 삭제 실패",e);}
+    imgs.forEach(p=>{delete diaryImgUrl[p];});
+  }
+  DB.diary=DB.diary.filter(x=>x.id!==id);save();diaryBack();
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   일기 첨부 사진 — Supabase Storage (비공개 버킷)
+   · 이미지 바이너리는 app_data(DB) 에 절대 넣지 않는다. 경로 문자열만 넣는다.
+   · 경로 형식: <유저ID>/<일기ID>/<파일명>.jpg
+   · 올리기 전에 canvas 로 리사이즈·압축 (가로 1280px / JPEG 0.7 / 약 200KB)
+   · 비공개 버킷이므로 볼 때는 signed URL 을 발급해서 쓴다
+   · 일기나 사진을 지우면 Storage 파일도 함께 지운다
+   기존 save()/app_data/mergeArray 로직은 건드리지 않는다.
+   ═══════════════════════════════════════════════════════════════ */
+const DIARY_BUCKET="diary-images";
+const DIARY_MAXW=1280, DIARY_Q=0.7, DIARY_TARGET=200*1024;
+let diaryDraftId=null, diaryEditImgs=[], diaryOrigImgs=[];
+const diaryImgUrl={};     /* 경로 -> 표시용 URL (방금 올린 건 로컬 blob, 나머지는 signed) */
+
+function compressImage(file,maxW,quality){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      if(!w||!h){reject(new Error("이미지 크기를 읽지 못했어요"));return;}
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      const cv=document.createElement("canvas");cv.width=w;cv.height=h;
+      const cx=cv.getContext("2d");
+      cx.fillStyle="#ffffff";cx.fillRect(0,0,w,h);   /* 투명 PNG 가 검게 나오는 것 방지 */
+      cx.drawImage(img,0,0,w,h);
+      cv.toBlob(b=>{b?resolve(b):reject(new Error("압축에 실패했어요"));},"image/jpeg",quality);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("이미지를 열지 못했어요"));};
+    img.src=url;
+  });
+}
+/* 목표 용량에 닿을 때까지 품질(그래도 크면 가로폭)을 단계적으로 낮춘다 */
+async function compressToTarget(file){
+  let q=DIARY_Q, w=DIARY_MAXW;
+  let blob=await compressImage(file,w,q);
+  for(let i=0;i<3&&blob.size>DIARY_TARGET*1.2;i++){
+    q=Math.max(0.4,q-0.12);
+    if(blob.size>DIARY_TARGET*2.2)w=Math.max(900,Math.round(w*0.85));
+    blob=await compressImage(file,w,q);
+  }
+  return blob;
+}
+async function signDiaryImg(path){
+  if(diaryImgUrl[path])return diaryImgUrl[path];
+  try{
+    const r=await sb.storage.from(DIARY_BUCKET).createSignedUrl(path,60*60);
+    if(r&&!r.error&&r.data&&r.data.signedUrl){diaryImgUrl[path]=r.data.signedUrl;return r.data.signedUrl;}
+    console.warn("[일기사진] signed URL 실패",path,r&&r.error);
+  }catch(e){console.warn("[일기사진] signed URL 예외",e);}
+  return null;
+}
+window.diaryPickImgs=async(input)=>{
+  const files=Array.prototype.slice.call(input.files||[]);
+  input.value="";
+  if(!files.length)return;
+  if(!(typeof sb!=="undefined"&&sb&&currentUser)){alert("로그인 후에 사진을 올릴 수 있어요.");return;}
+  if(!diaryDraftId)diaryDraftId=diarySel||uid();
+  const st=document.getElementById("dimgstat");
+  let ok=0;
+  for(let n=0;n<files.length;n++){
+    const f=files[n];
+    if(!/^image\//.test(f.type||"")){console.warn("[일기사진] 이미지가 아님",f.name);continue;}
+    if(st)st.textContent=`올리는 중... ${n+1}/${files.length}`;
+    try{
+      const blob=await compressToTarget(f);
+      const name=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+".jpg";
+      const path=currentUser.id+"/"+diaryDraftId+"/"+name;
+      const up=await sb.storage.from(DIARY_BUCKET).upload(path,blob,{contentType:"image/jpeg",upsert:false});
+      if(up.error)throw up.error;
+      diaryEditImgs.push(path);
+      diaryImgUrl[path]=URL.createObjectURL(blob);   /* 미리보기는 round-trip 없이 바로 */
+      ok++;
+    }catch(e){
+      console.warn("[일기사진] 업로드 실패",e);
+      alert("사진 업로드에 실패했어요: "+((e&&e.message)||e));
+    }
+  }
+  if(st)st.textContent=ok?`${ok}장 올렸어요`:"";
+  drawDiaryImgs();
+  if(ok&&st)setTimeout(()=>{if(st)st.textContent="";},2500);
+};
+window.diaryImgDel=async(i)=>{
+  const p=diaryEditImgs[i];if(!p)return;
+  if(!confirm("이 사진을 삭제할까요?"))return;
+  try{await sb.storage.from(DIARY_BUCKET).remove([p]);}catch(e){console.warn("[일기사진] 삭제 실패",e);}
+  diaryEditImgs.splice(i,1);
+  const oi=diaryOrigImgs.indexOf(p);if(oi>=0)diaryOrigImgs.splice(oi,1);
+  delete diaryImgUrl[p];
+  /* 이미 저장된 글이면 지운 사실을 바로 반영해 끊어진 참조가 남지 않게 한다 */
+  if(diarySel){const d=DB.diary.find(x=>x.id===diarySel);if(d){d.images=diaryEditImgs.slice();save();}}
+  drawDiaryImgs();
+};
+async function drawDiaryImgs(){
+  const el=document.getElementById("dimgs");if(!el)return;
+  if(!diaryEditImgs.length){el.innerHTML="";return;}
+  el.innerHTML=diaryEditImgs.map((p,i)=>
+    `<div class="dimg"><img alt="첨부 사진 ${i+1}" data-p="${esc(p)}"><button class="dimg-x" onclick="diaryImgDel(${i})" title="이 사진 삭제">×</button></div>`).join("");
+  const imgs=el.querySelectorAll("img");
+  for(let i=0;i<imgs.length;i++){
+    const u=await signDiaryImg(imgs[i].getAttribute("data-p"));
+    if(u)imgs[i].src=u;
+  }
+}
+async function drawDiaryView(paths){
+  const el=document.getElementById("dview");if(!el)return;
+  el.innerHTML=paths.map((p,i)=>
+    `<a class="dimg-v" data-p="${esc(p)}" target="_blank" rel="noopener" title="새 탭에서 크게 보기"><img alt="사진 ${i+1}"></a>`).join("");
+  const as=el.querySelectorAll("a");
+  for(let i=0;i<as.length;i++){
+    const u=await signDiaryImg(as[i].getAttribute("data-p"));
+    if(u){as[i].href=u;as[i].querySelector("img").src=u;}
+  }
+}
 
 /* ===== 4) 목표 (카테고리 없음 · 진행바 1줄 · 설명) ===== */
 let goalOpen={};
@@ -1393,11 +1585,12 @@ function renderQT(){
     fb.innerHTML=`<div class="card"><h2>말씀 기록 ${ed?"수정":"쓰기"}</h2>
       <div class="row"><input type="date" id="qd" class="n1" value="${ed?ed.date:T()}"><input id="qv" placeholder="말씀 (예: 시편 23편)" value="${ed?esc(ed.title):""}"></div>
       <textarea id="qn" class="mt ta-fill" rows="7" placeholder="묵상 내용">${ed?esc(ed.content):""}</textarea>
-      <div class="row mt"><button class="addb" id="qsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="qtBack()">취소</button></div></div>`;
+      <div class="row mt"><button class="addb" id="qsave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="qtCancel()">취소</button></div></div>`;
     document.getElementById("qsave").onclick=()=>{const v=val("qv"),n=val("qn");if(!v&&!n)return alert("내용을 입력하세요.");
-      if(ed){ed.date=val("qd")||ed.date;ed.title=v||"말씀";ed.content=n;}
-      else DB.qt.push({id:uid(),date:val("qd")||T(),title:v||"말씀",content:n});
-      save();qtBack();};
+      let id;
+      if(ed){ed.date=val("qd")||ed.date;ed.title=v||"말씀";ed.content=n;id=ed.id;}
+      else{id=uid();DB.qt.push({id:id,date:val("qd")||T(),title:v||"말씀",content:n});}
+      save();qtOpen(id);};
     return;
   }
   if(qtMode==="detail"){
@@ -1409,7 +1602,7 @@ function renderQT(){
         <button class="ghostb danger" onclick="qtDel('${q.id}')">삭제</button></div>
       <div class="meta">${fmt(q.date)}</div>
       <h2 style="font-size:20px;margin:4px 0 12px">${esc(q.title)}</h2>
-      <div class="detail-body">${esc(q.content)}</div></div>`;
+      <div class="detail-body">${mdBody(q.content)}</div></div>`;
     return;
   }
   if(qtYear===null)qtYear=String(new Date().getFullYear());
@@ -1431,6 +1624,7 @@ window.qtNew=()=>{qtMode="write";qtSel=null;rFaith();};
 window.qtEdit=(id)=>{qtMode="write";qtSel=id;rFaith();};
 window.qtOpen=(id)=>{qtMode="detail";qtSel=id;rFaith();};
 window.qtBack=()=>{qtMode="list";qtSel=null;rFaith();};
+window.qtCancel=()=>{if(qtSel)qtOpen(qtSel);else qtBack();};
 window.qtDel=(id)=>{if(!confirm("이 기록을 삭제할까요?"))return;DB.qt=DB.qt.filter(x=>x.id!==id);save();qtBack();};
 
 /* ----- 설교말씀 (연도별, 월 구분 없음) ----- */
@@ -1444,11 +1638,12 @@ function renderSermon(){
       <div class="row"><input type="date" id="sd" class="n1" value="${ed?ed.date:T()}"><input id="stt" placeholder="설교 제목" value="${ed?esc(ed.title):""}"></div>
       <div class="row mt"><input id="sref" placeholder="본문 (예: 출 25:31-40)" value="${ed?esc(ed.ref||""):""}"><input id="ssp" placeholder="인도자 (예: 이원규 목사님)" value="${ed?esc(ed.speaker||""):""}"></div>
       <textarea id="scont" class="mt ta-fill" rows="7" placeholder="설교 내용·은혜 받은 점 (선택)">${ed?esc(ed.content||""):""}</textarea>
-      <div class="row mt"><button class="addb" id="ssave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="sermonBack()">취소</button></div></div>`;
+      <div class="row mt"><button class="addb" id="ssave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="sermonCancel()">취소</button></div></div>`;
     document.getElementById("ssave").onclick=()=>{const t=val("stt");if(!t)return alert("설교 제목을 입력하세요.");
-      if(ed){ed.date=val("sd")||ed.date;ed.title=t;ed.ref=val("sref");ed.speaker=val("ssp");ed.content=val("scont");}
-      else DB.sermons.push({id:uid(),date:val("sd")||T(),title:t,ref:val("sref"),speaker:val("ssp"),content:val("scont")});
-      sermonYear=(val("sd")||T()).slice(0,4);save();sermonBack();};
+      let id;
+      if(ed){ed.date=val("sd")||ed.date;ed.title=t;ed.ref=val("sref");ed.speaker=val("ssp");ed.content=val("scont");id=ed.id;}
+      else{id=uid();DB.sermons.push({id:id,date:val("sd")||T(),title:t,ref:val("sref"),speaker:val("ssp"),content:val("scont")});}
+      sermonYear=(val("sd")||T()).slice(0,4);save();sermonOpen(id);};
     return;
   }
   if(sermonMode==="detail"){
@@ -1461,7 +1656,7 @@ function renderSermon(){
       <div class="meta">${fmt(s.date)}${s.speaker?" · "+esc(s.speaker):""}</div>
       <h2 style="font-size:20px;margin:4px 0 6px">${esc(s.title)}</h2>
       ${s.ref?`<div class="meta" style="margin-bottom:10px">본문: ${esc(s.ref)}</div>`:""}
-      <div class="detail-body">${esc(s.content||"")}</div></div>`;
+      <div class="detail-body">${mdBody(s.content||"")}</div></div>`;
     return;
   }
   const years=[...new Set(DB.sermons.map(s=>s.date.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
@@ -1482,6 +1677,7 @@ window.sermonNew=()=>{sermonMode="write";sermonSel=null;rFaith();};
 window.sermonEdit=(id)=>{sermonMode="write";sermonSel=id;rFaith();};
 window.sermonOpen=(id)=>{sermonMode="detail";sermonSel=id;rFaith();};
 window.sermonBack=()=>{sermonMode="list";sermonSel=null;rFaith();};
+window.sermonCancel=()=>{if(sermonSel)sermonOpen(sermonSel);else sermonBack();};
 window.sermonDel=(id)=>{if(!confirm("이 기록을 삭제할까요?"))return;DB.sermons=DB.sermons.filter(x=>x.id!==id);save();sermonBack();};
 
 /* ===== 6) 클라이언트 (문의시트 링크 연동) ===== */
@@ -1845,6 +2041,7 @@ window.bookNew=()=>{bookMode="write";bookSel=null;rBooks();};
 window.bookOpen=(id)=>{bookMode="detail";bookSel=id;rBooks();};
 window.bookEdit=(id)=>{bookMode="write";bookSel=id;rBooks();};
 window.bookBack=()=>{bookMode="list";bookSel=null;rBooks();};
+window.bookCancel=()=>{if(bookSel)bookOpen(bookSel);else bookBack();};
 window.bookDel=(id)=>{if(!confirm("이 독서노트를 삭제할까요?"))return;DB.books=DB.books.filter(x=>x.id!==id);save();bookBack();};
 function bookWrite(){
   const b=bookSel?DB.books.find(x=>x.id===bookSel):null;
@@ -1855,12 +2052,14 @@ function bookWrite(){
       <input id="bGenre" class="n2" placeholder="장르" value="${b?esc(b.genre):""}"></div>
     <input id="bTitle" class="mt" placeholder="책 제목" value="${b?esc(b.title):""}">
     <textarea id="bNote" class="mt ta-fill" rows="8" placeholder="노트 내용">${b?esc(b.note):""}</textarea>
-    <div class="row mt"><button class="addb" id="bSave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="bookBack()">취소</button></div></div>`;
+    <div class="row mt"><button class="addb" id="bSave">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="bookCancel()">취소</button></div></div>`;
   document.getElementById("bSave").onclick=()=>{
     const t=val("bTitle");if(!t)return alert("책 제목을 입력하세요.");
     const data={year:val("bYear")||String(new Date().getFullYear()),status:document.getElementById("bStatus").value,genre:val("bGenre"),title:t,note:val("bNote")};
-    if(b){Object.assign(b,data);}else{DB.books.push({id:uid(),...data});}
-    save();bookBack();
+    let id;
+    if(b){Object.assign(b,data);id=b.id;}else{id=uid();DB.books.push({id:id,...data});}
+    bookYear=String(data.year);
+    save();bookOpen(id);
   };
 }
 function bookDetail(){
@@ -1873,7 +2072,7 @@ function bookDetail(){
       <button class="ghostb danger" onclick="bookDel('${b.id}')">삭제</button></div>
     <div class="meta">${esc(String(b.year))}년 · <span class="pill">${esc(b.status)}</span> ${b.genre?esc(b.genre):""}</div>
     <h2 style="font-size:21px;margin:6px 0 12px">${esc(b.title)}</h2>
-    <div class="detail-body">${esc(b.note||"")}</div></div>`;
+    <div class="detail-body">${mdBody(b.note||"")}</div></div>`;
 }
 
 /* ===== 비용관리 (고정 비용) ===== */
@@ -1940,6 +2139,7 @@ window.noteNew=()=>{noteMode="write";noteSel=null;rNotes();};
 window.noteEdit=(id)=>{noteMode="write";noteSel=id;rNotes();};
 window.noteOpen=(id)=>{noteMode="detail";noteSel=id;rNotes();};
 window.noteBack=()=>{noteMode="list";noteSel=null;rNotes();};
+window.noteCancel=()=>{if(noteSel)noteOpen(noteSel);else noteBack();};
 window.noteDel=(id)=>{if(!confirm("이 노트를 삭제할까요?"))return;DB.notes=DB.notes.filter(x=>x.id!==id);save();noteBack();};
 function noteWrite(){
   const ed=noteSel?DB.notes.find(x=>x.id===noteSel):null;
@@ -1947,11 +2147,12 @@ function noteWrite(){
   <div class="card">
     <div class="row"><input type="date" id="nt_d" class="n1" value="${ed?ed.date:T()}"><input id="nt_t" placeholder="제목" value="${ed?esc(ed.title):""}"></div>
     <textarea id="nt_c" class="mt ta-fill" rows="9" placeholder="내용을 적어보세요">${ed?esc(ed.content):""}</textarea>
-    <div class="row mt"><button class="addb" id="nt_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="noteBack()">취소</button></div></div>`;
+    <div class="row mt"><button class="addb" id="nt_save">저장</button><button class="ghostb" style="flex:0 0 90px" onclick="noteCancel()">취소</button></div></div>`;
   document.getElementById("nt_save").onclick=()=>{const c=val("nt_c");if(!c)return alert("내용을 입력하세요.");
-    if(ed){ed.date=val("nt_d")||ed.date;ed.title=val("nt_t")||"무제";ed.content=c;}
-    else DB.notes.push({id:uid(),date:val("nt_d")||T(),title:val("nt_t")||"무제",content:c});
-    save();noteBack();};
+    let id;
+    if(ed){ed.date=val("nt_d")||ed.date;ed.title=val("nt_t")||"무제";ed.content=c;id=ed.id;}
+    else{id=uid();DB.notes.push({id:id,date:val("nt_d")||T(),title:val("nt_t")||"무제",content:c});}
+    save();noteOpen(id);};
 }
 function noteDetail(){
   const d=DB.notes.find(x=>x.id===noteSel);if(!d){noteBack();return;}
@@ -1963,7 +2164,7 @@ function noteDetail(){
       <button class="ghostb danger" onclick="noteDel('${d.id}')">삭제</button></div>
     <div class="meta">${fmt(d.date)}</div>
     <h2 style="font-size:21px;margin:4px 0 12px">${esc(d.title)}</h2>
-    <div class="detail-body">${esc(d.content)}</div></div>`;
+    <div class="detail-body">${mdBody(d.content)}</div></div>`;
 }
 
 /* ═══════════════════════════════════════════════════════════════
