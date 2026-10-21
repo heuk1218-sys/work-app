@@ -144,6 +144,12 @@
 
   .item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
   .item:last-child{border-bottom:none}
+  @media(min-width:761px){
+    .rt-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}
+    .rt-grid .item:nth-last-child(2):nth-child(odd){border-bottom:none}
+    .rt-grid .item[draggable]{cursor:grab}
+    .rt-grid .item.rt-over{box-shadow:inset 0 2px 0 var(--accent)}
+  }
   .chk{width:20px;height:20px;flex:0 0 20px;border:2px solid var(--line);border-radius:3px;background:none;margin-top:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
   .chk.on{background:var(--accent);border-color:var(--accent)}
   .item .bd{flex:1;min-width:0}.item .bd .t{font-weight:500}
@@ -1003,8 +1009,7 @@ function routineRow(r,done){
     <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}')" title="클릭해서 이 날짜만 수정"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}</div>
       <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r,1)}</div></div>
-    <button class="linklike" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">건너뛰기</button>
-    <button class="del" onclick="goPage('routines')" title="루틴 관리로 이동" style="color:var(--muted)">›</button></div>`;
+    <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
 }
 let todaySort="time",editSchedIdx=null,editRtId=null;
 function drawDay(){
@@ -1301,11 +1306,13 @@ function rRoutines(){
 function drawRoutines(){
   const e=document.getElementById("rt_list");
   if(!e)return;
-  const rows=DB.routines.filter(r=>r.freq===routineTab);
+  const rows=DB.routines.filter(r=>r.freq===routineTab);const mob=isMobile();
+  e.className=rows.length?"rt-grid":"";
+  /* PC: 2열 + 드래그로 순서 변경 (공통 rowDrag 헬퍼, DB.routines 전체 배열 안에서 이동) */
   e.innerHTML=rows.length?rows.map(r=>{const p=priInfo(r.pri);
-    return `<div class="item" style="${r.paused?"opacity:.5":""}">
+    return `<div class="item" style="${r.paused?"opacity:.5":""}" ${mob?"":`draggable="true" ondragstart="rowDragStart(event,'routines','${r.id}')" ondragover="rowDragOver(event);this.classList.add('rt-over')" ondragleave="this.classList.remove('rt-over')" ondrop="rowDrop(event,'routines','${r.id}')" ondragend="rowDragEnd();drawRoutines()"`}>
       <span class="pdot" style="background:${p.c};margin-top:6px"></span>
-      <div class="bd" style="cursor:pointer" onclick="rtEdit('${r.id}')" title="클릭해서 수정">
+      <div class="bd" style="cursor:pointer" onclick="rtEdit('${r.id}')" title="클릭해서 수정${mob?"":" · 끌어서 순서 변경"}">
         <div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}${esc(r.title)}${r.paused?' <span class="pill">중지됨</span>':""}</div>
         <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)} · ${rtPeriodLabel(r)}</div></div>
       <button class="linklike" onclick="rtPause('${r.id}')" title="${r.paused?"다시 시작":"일시중지"}">${r.paused?"▶":"❚❚"}</button>
@@ -2116,7 +2123,7 @@ window.cliMove=(i,d)=>{const j=i+d;if(j<0||j>=DB.clients.length)return;
 
 /* ===== 공통: 드래그/▲▼ 순서변경 (id 기반) ===== */
 let dragRow={arr:null,id:null};
-function reRenderArr(a){if(a==="prayers")drawP();else if(a==="costs")drawCosts();else if(a==="goals")drawG();else rAccounts();}
+function reRenderArr(a){if(a==="prayers")drawP();else if(a==="costs")drawCosts();else if(a==="goals")drawG();else if(a==="routines")drawRoutines();else rAccounts();}
 window.rowDragStart=(e,a,id)=>{dragRow={arr:a,id:id};if(e.dataTransfer){e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",id);}catch(_){}}};
 window.rowDragOver=(e)=>{e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect="move";};
 window.rowDrop=(e,a,id)=>{e.preventDefault();if(dragRow.arr!==a||dragRow.id==null||dragRow.id===id){dragRow={arr:null,id:null};return;}
