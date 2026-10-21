@@ -1309,7 +1309,7 @@ function rRoutines(){
   drawRoutines();
 }
 /* 주간 루틴 구역 (입력란 없이 드래그로만 지정). 미지정은 기타 */
-const RTGRP=[["content","콘텐츠"],["etc","기타"],["meeting","회의"]];
+const RTGRP=[["blog","블로그"],["threads","스레드"],["etc","기타"],["meeting","회의"],["faith","신앙"]];
 function rtGrpOf(r){return RTGRP.some(([k])=>k===r.grp)?r.grp:"etc";}
 function drawRoutines(){
   const e=document.getElementById("rt_list");
