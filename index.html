@@ -994,15 +994,15 @@ function routineRow(r,done){
         </div>
         <div class="meta ie-row">
           <select class="ie ie-pri" onchange="rtDayField('${r.id}','pri',this)" onkeydown="ieKey(event)"><option value=""${!r.pri?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${r.pri==n?" selected":""}>${n}순위</option>`).join("")}</select>
-          <span class="ie-hint">이 날짜만 적용 · 루틴 원본은 그대로${ovd?` <button class="linklike" onclick="rtDayReset('${r.id}')">되돌리기</button>`:""}</span>
+          <span class="ie-hint">${ovd?`<button class="linklike" onclick="rtDayReset('${r.id}')">되돌리기</button>`:""}</span>
         </div>
       </div>
       <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기">×</button></div>`;
   }
   return `<div class="item ${done?"done":""}">
     <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
-    <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}')" title="클릭해서 이 날짜만 수정"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span>${ovd?` <span class="pill" style="background:#3a2d12;color:#e0a649">수정됨</span>`:""}</div>
-      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)}</div></div>
+    <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}')" title="클릭해서 이 날짜만 수정"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}</div>
+      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r,1)}</div></div>
     <button class="linklike" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">건너뛰기</button>
     <button class="del" onclick="goPage('routines')" title="루틴 관리로 이동" style="color:var(--muted)">›</button></div>`;
 }
@@ -1038,7 +1038,7 @@ function drawDay(){
     html+=skipped.map(r=>`<div class="item" style="opacity:.5">
       <span class="pdot" style="background:${priInfo(r.pri).c};margin-top:8px"></span>
       <div class="bd"><div class="t" style="text-decoration:line-through">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}</div>
-        <div class="meta">${rtRecurLabel(r)}</div></div>
+        <div class="meta">${rtRecurLabel(r,1)}</div></div>
       <button class="linklike" onclick="routineUnskip('${r.id}')" title="이 날 다시 하기">되돌리기</button></div>`).join("");
   }
   el.innerHTML=html;
@@ -1245,9 +1245,11 @@ function purgeOrphanRdone(){
   if(n)console.log("[루틴] 고아 기록 "+n+"건 정리");
 }
 
-function rtRecurLabel(r){
+/* short=true → 오늘 업무 목록용: 주간은 "수 금"처럼 요일만 */
+function rtRecurLabel(r,short){
   if(r.freq==="daily")return "매일";
-  if(r.freq==="weekly")return "매주 "+(r.wd||[]).slice().sort((a,b)=>a-b).map(i=>DOW[i]).join("·")+"요일";
+  if(r.freq==="weekly"){const ds=(r.wd||[]).slice().sort((a,b)=>a-b).map(i=>DOW[i]);
+    return short?ds.join(" "):"매주 "+ds.join("·")+"요일";}
   return r.day==="last"?"매월 말일":"매월 "+r.day+"일";
 }
 function rtPeriodLabel(r){
