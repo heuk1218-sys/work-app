@@ -155,6 +155,8 @@
   .rt-sec+.rt-sec{margin-top:14px}
   .rt-sec-h{font-size:13px;font-weight:600;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--line)}
   .rt-sec-empty{padding:12px 0;font-size:13px;color:var(--muted)}
+  .rt-cnt{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);white-space:nowrap}
+  .rt-cnt input{width:46px;padding:4px 6px;text-align:center}
   .chk{width:20px;height:20px;flex:0 0 20px;border:2px solid var(--line);border-radius:3px;background:none;margin-top:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
   .chk.on{background:var(--accent);border-color:var(--accent)}
   .item .bd{flex:1;min-width:0}.item .bd .t{font-weight:500}
@@ -1311,6 +1313,15 @@ function rRoutines(){
 /* 주간 루틴 구역 (입력란 없이 드래그로만 지정). 미지정은 기타 */
 const RTGRP=[["blog","블로그"],["threads","스레드"],["etc","기타"],["meeting","회의"],["faith","신앙"]];
 function rtGrpOf(r){return RTGRP.some(([k])=>k===r.grp)?r.grp:"etc";}
+/* 구역 합계 (일시중지 제외): 블로그=요일 수 합(월수=주2회), 스레드=직접 입력한 주 횟수 합 */
+function rtSecCount(k,gr){
+  const on=gr.filter(r=>!r.paused);
+  if(k==="blog")return ` · 칼럼 주 ${on.reduce((s,r)=>s+(r.wd||[]).length,0)}회`;
+  if(k==="threads")return ` · 주 ${on.reduce((s,r)=>s+(parseInt(r.cnt)||0),0)}회`;
+  return "";
+}
+window.rtSetCnt=(id,v)=>{const it=DB.routines.find(x=>x.id===id);if(!it)return;const n=parseInt(v);
+  if(n>0)it.cnt=n;else delete it.cnt;save();drawRoutines();};
 function drawRoutines(){
   const e=document.getElementById("rt_list");
   if(!e)return;
@@ -1322,7 +1333,8 @@ function drawRoutines(){
       <span class="pdot" style="background:${p.c};margin-top:6px"></span>
       <div class="bd" style="cursor:pointer" onclick="rtEdit('${r.id}')" title="클릭해서 수정${mob?"":" · 끌어서 순서 변경"}">
         <div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}${esc(r.title)}${r.paused?' <span class="pill">중지됨</span>':""}</div>
-        <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)} · ${rtPeriodLabel(r)}</div></div>
+        <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r,1)} · ${rtPeriodLabel(r)}</div></div>
+      ${g==="threads"?`<label class="rt-cnt">주 <input type="number" min="0" inputmode="numeric" value="${r.cnt||""}" draggable="false" onchange="rtSetCnt('${r.id}',this.value)">회</label>`:""}
       <button class="linklike" onclick="rtPause('${r.id}')" title="${r.paused?"다시 시작":"일시중지"}">${r.paused?"▶":"❚❚"}</button>
       <button class="del" onclick="rtDel('${r.id}')">×</button></div>`;};
   if(!rows.length){e.className="";e.innerHTML=`<div class="empty">등록된 ${RTNAME[routineTab]} 루틴이 없어요.</div>`;return;}
@@ -1330,7 +1342,7 @@ function drawRoutines(){
   e.className="";
   e.innerHTML=RTGRP.map(([k,n])=>{const gr=rows.filter(r=>rtGrpOf(r)===k);
     return `<div class="rt-sec" ${mob?"":`ondragover="rowDragOver(event);this.classList.add('rt-over')" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('rt-over')" ondrop="rtDrop(event,'','${k}')"`}>
-      <div class="rt-sec-h">${n} <span style="font-weight:400">· ${gr.length}</span></div>
+      <div class="rt-sec-h">${n} <span style="font-weight:400">· ${gr.length}${rtSecCount(k,gr)}</span></div>
       ${gr.length?`<div class="rt-grid">${gr.map(item).join("")}</div>`:`<div class="rt-sec-empty">${mob?"없음":"여기로 끌어다 놓기"}</div>`}</div>`;}).join("");
 }
 window.rtDrop=(e,id,g)=>{e.preventDefault();e.stopPropagation();
