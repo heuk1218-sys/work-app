@@ -149,7 +149,12 @@
     .rt-grid .item:nth-last-child(2):nth-child(odd){border-bottom:none}
     .rt-grid .item[draggable]{cursor:grab}
     .rt-grid .item.rt-over{box-shadow:inset 0 2px 0 var(--accent)}
+    .rt-sec{padding-bottom:10px}
+    .rt-sec.rt-over{background:var(--input)}
   }
+  .rt-sec+.rt-sec{margin-top:14px}
+  .rt-sec-h{font-size:13px;font-weight:600;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .rt-sec-empty{padding:12px 0;font-size:13px;color:var(--muted)}
   .chk{width:20px;height:20px;flex:0 0 20px;border:2px solid var(--line);border-radius:3px;background:none;margin-top:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
   .chk.on{background:var(--accent);border-color:var(--accent)}
   .item .bd{flex:1;min-width:0}.item .bd .t{font-weight:500}
@@ -1303,22 +1308,41 @@ function rRoutines(){
   if(routineTab==="weekly")rtDrawWd();
   drawRoutines();
 }
+/* 주간 루틴 구역 (입력란 없이 드래그로만 지정). 미지정은 기타 */
+const RTGRP=[["content","콘텐츠"],["etc","기타"],["meeting","회의"]];
+function rtGrpOf(r){return RTGRP.some(([k])=>k===r.grp)?r.grp:"etc";}
 function drawRoutines(){
   const e=document.getElementById("rt_list");
   if(!e)return;
   const rows=DB.routines.filter(r=>r.freq===routineTab);const mob=isMobile();
-  e.className=rows.length?"rt-grid":"";
-  /* PC: 2열 + 드래그로 순서 변경 (공통 rowDrag 헬퍼, DB.routines 전체 배열 안에서 이동) */
-  e.innerHTML=rows.length?rows.map(r=>{const p=priInfo(r.pri);
-    return `<div class="item" style="${r.paused?"opacity:.5":""}" ${mob?"":`draggable="true" ondragstart="rowDragStart(event,'routines','${r.id}')" ondragover="rowDragOver(event);this.classList.add('rt-over')" ondragleave="this.classList.remove('rt-over')" ondrop="rowDrop(event,'routines','${r.id}')" ondragend="rowDragEnd();drawRoutines()"`}>
+  const wk=routineTab==="weekly";
+  /* PC: 2열 + 드래그로 순서 변경 (DB.routines 전체 배열 안에서 이동). 주간은 구역 사이로도 이동 */
+  const item=r=>{const p=priInfo(r.pri),g=wk?rtGrpOf(r):"";
+    return `<div class="item" style="${r.paused?"opacity:.5":""}" ${mob?"":`draggable="true" ondragstart="rowDragStart(event,'routines','${r.id}')" ondragover="rowDragOver(event);this.classList.add('rt-over')" ondragleave="this.classList.remove('rt-over')" ondrop="rtDrop(event,'${r.id}','${g}')" ondragend="rowDragEnd();drawRoutines()"`}>
       <span class="pdot" style="background:${p.c};margin-top:6px"></span>
       <div class="bd" style="cursor:pointer" onclick="rtEdit('${r.id}')" title="클릭해서 수정${mob?"":" · 끌어서 순서 변경"}">
         <div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}${esc(r.title)}${r.paused?' <span class="pill">중지됨</span>':""}</div>
         <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r)} · ${rtPeriodLabel(r)}</div></div>
       <button class="linklike" onclick="rtPause('${r.id}')" title="${r.paused?"다시 시작":"일시중지"}">${r.paused?"▶":"❚❚"}</button>
-      <button class="del" onclick="rtDel('${r.id}')">×</button></div>`;}).join("")
-    :`<div class="empty">등록된 ${RTNAME[routineTab]} 루틴이 없어요.</div>`;
+      <button class="del" onclick="rtDel('${r.id}')">×</button></div>`;};
+  if(!rows.length){e.className="";e.innerHTML=`<div class="empty">등록된 ${RTNAME[routineTab]} 루틴이 없어요.</div>`;return;}
+  if(!wk){e.className="rt-grid";e.innerHTML=rows.map(item).join("");return;}
+  e.className="";
+  e.innerHTML=RTGRP.map(([k,n])=>{const gr=rows.filter(r=>rtGrpOf(r)===k);
+    return `<div class="rt-sec" ${mob?"":`ondragover="rowDragOver(event);this.classList.add('rt-over')" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('rt-over')" ondrop="rtDrop(event,'','${k}')"`}>
+      <div class="rt-sec-h">${n} <span style="font-weight:400">· ${gr.length}</span></div>
+      ${gr.length?`<div class="rt-grid">${gr.map(item).join("")}</div>`:`<div class="rt-sec-empty">${mob?"없음":"여기로 끌어다 놓기"}</div>`}</div>`;}).join("");
 }
+window.rtDrop=(e,id,g)=>{e.preventDefault();e.stopPropagation();
+  const did=dragRow.arr==="routines"?dragRow.id:null;dragRow={arr:null,id:null};
+  if(did==null||did===id){drawRoutines();return;}
+  const arr=DB.routines;const fi=arr.findIndex(x=>x.id===did);if(fi<0){drawRoutines();return;}
+  const m=arr.splice(fi,1)[0];
+  if(g)m.grp=g;
+  let ti=id?arr.findIndex(x=>x.id===id):-1;
+  if(ti<0&&g){for(let i=arr.length-1;i>=0;i--)if(arr[i].freq==="weekly"&&rtGrpOf(arr[i])===g){ti=i+1;break;}}
+  arr.splice(ti<0?arr.length:ti,0,m);
+  save();drawRoutines();};
 function rtAdd(){
   const title=val("rt_title");if(!title)return alert("업무 내용을 입력하세요.");
   const start=document.getElementById("rt_start").value;
@@ -2654,8 +2678,9 @@ if(window.lucide)lucide.createIcons();
   }
   function mergeArray(baseMap, mineArr, serverArr){
     const mine=indexById(mineArr), server=indexById(serverArr), ids=new Set();
-    if(baseMap) for(const k of baseMap.keys()) ids.add(k);
+    /* 순서는 내 기기 순서 우선 (드래그 정렬 유지). 포함/삭제 판정은 그대로 */
     for(const k of mine.keys()) ids.add(k);
+    if(baseMap) for(const k of baseMap.keys()) ids.add(k);
     for(const k of server.keys()) ids.add(k);
     const out=[], deleted=[];
     for(const id of ids){
