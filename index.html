@@ -270,6 +270,10 @@
     .mobwide{flex:1 1 100%!important}
   }
   .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
+  /* PC 오늘 업무 2열: 왼쪽 시간순 / 오른쪽 우선순위순 */
+  .tl-split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+  .tl-h{font-size:12.5px;font-weight:600;color:var(--muted);padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .tt-dim{color:#7a7a7a}
 
   /* ===== 제자리 수정(인라인 편집) =====
      글자가 있던 자리에 투명한 입력칸을 깔아, 수정 모드로 들어가도
@@ -907,7 +911,7 @@ function rSchedule(){
       <button class="addb" id="sadd" style="flex:0 0 140px">+ 추가</button></div></div></details>`}
   <div class="card">
     <div style="display:flex;align-items:center;margin-bottom:12px"><h2 style="flex:1;margin:0">${dayLabel} 업무</h2>
-      <div class="sort-toggle"><button class="${todaySort==="pri"?"on":""}" onclick="setTodaySort('pri')">우선순위순</button><button class="${todaySort==="time"?"on":""}" onclick="setTodaySort('time')">시간순</button></div></div>
+      ${mob?`<div class="sort-toggle"><button class="${todaySort==="pri"?"on":""}" onclick="setTodaySort('pri')">우선순위순</button><button class="${todaySort==="time"?"on":""}" onclick="setTodaySort('time')">시간순</button></div>`:""}</div>
     <div id="tlist"></div></div>
   <div class="card"><h2>${dayLabel} 메모</h2><textarea rows="3" placeholder="메모를 적어두세요" onchange="setDayField('memo',this.value)">${esc(di.memo||"")}</textarea></div>
   <div class="card"><h2>${dayLabel} 회고</h2><textarea rows="3" placeholder="오늘 하루를 돌아보며 회고를 적어보세요" onchange="setDayField('retro',this.value)">${esc(di.retro||"")}</textarea></div>`;
@@ -982,65 +986,82 @@ function weekCol(d){
 }
 /* done 이 undefined 인 옛 데이터에서도 NaN 비교가 나오지 않도록 !! 로 정규화한다 */
 const byPri=(a,b)=>((!!a.s.done)-(!!b.s.done))||(priRank(a.s.priority)-priRank(b.s.priority));
-function taskRow(s,i){
+/* col: PC 2열 목록에서 어느 쪽 열인지("time"/"pri"). 모바일은 undefined.
+   같은 업무가 양쪽 열에 다 나오므로, 수정 모드는 클릭한 열에서만 펼친다. */
+function isEditCol(col){return (editCol||null)===(col||null);}
+function taskRow(s,i,col){
   const p=priInfo(s.priority);
-  if(i===editSchedIdx){
+  const pc=col==="pri";
+  if(i===editSchedIdx&&isEditCol(col)){
     /* 수정 모드 — 평소 행과 뼈대(체크박스·본문 2줄·삭제버튼)가 완전히 같다.
-       글자 자리에 .ie 입력칸만 깔리므로 줄 수도 위치도 바뀌지 않는다. */
+       글자 자리에 .ie 입력칸만 깔리므로 줄 수도 위치도 바뀌지 않는다.
+       우선순위순 열에서는 [우선순위][업무내용] / [시간][비고] 순서. */
+    const tI=`<input class="ie ie-time" value="${esc(s.time||"")}" placeholder="시간" inputmode="numeric" onchange="schedField(${i},'time',this)" onkeydown="ieKey(event)">`;
+    const pI=`<select class="ie ie-pri" onchange="schedField(${i},'priority',this)" onkeydown="ieKey(event)"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select>`;
     return `<div class="item editing" data-edit="1">
       <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
       <div class="bd">
         <div class="t ie-row">
-          <input class="ie ie-time" value="${esc(s.time||"")}" placeholder="시간" inputmode="numeric" onchange="schedField(${i},'time',this)" onkeydown="ieKey(event)">
+          ${pc?pI:tI}
           <input class="ie ie-title" value="${esc(s.title)}" placeholder="업무 내용" onchange="schedField(${i},'title',this)" onkeydown="ieKey(event)" data-focus="1">
         </div>
         <div class="meta ie-row">
-          <select class="ie ie-pri" onchange="schedField(${i},'priority',this)" onkeydown="ieKey(event)"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select>
+          ${pc?tI:pI}
           <input class="ie ie-note" value="${esc(s.note||"")}" placeholder="비고" onchange="schedField(${i},'note',this)" onkeydown="ieKey(event)">
         </div>
       </div>
       <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
   }
+  const ca=col?`,'${col}'`:"";
+  /* 우선순위순 열: 시간은 제목 앞이 아니라 아랫줄에 흐리게 */
+  const title=pc?esc(s.title):`${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}`;
+  const meta=`<span style="color:${p.c};font-weight:500">${p.t}</span>${pc&&s.time?` · <span class="tt-dim">${esc(s.time)}</span>`:""}${s.note?" · "+esc(s.note):""}`;
   return `<div class="item ${s.done?"done":""}">
     <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
-    <div class="bd" style="cursor:pointer" onclick="schedEdit(${i})" title="클릭해서 수정"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div>
-      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}</div></div>
+    <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="클릭해서 수정"><div class="t">${title}</div>
+      <div class="meta">${meta}</div></div>
     <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
 }
-function routineRow(r,done){
+function routineRow(r,done,col){
   const p=priInfo(r.pri);
+  const pc=col==="pri";
   const ovd=!!roverOf(selDay)[r.id];
-  if(editRtId===r.id){
+  if(editRtId===r.id&&isEditCol(col)){
     /* 루틴도 평소 행과 뼈대가 같다. 수정분은 이 날짜에만 적용되고 루틴 원본은 그대로. */
+    const tI=`<input class="ie ie-time" value="${esc(r.time||"")}" placeholder="시간" inputmode="numeric" onchange="rtDayField('${r.id}','time',this)" onkeydown="ieKey(event)">`;
+    const pI=`<select class="ie ie-pri" onchange="rtDayField('${r.id}','pri',this)" onkeydown="ieKey(event)"><option value=""${!r.pri?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${r.pri==n?" selected":""}>${n}순위</option>`).join("")}</select>`;
     return `<div class="item editing" data-edit="1">
       <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
       <div class="bd">
         <div class="t ie-row">
-          <input class="ie ie-time" value="${esc(r.time||"")}" placeholder="시간" inputmode="numeric" onchange="rtDayField('${r.id}','time',this)" onkeydown="ieKey(event)">
+          ${pc?pI:tI}
           <input class="ie ie-title" value="${esc(r.title)}" placeholder="업무 내용" onchange="rtDayField('${r.id}','title',this)" onkeydown="ieKey(event)" data-focus="1">
         </div>
         <div class="meta ie-row">
-          <select class="ie ie-pri" onchange="rtDayField('${r.id}','pri',this)" onkeydown="ieKey(event)"><option value=""${!r.pri?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${r.pri==n?" selected":""}>${n}순위</option>`).join("")}</select>
+          ${pc?tI:pI}
           <span class="ie-hint">${ovd?`<button class="linklike" onclick="rtDayReset('${r.id}')">되돌리기</button>`:""}</span>
         </div>
       </div>
       <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기">×</button></div>`;
   }
+  const ca=col?`,'${col}'`:"";
+  const title=pc?esc(r.title):`${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}`;
   return `<div class="item ${done?"done":""}">
     <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
-    <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}')" title="클릭해서 이 날짜만 수정"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}</div>
-      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r,1)}</div></div>
+    <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="클릭해서 이 날짜만 수정"><div class="t">${title}</div>
+      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${pc&&r.time?` · <span class="tt-dim">${esc(r.time)}</span>`:""} · ${rtRecurLabel(r,1)}</div></div>
     <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
 }
-let todaySort="time",editSchedIdx=null,editRtId=null;
+let todaySort="time",editSchedIdx=null,editRtId=null,editCol=null;
 function drawDay(){
   const el=document.getElementById("tlist");
   if(!el)return;
   const rd=rdoneOf(selDay);
   const skipped=routinesSkipped(selDay);
 
-  /* 일반 업무와 루틴을 한 목록으로 합쳐, 위쪽 정렬 토글(우선순위순/시간순)을
-     똑같이 적용한다. 루틴이라고 위에 고정되지 않는다. */
+  /* 일반 업무와 루틴을 한 목록으로 합친다. 루틴이라고 위에 고정되지 않는다.
+     PC: 왼쪽 시간순 / 오른쪽 우선순위순 2열을 동시에 보여준다.
+     모바일: 위쪽 정렬 토글(우선순위순/시간순) 하나만 적용. */
   const units=[];
   DB.schedules.forEach((s,i)=>{
     if(s.date===selDay)units.push({kind:"task",s,i,done:!!s.done,time:s.time||"",pri:s.priority});
@@ -1048,14 +1069,17 @@ function drawDay(){
   routinesForDate(selDay).forEach(r=>{
     units.push({kind:"routine",r,done:!!rd[r.id],time:r.time||"",pri:r.pri});
   });
-  const cmp = todaySort==="time"
-    ? (a,b)=>(a.done-b.done)||((a.time||"99:99").localeCompare(b.time||"99:99"))
-    : (a,b)=>(a.done-b.done)||(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99"));
-  units.sort(cmp);
+  const byTime=(a,b)=>(a.done-b.done)||((a.time||"99:99").localeCompare(b.time||"99:99"));
+  const byP=(a,b)=>(a.done-b.done)||(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99"));
+  const list=(sort,col)=>units.slice().sort(sort==="time"?byTime:byP)
+    .map(u=>u.kind==="task"?taskRow(u.s,u.i,col):routineRow(u.r,u.done,col)).join("");
 
-  let html = units.length
-    ? units.map(u=>u.kind==="task"?taskRow(u.s,u.i):routineRow(u.r,u.done)).join("")
-    : (skipped.length?"":'<div class="empty">이 날 업무가 없어요.</div>');
+  let html;
+  if(!units.length) html=skipped.length?"":'<div class="empty">이 날 업무가 없어요.</div>';
+  else if(isMobile()) html=list(todaySort);
+  else html=`<div class="tl-split">
+      <div><div class="tl-h">시간순</div>${list("time","time")}</div>
+      <div><div class="tl-h">우선순위순</div>${list("pri","pri")}</div></div>`;
 
   if(skipped.length){
     html+=`<div style="height:12px"></div>`;
@@ -1074,7 +1098,7 @@ function drawDay(){
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
 window.goToday=()=>{selDay=T();editSchedIdx=null;editRtId=null;rSchedule();};
-window.schedEdit=(i)=>{editSchedIdx=i;editRtId=null;drawDay();ieArm();};
+window.schedEdit=(i,col)=>{editSchedIdx=i;editRtId=null;editCol=col||null;drawDay();ieArm();};
 window.schedEditCancel=()=>{ieExit();};
 
 /* ---- 제자리 수정 공통 ----
@@ -1117,7 +1141,7 @@ window.schedField=(i,f,el)=>{
 /* ---- 루틴: 그 날짜만 수정 (원본 루틴은 건드리지 않는다) ----
    dayinfo[날짜].rover[루틴id] = {time?,title?,pri?} 형태로 바뀐 값만 저장한다.
    원본과 같아지면 항목을 지워 블롭이 불어나지 않게 한다. */
-window.rtDayEdit=(id)=>{editRtId=id;editSchedIdx=null;drawDay();ieArm();};
+window.rtDayEdit=(id,col)=>{editRtId=id;editSchedIdx=null;editCol=col||null;drawDay();ieArm();};
 window.rtDayField=(id,f,el)=>{
   const base=(DB.routines||[]).find(x=>x.id===id);if(!base)return;
   if(!DB.dayinfo[selDay])DB.dayinfo[selDay]={};
