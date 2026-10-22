@@ -1147,10 +1147,12 @@ window.toggleDone=()=>{doneOpen=!doneOpen;drawDay();};
    최대로 좁혀도 안 들어가면 원래 자간으로 두 줄 (둘째 줄은 제목 시작선에 맞춰진다). */
 function fitTitles(){
   document.querySelectorAll(".week-grid .tt-title, #tlist .tt-title, #tlist .tl-one .bd .t").forEach(el=>{
-    el.style.letterSpacing="";el.style.whiteSpace="nowrap";el.style.overflow="hidden";
-    const w=el.clientWidth;let fit=null;
-    if(w>0) for(const ls of [0,-0.02,-0.04,-0.06]){el.style.letterSpacing=ls+"em";if(el.scrollWidth<=w){fit=ls;break;}}
-    el.style.whiteSpace="";el.style.overflow="";
+    /* 한 줄 높이를 먼저 재고, 자간을 줄여가며 실제 높이가 한 줄이 되는지 본다 */
+    el.style.letterSpacing="";el.style.whiteSpace="nowrap";
+    const one=el.getBoundingClientRect().height;el.style.whiteSpace="";
+    if(!one)return;
+    let fit=null;
+    for(const ls of [0,-0.02,-0.04,-0.06]){el.style.letterSpacing=ls?ls+"em":"";if(el.getBoundingClientRect().height<=one+1){fit=ls;break;}}
     el.style.letterSpacing=fit?fit+"em":"";
   });
 }
