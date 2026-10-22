@@ -16,7 +16,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'7'%20fill%3D'%23161616'%2F%3E%3Ctext%20x%3D'16'%20y%3D'22'%20text-anchor%3D'middle'%20font-family%3D'Arial%2CHelvetica%2Csans-serif'%20font-weight%3D'800'%20font-size%3D'20'%20letter-spacing%3D'-1'%20fill%3D'%230A84FF'%3EB%3C%2Ftext%3E%3Crect%20x%3D'10.5'%20y%3D'24'%20width%3D'11'%20height%3D'2.4'%20rx%3D'1.2'%20fill%3D'%230A84FF'%2F%3E%3C%2Fsvg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400..700&display=swap" rel="stylesheet" />
 <style>
   :root{
     /* Apple HIG 다크 모드 시스템 색 기반 */
@@ -298,6 +298,27 @@
   .tl-donebtn{background:transparent;border:none;color:var(--muted);font-size:12.5px;padding:4px 0;cursor:pointer}
   .tl-donebtn:hover{color:var(--ink)}
   .tl-donelist{margin-top:4px}
+  /* 일정 제목은 볼드처럼 보이지 않게 450(폰트는 400~700 가변으로 받는다), 시간도 한 단계 가볍게 */
+  #tlist .item .bd .t{font-weight:450}
+  #tlist .tt-time{font-weight:500}
+  /* 태블릿 폭 대응 — 화면 폭이 아니라 #tlist 실제 폭 기준(사이드바 접힘도 반영된다).
+     좁아지면 글씨를 줄이고, 더 좁아지면 시간순 카드 위 / 우선순위 카드 아래로 쌓는다 */
+  #tlist{container-type:inline-size}
+  @container (max-width:900px){
+    .tl-split .item .bd .t{font-size:14.5px}
+    .tl-split .meta{font-size:12px}
+    .tl-split .tl-time{font-size:11.5px}
+    .tl-split>.card{padding:15px 16px}
+  }
+  @container (max-width:700px){
+    .tl-split{grid-template-columns:1fr}
+  }
+  /* 중간 폭(태블릿)에선 왼쪽 메뉴도 좁힌다 (접힘 상태·모바일은 그대로) */
+  @media(min-width:761px) and (max-width:1200px){
+    .layout:not(.collapsed) aside{width:220px;flex-basis:220px}
+    aside nav button{font-size:13.5px;padding:9px 10px}
+    aside .brand{font-size:18px}
+  }
   /* 2열에선 ×가 너무 많이 보여서, 행에 마우스를 올렸을 때(또는 수정 중)만 보인다 */
   .tl-split .item .del{opacity:0;transition:opacity .12s}
   .tl-split .item:hover .del,.tl-split .item.editing .del,.tl-split .item .del:focus-visible{opacity:1}
