@@ -274,6 +274,12 @@
   .tl-split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
   .tl-h{font-size:12.5px;font-weight:600;color:var(--muted);padding-bottom:7px;border-bottom:1px solid var(--line)}
   .tt-dim{color:#7a7a7a}
+  .tl-g{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);margin:14px 0 0;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  .tl-g .pdot{margin-top:0}
+  .tl-gn{font-weight:400;color:#6a6a6a}
+  /* 2열에선 ×가 너무 많이 보여서, 행에 마우스를 올렸을 때(또는 수정 중)만 보인다 */
+  .tl-split .item .del{opacity:0;transition:opacity .12s}
+  .tl-split .item:hover .del,.tl-split .item.editing .del,.tl-split .item .del:focus-visible{opacity:1}
 
   /* ===== 제자리 수정(인라인 편집) =====
      글자가 있던 자리에 투명한 입력칸을 깔아, 수정 모드로 들어가도
@@ -1015,11 +1021,13 @@ function taskRow(s,i,col){
   const ca=col?`,'${col}'`:"";
   /* 우선순위순 열: 시간은 제목 앞이 아니라 아랫줄에 흐리게 */
   const title=pc?esc(s.title):`${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}`;
-  const meta=`<span style="color:${p.c};font-weight:500">${p.t}</span>${pc&&s.time?` · <span class="tt-dim">${esc(s.time)}</span>`:""}${s.note?" · "+esc(s.note):""}`;
+  const meta=pc
+    ? [s.time?`<span class="tt-dim">${esc(s.time)}</span>`:"",s.note?esc(s.note):""].filter(Boolean).join(" · ")
+    : `<span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}`;
   return `<div class="item ${s.done?"done":""}">
     <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="클릭해서 수정"><div class="t">${title}</div>
-      <div class="meta">${meta}</div></div>
+      ${meta?`<div class="meta">${meta}</div>`:""}</div>
     <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
 }
 function routineRow(r,done,col){
@@ -1049,7 +1057,7 @@ function routineRow(r,done,col){
   return `<div class="item ${done?"done":""}">
     <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="클릭해서 이 날짜만 수정"><div class="t">${title}</div>
-      <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span>${pc&&r.time?` · <span class="tt-dim">${esc(r.time)}</span>`:""} · ${rtRecurLabel(r,1)}</div></div>
+      <div class="meta">${pc?(r.time?`<span class="tt-dim">${esc(r.time)}</span> · `:""):`<span style="color:${p.c};font-weight:500">${p.t}</span> · `}${rtRecurLabel(r,1)}</div></div>
     <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
 }
 let todaySort="time",editSchedIdx=null,editRtId=null,editCol=null;
@@ -1074,12 +1082,22 @@ function drawDay(){
   const list=(sort,col)=>units.slice().sort(sort==="time"?byTime:byP)
     .map(u=>u.kind==="task"?taskRow(u.s,u.i,col):routineRow(u.r,u.done,col)).join("");
 
+  const priGroups=()=>{
+    const arr=units.slice().sort(byP);
+    return [1,2,3,4,null].map(g=>{
+      const it=arr.filter(u=>{const n=parseInt(u.pri);return ([1,2,3,4].includes(n)?n:null)===g;});
+      if(!it.length)return "";
+      const pi=priInfo(g);
+      return `<div class="tl-g"><span class="pdot" style="background:${pi.c}"></span>${pi.t}<span class="tl-gn">${it.length}</span></div>`
+        +it.map(u=>u.kind==="task"?taskRow(u.s,u.i,"pri"):routineRow(u.r,u.done,"pri")).join("");
+    }).join("");
+  };
   let html;
   if(!units.length) html=skipped.length?"":'<div class="empty">이 날 업무가 없어요.</div>';
   else if(isMobile()) html=list(todaySort);
   else html=`<div class="tl-split">
       <div><div class="tl-h">시간순</div>${list("time","time")}</div>
-      <div><div class="tl-h">우선순위순</div>${list("pri","pri")}</div></div>`;
+      <div><div class="tl-h">우선순위순</div>${priGroups()}</div></div>`;
 
   if(skipped.length){
     html+=`<div style="height:12px"></div>`;
