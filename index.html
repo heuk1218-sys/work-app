@@ -20,8 +20,8 @@
 <style>
   :root{
     /* Apple HIG 다크 모드 시스템 색 기반 */
-    --bg:#1c1c1e; --side:#000000; --side-ink:#f2f2f7; --side-hover:#2c2c2e;
-    --card:#2c2c2e; --ink:#ffffff; --muted:#98989e; --line:#38383a;
+    --bg:#1c1c1e; --side:#000000; --side-ink:#e6e6e8; --side-hover:#2c2c2e;
+    --card:#2c2c2e; --ink:#e6e6e8; --ink-strong:#ffffff; --muted:#98989e; --line:#38383a;
     --accent:#0a84ff; --accent-2:#6cb6ff; --accent-soft:#0e2a45; --on-accent:#ffffff; --good:#30d158; --bad:#ff453a;
     --shadow:0 4px 18px rgba(0,0,0,.5); --input:#2c2c2e;
     /* PC 본문 최대 폭. 이 숫자 하나만 고치면 좌우 폭이 바뀐다.
@@ -119,17 +119,19 @@
   aside nav button.on svg{color:var(--on-accent)}
   aside .brand svg{color:var(--accent)}
   details.acard{background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.22);margin-bottom:14px}
-  details.acard>summary{cursor:pointer;padding:15px 20px;font-size:15px;font-weight:600;color:var(--ink);list-style:none}
+  details.acard>summary{cursor:pointer;padding:15px 20px;font-size:15px;font-weight:600;color:var(--ink-strong);list-style:none}
   details.acard>summary::-webkit-details-marker{display:none}
   details.acard>summary::before{content:"＋ ";color:var(--accent)}
   details.acard[open]>summary::before{content:"− ";color:var(--accent)}
   details.acard .acbody{padding:0 20px 18px}
 
   main{flex:1;padding:26px 34px 70px;width:100%;max-width:var(--main-max);margin:0 auto}
-  .page-h{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;color:var(--ink)}
+  .page-h{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;color:var(--ink-strong)}
   .page-sub{color:var(--muted);font-size:15px;margin-bottom:22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.22);padding:18px 20px;margin-bottom:14px}
-  .card h2{font-size:17px;font-weight:600;letter-spacing:-.01em;margin-bottom:14px;color:var(--ink)}
+  .card h2{font-size:17px;font-weight:600;letter-spacing:-.01em;margin-bottom:14px;color:var(--ink-strong)}
+  /* 글자는 기본 --ink(살짝 톤다운된 흰색). 큰 제목만 순백 */
+  h1,h2,.md-h1,.md-h2{color:var(--ink-strong)}
   .row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:0}
   .row .n1{flex:0 0 130px}.row .n2{flex:0 0 100px}
   .mt{margin-top:9px}
@@ -275,8 +277,6 @@
   .tl-tt .tt-time,.wt-time{flex:0 0 auto;font-variant-numeric:tabular-nums}
   .tt-title{flex:1;min-width:0}
   .wt-time{font-weight:500;color:var(--muted)}
-  /* 일정 제목 글씨는 순백보다 아주 살짝 낮춘다 (완료 항목의 회색은 그대로) */
-  .wtask,#tlist .item:not(.done) .bd .t{color:#e6e6e8}
   /* PC 오늘 업무: 시간순 카드 / 우선순위 카드를 나란히 */
   .tl-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-bottom:14px}
   .tl-split>.card{margin-bottom:0}
