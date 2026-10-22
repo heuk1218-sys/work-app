@@ -389,6 +389,19 @@
     .gsearch-box input{font-size:13.5px}
     .gresults{width:min(78vw,280px)}
   }
+  /* ===== 모바일·태블릿 최적화 ===== */
+  /* 백업/복원(안전패치가 만드는 #safeBkBtn): 사이드바 '로그아웃'과 겹치지 않게 오른쪽 아래, 저작권 위 */
+  #safeBkBtn{left:auto!important;right:10px!important;bottom:calc(28px + env(safe-area-inset-bottom))!important}
+  .cli-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));column-gap:8px}
+  .co-mv{display:flex;flex-direction:column;align-items:center;line-height:1.1}
+  @media(max-width:760px){
+    /* 떠 있으면 목록을 가리므로 페이지 맨 아래 흐름 속으로 */
+    #safeBkBtn{position:static!important;justify-content:center;padding:0 0 40px;opacity:.6!important}
+    /* 캘린더: 좁은 칸에서 한 글자씩 쪼개지지 않게 최대 2줄로 자른다 */
+    .cal-grid .ev{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
+    /* ×: 보이는 크기는 그대로, 누르는 영역만 넓게 */
+    .del{padding:8px 6px;margin:-8px -4px}
+  }
 </style>
 </head>
 <body>
@@ -798,7 +811,7 @@ function rDashboard(){
       <div style="display:flex;align-items:flex-end;gap:8px;margin-top:14px;min-height:112px">${bars}</div></div></div>
   <div class="two-col">
     <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">오늘 일정 <span class="meta" style="font-weight:400">· 시간순</span></h2><button class="linklike" onclick="goPage('schedule')">더보기 ›</button></div>
-      <div class="mt">${tdRoutines.map(r=>`<div class="item ${tdRdone[r.id]?"done":""}"><button class="chk ${tdRdone[r.id]?"on":""}" onclick="routineToggle('${r.id}','${today}')">${tdRdone[r.id]?"✓":""}</button><div class="bd"><div class="t">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)} <span class="pill">루틴</span></div><div class="meta"><span style="color:${priInfo(r.pri).c}">${priInfo(r.pri).t}</span></div></div></div>`).join("")}${todayTasks.length?todayTasks.map(({s,i})=>`<div class="item ${s.done?"done":""}"><button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button><div class="bd"><div class="t">${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}</div><div class="meta"><span style="color:${priInfo(s.priority).c}">${priInfo(s.priority).t}</span></div></div></div>`).join(""):(tdRoutines.length?"":'<div class="empty">오늘 일정이 없어요.</div>')}</div></div>
+      <div class="mt">${tdRoutines.map(r=>`<div class="item ${tdRdone[r.id]?"done":""}"><button class="chk ${tdRdone[r.id]?"on":""}" onclick="routineToggle('${r.id}','${today}')">${tdRdone[r.id]?"✓":""}</button><div class="bd"><div class="t tl-tt">${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}<span class="tt-title">${esc(r.title)} <span class="pill">루틴</span></span></div><div class="meta"><span style="color:${priInfo(r.pri).c}">${priInfo(r.pri).t}</span></div></div></div>`).join("")}${todayTasks.length?todayTasks.map(({s,i})=>`<div class="item ${s.done?"done":""}"><button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button><div class="bd"><div class="t tl-tt">${s.time?`<span class="tt-time">${esc(s.time)}</span>`:""}<span class="tt-title">${esc(s.title)}</span></div><div class="meta"><span style="color:${priInfo(s.priority).c}">${priInfo(s.priority).t}</span></div></div></div>`).join(""):(tdRoutines.length?"":'<div class="empty">오늘 일정이 없어요.</div>')}</div></div>
     <div>
       <div class="card"><div style="display:flex;align-items:center"><h2 style="flex:1;margin:0">이번 주</h2><button class="linklike" onclick="goPage('schedule')">›</button></div>
         <div class="mt">${wdays.map(d=>{const dt=new Date(d+"T00:00:00");const u=dayUnits(d);const isT=d===today;
@@ -2124,15 +2137,15 @@ function cliForm(c,i){
 function drawC(){
   const e=document.getElementById("clist");
   if(!DB.clients.length){e.innerHTML='<div class="empty">등록된 고객이 없어요.</div>';drawSummary();drawRpt();return;}
-  if(isMobile()){
-    e.innerHTML=DB.clients.map((c,i)=>{
+  if(isMobile()||e.clientWidth<720){
+    e.innerHTML='<div class="cli-cards">'+DB.clients.map((c,i)=>{
       if(i===editClientIdx)return `<div style="border:1px solid var(--line);border-radius:5px;padding:12px;margin-bottom:8px">${cliForm(c,i)}</div>`;
       return `<div style="border:1px solid var(--line);border-radius:5px;padding:12px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:2px"><span style="flex:1;font-weight:600;cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${esc(c.name)}</span><button class="linklike" onclick="cliMove(${i},-1)" title="위로" ${i===0?"disabled":""}>▲</button><button class="linklike" onclick="cliMove(${i},1)" title="아래로" ${i===DB.clients.length-1?"disabled":""}>▼</button><button class="del" onclick="delClient(${i})">×</button></div>
       <div class="meta" style="margin-top:6px;line-height:1.9;cursor:pointer" onclick="cliEdit(${i})" title="클릭해서 수정">${c.field?esc(c.field)+" · ":""}포스팅 ${esc(c.cycle||"-")} · 재계약 ${esc(recDisp(c.recontract))}${c.note?"<br>분납일: "+esc(c.note):""}</div>
       <div class="meta" style="line-height:1.9">
         ${c.clink?`<a href="${esc(c.clink)}" target="_blank" rel="noopener" style="color:var(--accent)">클라이언트 ↗</a>`:`<button class="linklike" onclick="setClink(${i})">＋클라이언트</button>`} &nbsp;
-        ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`}</div></div>`;}).join("");
+        ${c.sheet?`<a href="${esc(c.sheet)}" target="_blank" rel="noopener" style="color:var(--accent)">문의시트 ↗</a>`:`<button class="linklike" onclick="setSheet(${i})">＋문의시트</button>`}</div></div>`;}).join("")+'</div>';
     drawSummary();drawRpt();return;
   }
   e.innerHTML=`<table class="tbl fixed"><tr><th style="width:25%">성함</th><th style="width:11%">대행분야</th><th style="width:12%">클라이언트</th><th style="width:12%">문의시트</th><th style="width:15%">포스팅</th><th style="width:10%">재계약</th><th style="width:10%">분납일</th><th style="width:5%"></th></tr>
@@ -2518,17 +2531,17 @@ function drawCosts(){
   const total=DB.costs.reduce((a,c)=>a+(c.amount||0),0);
   document.getElementById("costStat").innerHTML=`<div class="s"><div class="lab">월 고정비용 합계</div><div class="val">₩${total.toLocaleString("ko-KR")}</div></div><div class="s"><div class="lab">항목 수</div><div class="val">${DB.costs.length}개</div></div>`;
   const e=document.getElementById("co_list");const mob=isMobile();const n=DB.costs.length;
-  e.innerHTML=n?`<table class="tbl"><tr><th style="width:38px"></th><th>항목</th><th style="text-align:right">액수</th><th>날짜</th><th>코멘트</th><th></th></tr>
+  e.innerHTML=n?`<table class="tbl"><tr><th style="width:${mob?24:38}px"></th><th>항목</th><th style="text-align:right">액수</th><th>날짜</th>${mob?"":"<th>코멘트</th>"}<th></th></tr>
     ${DB.costs.map((c,i)=>{
       if(c.id===editCostId){
-        return `<tr><td colspan="6"><div class="row"><input id="ec_it_${c.id}" class="n2" value="${esc(c.item)}" placeholder="항목"><input id="ec_am_${c.id}" class="n2" type="number" value="${c.amount||0}" placeholder="액수"><input id="ec_dy_${c.id}" class="n2" value="${esc(c.day||"")}" placeholder="날짜"><input id="ec_cm_${c.id}" value="${esc(c.comment||"")}" placeholder="코멘트"></div><div class="row mt"><button class="addb" onclick="costSave('${c.id}')">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="costEditCancel()">취소</button></div></td></tr>`;
+        return `<tr><td colspan="${mob?5:6}"><div class="row"><input id="ec_it_${c.id}" class="n2" value="${esc(c.item)}" placeholder="항목"><input id="ec_am_${c.id}" class="n2" type="number" value="${c.amount||0}" placeholder="액수"><input id="ec_dy_${c.id}" class="n2" value="${esc(c.day||"")}" placeholder="날짜"><input id="ec_cm_${c.id}" value="${esc(c.comment||"")}" placeholder="코멘트"></div><div class="row mt"><button class="addb" onclick="costSave('${c.id}')">저장</button><button class="ghostb" style="flex:0 0 80px" onclick="costEditCancel()">취소</button></div></td></tr>`;
       }
       return `<tr ${mob?"":`draggable="true" ondragstart="rowDragStart(event,'costs','${c.id}')" ondragover="rowDragOver(event)" ondrop="rowDrop(event,'costs','${c.id}')" ondragend="rowDragEnd()"`}>
-      <td style="color:var(--muted);white-space:nowrap">${mob?`<button class="linklike" onclick="costMove('${c.id}',-1)" ${i===0?"disabled":""}>▲</button><button class="linklike" onclick="costMove('${c.id}',1)" ${i===n-1?"disabled":""}>▼</button>`:`<span style="cursor:grab" title="드래그해서 순서 변경">⠿</span>`}</td>
-      <td style="font-weight:500;cursor:pointer" onclick="costEdit('${c.id}')" title="클릭해서 수정">${esc(c.item)}</td>
+      <td style="color:var(--muted);white-space:nowrap">${mob?`<div class="co-mv"><button class="linklike" onclick="costMove('${c.id}',-1)" ${i===0?"disabled":""}>▲</button><button class="linklike" onclick="costMove('${c.id}',1)" ${i===n-1?"disabled":""}>▼</button></div>`:`<span style="cursor:grab" title="드래그해서 순서 변경">⠿</span>`}</td>
+      <td style="font-weight:500;cursor:pointer;word-break:keep-all" onclick="costEdit('${c.id}')" title="클릭해서 수정">${esc(c.item)}${mob&&c.comment?`<div class="meta" style="font-weight:400">${esc(c.comment)}</div>`:""}</td>
       <td style="text-align:right;cursor:pointer" onclick="costEdit('${c.id}')">₩${(c.amount||0).toLocaleString("ko-KR")}</td>
       <td class="meta costday" style="cursor:pointer" onclick="costEdit('${c.id}')">${esc(c.day||"")}</td>
-      <td class="meta" style="cursor:pointer" onclick="costEdit('${c.id}')">${esc(c.comment||"")}</td>
+      ${mob?"":`<td class="meta" style="cursor:pointer" onclick="costEdit('${c.id}')">${esc(c.comment||"")}</td>`}
       <td style="text-align:right"><button class="del" onclick="delCostId('${c.id}')">×</button></td></tr>`;}).join("")}</table>`
     :'<div class="empty">등록된 고정 비용이 없어요.</div>';
 }
