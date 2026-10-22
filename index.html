@@ -226,10 +226,13 @@
   @media(min-width:761px){.week-scroll{margin:0 -20px}}
   .week-grid{display:grid;gap:7px}
   .wcol{background:#2c2c2e;border:1px solid var(--line);border-radius:5px;padding:7px;min-height:104px;cursor:pointer}
-  .wcol:hover{border-color:var(--accent)}
-  .wcol.today{border-color:var(--accent);background:var(--card)}
-  .wcol.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  /* 파랑은 '오늘' 전용. 다른 날의 호버·선택은 회색/흰색 계열로 구분한다 */
+  .wcol:hover{border-color:#6e6e73}
+  .wcol.today,.wcol.today:hover{border-color:var(--accent);background:var(--card)}
+  .wcol.sel{border-color:#d1d1d6;box-shadow:0 0 0 2px rgba(255,255,255,.14)}
+  .wcol.today.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
   .wcol-h{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-align:center}
+  .wcol.sel .wcol-h{color:var(--ink)}
   .wcol.today .wcol-h{color:var(--accent)}
   .wtask{font-size:12px;line-height:1.35;display:flex;align-items:flex-start;gap:5px;padding:4px 6px;border-radius:3px;margin-bottom:3px;background:var(--card);border:1px solid var(--line);word-break:keep-all}
   .wtask.done{opacity:.5;text-decoration:line-through}
@@ -287,6 +290,8 @@
   .ie-note{flex:1;min-width:0}
   .ie-hint{flex:1;min-width:0;font-size:12px;color:#7a7a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .item.editing{background:#242426;border-radius:4px}
+  /* 모바일 '업무 추가' — 수정 모드 행과 같은 뼈대. 체크박스가 없으니 좌우 여백만 준다 */
+  .item.editing.add-form{padding:11px 12px;border-bottom:none}
 
   /* ===== 일기 첨부 사진 ===== */
   .dimg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
@@ -883,14 +888,23 @@ function rSchedule(){
     <textarea id="daymain" rows="2" placeholder="이 날의 핵심 일정·업무를 적어두세요 (예: 11시 스터디, 14시 회의)" onchange="setMain(this.value)">${esc((DB.dayinfo[selDay]||{}).main||"")}</textarea></div>
   <details class="acard"><summary>업무 추가</summary><div class="acbody">
     <!-- 아래 '오늘 업무' 줄과 칸 순서·폭을 맞췄다: [시간][업무내용] / [우선순위][비고].
-         날짜는 오른쪽 끝, 시·분 드롭다운은 안 쓰게 돼서 뺐다. -->
+         날짜는 오른쪽 끝, 시·분 드롭다운은 안 쓰게 돼서 뺐다.
+         모바일은 수정 모드 행(.item.editing + .ie)과 같은 모양으로 그린다. id 는 동일. -->
+    ${mob?`<div class="item editing add-form"><div class="bd">
+        <div class="t ie-row">
+          <input id="stime" class="ie ie-time" placeholder="시간" inputmode="numeric" onkeydown="if(event.key==='Enter')document.getElementById('sadd').click()">
+          <input id="stt" class="ie ie-title" placeholder="업무 내용" onkeydown="if(event.key==='Enter')document.getElementById('sadd').click()"></div>
+        <div class="meta ie-row">
+          <select id="spri" class="ie ie-pri"><option value="" selected>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}">${n}순위</option>`).join("")}</select>
+          <input id="snote" class="ie ie-note" placeholder="비고" onkeydown="if(event.key==='Enter')document.getElementById('sadd').click()"></div></div></div>
+      <div class="row mt"><input type="date" id="sd" class="n1" value="${selDay}" title="날짜"><button class="addb" id="sadd" style="flex:1 1 46%">+ 추가</button></div></div></details>`:`
     <div class="row"><input id="stime" class="n2" placeholder="시간" inputmode="numeric" style="flex:0 0 92px">
       <input id="stt" class="mobwide" placeholder="업무 내용">
       <input type="date" id="sd" class="n1" value="${selDay}" title="날짜" style="flex:0 0 140px"></div>
     <div class="row mt"><select id="spri" class="n2" style="flex:0 0 92px">
         <option value="" selected>미지정</option><option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4">4순위</option></select>
       <input id="snote" class="mobwide" placeholder="비고 (선택)">
-      <button class="addb" id="sadd" style="flex:0 0 140px">+ 추가</button></div></div></details>
+      <button class="addb" id="sadd" style="flex:0 0 140px">+ 추가</button></div></div></details>`}
   <div class="card">
     <div style="display:flex;align-items:center;margin-bottom:12px"><h2 style="flex:1;margin:0">${dayLabel} 업무</h2>
       <div class="sort-toggle"><button class="${todaySort==="pri"?"on":""}" onclick="setTodaySort('pri')">우선순위순</button><button class="${todaySort==="time"?"on":""}" onclick="setTodaySort('time')">시간순</button></div></div>
