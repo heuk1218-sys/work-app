@@ -275,6 +275,8 @@
   .tl-tt .tt-time,.wt-time{flex:0 0 auto;font-variant-numeric:tabular-nums}
   .tt-title{flex:1;min-width:0}
   .wt-time{font-weight:500;color:var(--muted)}
+  /* 일정 제목 글씨는 순백보다 아주 살짝 낮춘다 (완료 항목의 회색은 그대로) */
+  .wtask,#tlist .item:not(.done) .bd .t{color:#e6e6e8}
   /* PC 오늘 업무: 시간순 카드 / 우선순위 카드를 나란히 */
   .tl-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-bottom:14px}
   .tl-split>.card{margin-bottom:0}
