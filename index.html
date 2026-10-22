@@ -1080,16 +1080,16 @@ function routineRow(r,done,col){
       <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r,1)}</div></div>
     <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
 }
-let todaySort="time",editSchedIdx=null,editRtId=null,editCol=null,priDoneOpen=false;
+let todaySort="time",editSchedIdx=null,editRtId=null,editCol=null,doneOpen=false;
 function drawDay(){
   const el=document.getElementById("tlist");
   if(!el)return;
   const rd=rdoneOf(selDay);
-  const skipped=routinesSkipped(selDay);
 
   /* 일반 업무와 루틴을 한 목록으로 합친다. 루틴이라고 위에 고정되지 않는다.
-     PC: 왼쪽 시간순 / 오른쪽 우선순위순 2열을 동시에 보여준다.
-     모바일: 위쪽 정렬 토글(우선순위순/시간순) 하나만 적용. */
+     PC: 왼쪽 시간순 카드 / 오른쪽 우선순위 카드를 동시에 보여준다.
+     모바일: 위쪽 정렬 토글(우선순위순/시간순) 하나만 적용.
+     (그날만 건너뛴 루틴 목록은 더 이상 표시하지 않는다) */
   const units=[];
   DB.schedules.forEach((s,i)=>{
     if(s.date===selDay)units.push({kind:"task",s,i,done:!!s.done,time:s.time||"",pri:s.priority});
@@ -1099,45 +1099,36 @@ function drawDay(){
   });
   const byTime=(a,b)=>(a.done-b.done)||((a.time||"99:99").localeCompare(b.time||"99:99"));
   const byP=(a,b)=>(a.done-b.done)||(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99"));
-  const list=(sort,col)=>units.slice().sort(sort==="time"?byTime:byP)
-    .map(u=>u.kind==="task"?taskRow(u.s,u.i,col):routineRow(u.r,u.done,col)).join("");
+  const rowOf=col=>u=>u.kind==="task"?taskRow(u.s,u.i,col):routineRow(u.r,u.done,col);
+  const list=(sort,col)=>units.slice().sort(sort==="time"?byTime:byP).map(rowOf(col)).join("");
+  const empty='<div class="empty">이 날 업무가 없어요.</div>';
 
-  const row=u=>u.kind==="task"?taskRow(u.s,u.i,"pri"):routineRow(u.r,u.done,"pri");
-  /* 우선순위 카드: 순위 묶음마다 왼쪽 막대(순위 색) + "완료/전체".
-     묶음 안엔 남은 일만, 완료는 카드 맨 아래 '완료 N'에 접어둔다. */
+  /* 시간순 카드: 남은 일만 펼쳐두고, 완료는 맨 아래 '완료 N'에 접어둔다 */
+  const timeList=()=>{
+    const arr=units.slice().sort(byTime), open=arr.filter(u=>!u.done), done=arr.filter(u=>u.done);
+    return open.map(rowOf("time")).join("")
+      +(done.length?`<button class="tl-donebtn" onclick="toggleDone()">완료 ${done.length} ${doneOpen?"▾":"▸"}</button>
+        ${doneOpen?`<div class="tl-donelist">${done.map(rowOf("time")).join("")}</div>`:""}`:"");
+  };
+  /* 우선순위 카드: 순위 묶음마다 왼쪽 막대(순위 색) + "완료/전체". 완료한 일은 보여주지 않는다. */
   const priGroups=()=>{
     const arr=units.slice().sort(byP);
-    const groups=[1,2,3,4,null].map(g=>{
+    return [1,2,3,4,null].map(g=>{
       const all=arr.filter(u=>{const n=parseInt(u.pri);return ([1,2,3,4].includes(n)?n:null)===g;});
       if(!all.length)return "";
       const open=all.filter(u=>!u.done), pi=priInfo(g);
       return `<div class="tl-grp" style="--pc:${pi.c}"><div class="tl-g">${pi.t}<span class="tl-gn">${all.length-open.length}/${all.length}</span></div>
-        ${open.length?open.map(row).join(""):'<div class="tl-alldone">모두 완료</div>'}</div>`;
+        ${open.length?open.map(rowOf("pri")).join(""):'<div class="tl-alldone">모두 완료</div>'}</div>`;
     }).join("");
-    const done=arr.filter(u=>u.done);
-    return groups+(done.length?`<button class="tl-donebtn" onclick="togglePriDone()">완료 ${done.length} ${priDoneOpen?"▾":"▸"}</button>
-      ${priDoneOpen?`<div class="tl-donelist">${done.map(row).join("")}</div>`:""}`:"");
   };
-  const empty=skipped.length?"":'<div class="empty">이 날 업무가 없어요.</div>';
-  let skHtml="";
-  if(skipped.length){
-    skHtml+=`<div style="height:12px"></div>`;
-    /* 그날만 뺀 루틴 — 되돌릴 수 있게 남겨둔다 */
-    skHtml+=`<div class="meta" style="margin:0 0 6px;color:var(--muted)">건너뛴 루틴 · ${skipped.length}건 <span style="color:#6a6a6a">(달성률에서 제외됨)</span></div>`;
-    skHtml+=skipped.map(r=>`<div class="item" style="opacity:.5">
-      <span class="pdot" style="background:${priInfo(r.pri).c};margin-top:8px"></span>
-      <div class="bd"><div class="t" style="text-decoration:line-through">${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}</div>
-        <div class="meta">${rtRecurLabel(r,1)}</div></div>
-      <button class="linklike" onclick="routineUnskip('${r.id}')" title="이 날 다시 하기">되돌리기</button></div>`).join("");
-  }
   let html;
-  if(isMobile()) html=(units.length?list(todaySort):empty)+skHtml;
+  if(isMobile()) html=units.length?list(todaySort):empty;
   else{
     const ds=new Date(selDay+"T00:00:00");
     const dl=selDay===T()?"오늘":`${ds.getMonth()+1}월 ${ds.getDate()}일`;
     html=`<div class="tl-split">
-      <div class="card"><h2>${dl} 업무<span class="tl-sub">시간순</span></h2>${units.length?list("time","time"):empty}${skHtml}</div>
-      <div class="card"><h2>우선순위</h2>${units.length?priGroups():'<div class="empty">이 날 업무가 없어요.</div>'}</div></div>`;
+      <div class="card"><h2>${dl} 업무<span class="tl-sub">시간순</span></h2>${units.length?timeList():empty}</div>
+      <div class="card"><h2>우선순위</h2>${units.length?priGroups():empty}</div></div>`;
   }
   el.innerHTML=html;
   /* 수정 모드로 들어왔으면 제목칸에 커서를 둔다 (스크롤은 건드리지 않는다) */
@@ -1145,7 +1136,7 @@ function drawDay(){
   if(f){try{f.focus({preventScroll:true});const n=f.value.length;if(f.setSelectionRange)f.setSelectionRange(n,n);}catch(_){}}
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
-window.togglePriDone=()=>{priDoneOpen=!priDoneOpen;drawDay();};
+window.toggleDone=()=>{doneOpen=!doneOpen;drawDay();};
 window.goToday=()=>{selDay=T();editSchedIdx=null;editRtId=null;rSchedule();};
 window.schedEdit=(i,col)=>{editSchedIdx=i;editRtId=null;editCol=col||null;drawDay();ieArm();};
 window.schedEditCancel=()=>{ieExit();};
