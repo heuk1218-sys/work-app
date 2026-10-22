@@ -270,6 +270,11 @@
     .mobwide{flex:1 1 100%!important}
   }
   .tt-time{color:var(--muted);font-weight:600;margin-right:5px}
+  /* [시간][제목] 2칸 — 제목이 길어 줄바꿈되면 둘째 줄도 제목 시작선에서 시작 */
+  .tl-tt{display:flex;align-items:baseline}
+  .tl-tt .tt-time,.wt-time{flex:0 0 auto;font-variant-numeric:tabular-nums}
+  .tt-title{flex:1;min-width:0}
+  .wt-time{font-weight:500;color:var(--muted)}
   /* PC 오늘 업무: 시간순 카드 / 우선순위 카드를 나란히 */
   .tl-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-bottom:14px}
   .tl-split>.card{margin-bottom:0}
@@ -997,8 +1002,8 @@ function weekCol(d){
   const pct=u.total?u.rate:null;
   const mn=(DB.dayinfo[d]||{}).main;
   const rts=routinesForDate(d), rd=rdoneOf(d);
-  const rtHtml=rts.map(rt=>`<div class="wtask ${rd[rt.id]?"done":""}"><span class="pdot" style="background:${priInfo(rt.pri).c}"></span>${rt.time?`<b style="font-weight:500;color:var(--muted)">${esc(rt.time)}</b> `:""}${esc(rt.title)}<span style="color:#7a7a7a;font-size:10px"> ·루틴</span></div>`).join("");
-  const taskHtml=items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${priInfo(s.priority).c}"></span>${s.time?`<b style="font-weight:500;color:var(--muted)">${s.time}</b> `:""}${esc(s.title)}</div>`).join("");
+  const rtHtml=rts.map(rt=>`<div class="wtask ${rd[rt.id]?"done":""}"><span class="pdot" style="background:${priInfo(rt.pri).c}"></span>${rt.time?`<b class="wt-time">${esc(rt.time)}</b>`:""}<span class="tt-title">${esc(rt.title)}<span style="color:#7a7a7a;font-size:10px"> ·루틴</span></span></div>`).join("");
+  const taskHtml=items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${priInfo(s.priority).c}"></span>${s.time?`<b class="wt-time">${esc(s.time)}</b>`:""}<span class="tt-title">${esc(s.title)}</span></div>`).join("");
   return `<div class="wcol ${isT?"today":""} ${isSel?"sel":""}" onclick="selectDay('${d}')">
     <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${pct!==null?` · <span style="color:var(--accent)">${pct}%</span>`:""}</div>
     ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
@@ -1034,7 +1039,7 @@ function taskRow(s,i,col){
   }
   const ca=col?`,'${col}'`:"";
   /* 우선순위 카드: 한 줄 행 — 제목 …… 시간(흐리게). 비고는 마우스 툴팁·수정 모드에서 */
-  const title=`${s.time?`<span class="tt-time">${esc(s.time)}</span> `:""}${esc(s.title)}`;
+  const title=`${s.time?`<span class="tt-time">${esc(s.time)}</span>`:""}<span class="tt-title">${esc(s.title)}</span>`;
   if(pc)return `<div class="item tl-one ${s.done?"done":""}">
     <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="${s.note?esc(s.note)+" · ":""}클릭해서 수정"><span class="t">${esc(s.title)}</span>${s.time?`<span class="tt-dim tl-time">${esc(s.time)}</span>`:""}</div>
@@ -1042,7 +1047,7 @@ function taskRow(s,i,col){
   const meta=`<span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}`;
   return `<div class="item ${s.done?"done":""}">
     <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
-    <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="클릭해서 수정"><div class="t">${title}</div>
+    <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="클릭해서 수정"><div class="t tl-tt">${title}</div>
       <div class="meta">${meta}</div></div>
     <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
 }
@@ -1073,10 +1078,10 @@ function routineRow(r,done,col){
     <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="${rtRecurLabel(r,1)} · 클릭해서 이 날짜만 수정"><span class="t">${esc(r.title)}</span>${r.time?`<span class="tt-dim tl-time">${esc(r.time)}</span>`:""}</div>
     <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
-  const title=`${r.time?`<span class="tt-time">${esc(r.time)}</span> `:""}${esc(r.title)}`;
+  const title=`${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}<span class="tt-title">${esc(r.title)}</span>`;
   return `<div class="item ${done?"done":""}">
     <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
-    <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="클릭해서 이 날짜만 수정"><div class="t">${title}</div>
+    <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="클릭해서 이 날짜만 수정"><div class="t tl-tt">${title}</div>
       <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r,1)}</div></div>
     <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
 }
@@ -1131,12 +1136,24 @@ function drawDay(){
       <div class="card"><h2>우선순위</h2>${units.length?priGroups():empty}</div></div>`;
   }
   el.innerHTML=html;
+  fitTitles();
   /* 수정 모드로 들어왔으면 제목칸에 커서를 둔다 (스크롤은 건드리지 않는다) */
   const f=el.querySelector('[data-focus="1"]');
   if(f){try{f.focus({preventScroll:true});const n=f.value.length;if(f.setSelectionRange)f.setSelectionRange(n,n);}catch(_){}}
 }
 window.setTodaySort=(s)=>{todaySort=s;rSchedule();};
 window.toggleDone=()=>{doneOpen=!doneOpen;drawDay();};
+/* 제목이 한 줄을 살짝 넘치면 자간을 조금씩 좁혀 한 줄에 맞춘다.
+   최대로 좁혀도 안 들어가면 원래 자간으로 두 줄 (둘째 줄은 제목 시작선에 맞춰진다). */
+function fitTitles(){
+  document.querySelectorAll(".week-grid .tt-title, #tlist .tt-title, #tlist .tl-one .bd .t").forEach(el=>{
+    el.style.letterSpacing="";el.style.whiteSpace="nowrap";el.style.overflow="hidden";
+    const w=el.clientWidth;let fit=null;
+    if(w>0) for(const ls of [0,-0.02,-0.04,-0.06]){el.style.letterSpacing=ls+"em";if(el.scrollWidth<=w){fit=ls;break;}}
+    el.style.whiteSpace="";el.style.overflow="";
+    el.style.letterSpacing=fit?fit+"em":"";
+  });
+}
 window.goToday=()=>{selDay=T();editSchedIdx=null;editRtId=null;rSchedule();};
 window.schedEdit=(i,col)=>{editSchedIdx=i;editRtId=null;editCol=col||null;drawDay();ieArm();};
 window.schedEditCancel=()=>{ieExit();};
