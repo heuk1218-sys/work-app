@@ -344,19 +344,6 @@
   /* 날짜 옮기기 — 자주 안 쓰므로 비고 줄 오른쪽 끝에 흐리고 작게 */
   .ie-date{flex:0 0 auto;width:auto;font-size:12px;color:#7a7a7a;color-scheme:dark}
   .ie-hint{flex:1;min-width:0;font-size:12px;color:#7a7a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* 날짜 프리셋 칩 [오늘][내일][다음주][날짜선택] — 추가폼·수정폼 날짜칸 옆 */
-  .dchips{display:flex;gap:4px;flex:0 0 auto;align-items:center}
-  .row>.dchips{flex:0 0 auto}
-  .dchip{background:transparent;border:1px solid var(--line);color:var(--muted);font-size:11.5px;line-height:1.2;padding:3px 7px;border-radius:10px;cursor:pointer;white-space:nowrap;font-family:inherit}
-  .dchip:hover{border-color:#6e6e73;color:var(--ink)}
-  .dchip.on{border-color:var(--accent);color:var(--accent-2);background:var(--accent-soft)}
-  /* 칸이 좁으면(PC 2열 카드 등) 비고가 찌그러지지 않게 칩을 다음 줄로 내린다 */
-  .item.editing .meta.ie-row{flex-wrap:wrap;row-gap:6px}
-  .item.editing .meta.ie-row>.ie-note{flex:1 1 110px}
-  @media(max-width:760px){
-    .dchip{font-size:13px;padding:6px 10px}
-    .item.editing .meta.ie-row>.dchips{flex:1 0 100%}
-  }
   /* 빠른 메뉴 (TickTick 우클릭 메뉴 모양) — 날짜 아이콘 줄 / 우선순위 깃발 줄 / 구분선 / 삭제 */
   .ctxm{position:fixed;z-index:9999;width:188px;background:#2a2a2c;border:1px solid rgba(255,255,255,.09);border-radius:8px;
         box-shadow:0 10px 30px rgba(0,0,0,.55);padding:6px 0;color:var(--ink);font-size:13px;user-select:none}
@@ -871,8 +858,8 @@ function rDashboard(){
 }
 
 /* ===== 1) 일정 (주간 보기 · 날짜 선택 · 반응형) ===== */
-/* c = 글자색(회색 단계, 그대로 유지) / f = 깃발색(체크박스 테두리·점·묶음 막대에만). 4순위·미지정은 무색 */
-const PRI={1:{t:"1순위",c:"#e0e0e0",f:"#e5484d"},2:{t:"2순위",c:"#b6b6b6",f:"#f2a73b"},3:{t:"3순위",c:"#8f8f8f",f:"#4a9eff"},4:{t:"4순위",c:"#6f6f6f",f:null}};
+/* c = 글자색(회색 단계, 그대로 유지) / f = 깃발색(체크박스 테두리·점·묶음 막대·메뉴 깃발). 어두운 화면에 튀지 않게 채도를 낮춘 톤. 4순위·미지정은 무색 */
+const PRI={1:{t:"1순위",c:"#e0e0e0",f:"#a8545a"},2:{t:"2순위",c:"#b6b6b6",f:"#b08848"},3:{t:"3순위",c:"#8f8f8f",f:"#5079a8"},4:{t:"4순위",c:"#6f6f6f",f:null}};
 /* 우선순위 미지정(null) 지원.
    기존 데이터는 priority가 명시돼 있으므로 표시가 바뀌지 않고,
    새로 추가하는 업무만 "미지정"으로 시작해 직접 고르도록 유도한다. */
@@ -1004,11 +991,10 @@ function rSchedule(){
         <div class="meta ie-row">
           <select id="spri" class="ie ie-pri"><option value="" selected>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}">${n}순위</option>`).join("")}</select>
           <input id="snote" class="ie ie-note" placeholder="비고" onkeydown="if(event.key==='Enter')document.getElementById('sadd').click()"></div></div></div>
-      <div class="row mt">${dchips("addDateChip(",selDay,"sdchips")}</div>
-      <div class="row mt"><input type="date" id="sd" class="n1" value="${selDay}" title="날짜" oninput="dchipSync()" onchange="dchipSync()"><button class="addb" id="sadd" style="flex:1 1 46%">+ 추가</button></div></div></details>`:`
+      <div class="row mt"><input type="date" id="sd" class="n1" value="${selDay}" title="날짜"><button class="addb" id="sadd" style="flex:1 1 46%">+ 추가</button></div></div></details>`:`
     <div class="row"><input id="stime" class="n2" placeholder="시간" inputmode="numeric" style="flex:0 0 92px">
       <input id="stt" class="mobwide" placeholder="업무 내용">
-      <input type="date" id="sd" class="n1" value="${selDay}" title="날짜" style="flex:0 0 140px" oninput="dchipSync()" onchange="dchipSync()">${dchips("addDateChip(",selDay,"sdchips")}</div>
+      <input type="date" id="sd" class="n1" value="${selDay}" title="날짜" style="flex:0 0 140px"></div>
     <div class="row mt"><select id="spri" class="n2" style="flex:0 0 92px">
         <option value="" selected>미지정</option><option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4">4순위</option></select>
       <input id="snote" class="mobwide" placeholder="비고 (선택)">
@@ -1034,37 +1020,15 @@ function rSchedule(){
   };
   drawDay();
 }
-/* ---- 날짜 프리셋 칩 ----
-   기준은 선택한 날이 아니라 '진짜 오늘'. 다음주 = 다음 주 월요일.
-   call 은 onclick 앞부분(예: "addDateChip(" / "schedDateChip(3,") — 뒤에 'k') 를 붙인다. */
+/* ---- 날짜 프리셋 (빠른 메뉴용) ----
+   기준은 선택한 날이 아니라 '진짜 오늘'. 다음주 = 다음 주 월요일. */
 function presetDate(k){
   const d=new Date(T()+"T00:00:00");
   if(k==="tom")d.setDate(d.getDate()+1);
   else if(k==="nw")d.setDate(d.getDate()+7-((d.getDay()+6)%7));
   return d.toLocaleDateString("sv-SE");
 }
-function dchips(call,cur,id){
-  const P=[["today","오늘"],["tom","내일"],["nw","다음주"]];
-  return `<span class="dchips"${id?` id="${id}"`:""}>${P.map(([k,t])=>{const v=presetDate(k);
-    return `<button type="button" class="dchip${cur===v?" on":""}" data-k="${k}" title="${v}" onclick="${call}'${k}')">${t}</button>`;}).join("")}<button type="button" class="dchip" onclick="${call}'pick')">날짜선택</button></span>`;
-}
 function openPicker(el){try{if(el.showPicker){el.showPicker();return;}}catch(_){}el.focus();el.click();}
-/* 추가폼: 날짜칸 값만 바꾼다(저장은 '+ 추가' 때) */
-function dchipSync(){
-  const el=document.getElementById("sd"),box=document.getElementById("sdchips");if(!el||!box)return;
-  box.querySelectorAll(".dchip[data-k]").forEach(b=>b.classList.toggle("on",presetDate(b.dataset.k)===el.value));
-}
-window.dchipSync=dchipSync;
-window.addDateChip=(k)=>{
-  const el=document.getElementById("sd");if(!el)return;
-  if(k==="pick"){openPicker(el);return;}
-  el.value=presetDate(k);dchipSync();
-};
-/* 수정폼: 기존 저장 경로(schedField 'date') 그대로 탄다 */
-window.schedDateChip=(i,k)=>{
-  if(k==="pick"){const el=document.querySelector('#tlist [data-edit="1"] .ie-date');if(el)openPicker(el);return;}
-  schedField(i,"date",{value:presetDate(k)});
-};
 /* (시·분 드롭다운을 없애면서 pickTime() 도 제거했다 — 시간은 stime 칸에 직접 입력) */
 function normTime(s){s=(s||"").trim();if(!s)return"";s=s.replace(/[^0-9:]/g,"");let h,m,mm=s.match(/^(\d{1,2}):(\d{1,2})$/);if(mm){h=+mm[1];m=+mm[2];}else if(/^\d{3,4}$/.test(s)){h=+s.slice(0,s.length-2);m=+s.slice(-2);}else if(/^\d{1,2}$/.test(s)){h=+s;m=0;}else return"";if(h>23||m>59)return"";return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
 window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;editRtId=null;rSchedule();};
@@ -1152,7 +1116,6 @@ function taskRow(s,i,col){
           ${pc?tI:pI}
           <input class="ie ie-note" value="${esc(s.note||"")}" placeholder="비고" onchange="schedField(${i},'note',this)" onkeydown="ieKey(event)">
           <input type="date" class="ie ie-date" value="${esc(s.date||"")}" title="날짜 옮기기" onchange="schedField(${i},'date',this)" onkeydown="ieKey(event)">
-          ${dchips(`schedDateChip(${i},`,s.date)}
         </div>
       </div>
       <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
