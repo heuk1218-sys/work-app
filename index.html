@@ -142,6 +142,7 @@
   .ghostb.danger{color:var(--bad)}
   .linklike{background:none;border:none;color:var(--accent);font-size:12.5px;cursor:pointer;padding:2px 4px}
   .empty{color:var(--muted);text-align:center;padding:22px 0;font-size:13.5px}
+  .empty-sub{font-size:12px;color:#6a6a6a;margin-top:4px}
   .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:10px;background:var(--accent-soft);color:var(--accent-2)}
 
   .item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
@@ -238,7 +239,7 @@
   .wcol.today .wcol-h{color:var(--accent)}
   .wtask{font-size:12px;line-height:1.35;display:flex;align-items:flex-start;gap:5px;padding:4px 6px;border-radius:3px;margin-bottom:3px;background:var(--card);border:1px solid var(--line);word-break:keep-all}
   .wtask.done{opacity:.5;text-decoration:line-through}
-  .pdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:4px}
+  .pdot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;margin-top:3.5px;box-shadow:0 0 0 1.5px rgba(0,0,0,.45)}
   .wempty{color:#8f8f8f;font-size:11px;text-align:center;padding:4px 0}
   .wmain{font-size:11.5px;font-weight:600;color:var(--accent-2);background:var(--accent-soft);border-radius:3px;padding:4px 7px;margin-bottom:5px;white-space:normal;line-height:1.4;word-break:break-word}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -285,9 +286,9 @@
   /* 2열에선 ×가 너무 많이 보여서, 행에 마우스를 올렸을 때(또는 수정 중)만 보인다 */
   .tl-split .item .del{opacity:0;transition:opacity .12s}
   .tl-split .item:hover .del,.tl-split .item.editing .del,.tl-split .item .del:focus-visible{opacity:1}
-  /* 우선순위 묶음: 왼쪽 막대 색 = 순위 색(1순위가 가장 밝다) */
+  /* 우선순위 묶음: 왼쪽 막대·소제목 색 = 깃발색(1 빨강·2 주황·3 파랑, 4·미지정은 무색) */
   .tl-grp{border-left:3px solid var(--pc);padding-left:11px;margin-bottom:14px}
-  .tl-g{display:flex;align-items:baseline;gap:7px;font-size:12.5px;font-weight:700;color:var(--ink);padding:1px 0 3px}
+  .tl-g{display:flex;align-items:baseline;gap:7px;font-size:12.5px;font-weight:700;color:var(--pt,var(--ink));padding:1px 0 3px}
   .tl-gn{font-weight:400;font-size:11.5px;color:#7a7a7a}
   .tl-grp .item:last-child{border-bottom:none}
   .tl-one{padding:7px 0;align-items:center}
@@ -343,6 +344,32 @@
   /* 날짜 옮기기 — 자주 안 쓰므로 비고 줄 오른쪽 끝에 흐리고 작게 */
   .ie-date{flex:0 0 auto;width:auto;font-size:12px;color:#7a7a7a;color-scheme:dark}
   .ie-hint{flex:1;min-width:0;font-size:12px;color:#7a7a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* 빠른 메뉴 (TickTick 우클릭 메뉴 모양) — 날짜 아이콘 줄 / 우선순위 깃발 줄 / 구분선 / 삭제 */
+  .ctxm{position:fixed;z-index:9999;width:188px;background:#2a2a2c;border:1px solid rgba(255,255,255,.09);border-radius:8px;
+        box-shadow:0 10px 30px rgba(0,0,0,.55);padding:6px 0;color:var(--ink);font-size:13px;user-select:none}
+  .ctxm-lab{font-size:12px;color:var(--muted);padding:5px 14px 3px}
+  .ctxm-note{font-size:10.5px;color:#6a6a6a;margin-left:6px}
+  .ctxm-ic{display:flex;justify-content:space-between;padding:0 9px 6px}
+  .ctxm-ic button{width:36px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;border-radius:5px;color:#c7c7cc;cursor:pointer;padding:0}
+  .ctxm-ic button:hover{background:rgba(255,255,255,.08)}
+  .ctxm-ic button.on{background:rgba(255,255,255,.14)}
+  .cx-svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .ctxm-sep{height:1px;background:var(--line);margin:4px 0}
+  .ctxm-row{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:none;border-radius:0;color:var(--ink);font-size:13px;padding:8px 14px;cursor:pointer;text-align:left;font-family:inherit}
+  .ctxm-row:hover{background:rgba(255,255,255,.07)}
+  .ctxm-row .cx-svg{width:17px;height:17px}
+  .ctxm-row.bad{color:var(--bad)}
+  #ctxPick{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
+  .more{background:none;border:none;color:var(--muted);font-size:17px;line-height:1;padding:0 3px;cursor:pointer}
+  @media(max-width:760px){
+    .ctxm{width:214px}
+    .ctxm-ic button{width:42px;height:38px}
+    .ctxm-row{padding:11px 14px;font-size:14.5px}
+    .more{padding:8px 6px;margin:-8px -2px}
+  }
+  /* 우선순위 색을 체크박스 테두리에 (PRI 깃발색 f, --pc 는 행에서 넘겨준다) */
+  .chk.pc{border-color:var(--pc)}
+  .chk.pc.on{border-color:var(--accent)}
   .item.editing{background:#242426;border-radius:4px}
   /* 모바일 '업무 추가' — 수정 모드 행과 같은 뼈대. 체크박스가 없으니 좌우 여백만 준다 */
   .item.editing.add-form{padding:11px 12px;border-bottom:none}
@@ -831,12 +858,15 @@ function rDashboard(){
 }
 
 /* ===== 1) 일정 (주간 보기 · 날짜 선택 · 반응형) ===== */
-const PRI={1:{t:"1순위",c:"#e0e0e0"},2:{t:"2순위",c:"#b6b6b6"},3:{t:"3순위",c:"#8f8f8f"},4:{t:"4순위",c:"#6f6f6f"}};
+/* c = 글자색(회색 단계, 그대로 유지) / f = 깃발색(체크박스 테두리·점·묶음 막대·메뉴 깃발). 어두운 화면에 튀지 않게 채도를 낮춘 톤. 4순위·미지정은 무색 */
+const PRI={1:{t:"1순위",c:"#e0e0e0",f:"#a8545a"},2:{t:"2순위",c:"#b6b6b6",f:"#b08848"},3:{t:"3순위",c:"#8f8f8f",f:"#5079a8"},4:{t:"4순위",c:"#6f6f6f",f:null}};
 /* 우선순위 미지정(null) 지원.
    기존 데이터는 priority가 명시돼 있으므로 표시가 바뀌지 않고,
    새로 추가하는 업무만 "미지정"으로 시작해 직접 고르도록 유도한다. */
 const PRI_NONE={t:"미지정",c:"#4a4a4a"};
 function priInfo(p){return PRI[p]||PRI_NONE;}
+/* 주간 칸 점: 색 있는 순위는 채운 점, 4순위·미지정은 외곽선만 */
+function pdotSt(p){const f=priInfo(p).f;return f?`background:${f}`:"background:transparent;box-shadow:inset 0 0 0 1.5px #6a6a6a";}
 function priRank(p){return p?+p:5;}   /* 미지정은 정렬상 맨 뒤 */
 let selDay=null;
 function isMobile(){return window.innerWidth<=760;}
@@ -990,6 +1020,15 @@ function rSchedule(){
   };
   drawDay();
 }
+/* ---- 날짜 프리셋 (빠른 메뉴용) ----
+   기준은 선택한 날이 아니라 '진짜 오늘'. 다음주 = 다음 주 월요일. */
+function presetDate(k){
+  const d=new Date(T()+"T00:00:00");
+  if(k==="tom")d.setDate(d.getDate()+1);
+  else if(k==="nw")d.setDate(d.getDate()+7-((d.getDay()+6)%7));
+  return d.toLocaleDateString("sv-SE");
+}
+function openPicker(el){try{if(el.showPicker){el.showPicker();return;}}catch(_){}el.focus();el.click();}
 /* (시·분 드롭다운을 없애면서 pickTime() 도 제거했다 — 시간은 stime 칸에 직접 입력) */
 function normTime(s){s=(s||"").trim();if(!s)return"";s=s.replace(/[^0-9:]/g,"");let h,m,mm=s.match(/^(\d{1,2}):(\d{1,2})$/);if(mm){h=+mm[1];m=+mm[2];}else if(/^\d{3,4}$/.test(s)){h=+s.slice(0,s.length-2);m=+s.slice(-2);}else if(/^\d{1,2}$/.test(s)){h=+s;m=0;}else return"";if(h>23||m>59)return"";return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
 window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;editRtId=null;rSchedule();};
@@ -1045,8 +1084,8 @@ function weekCol(d){
   const pct=u.total?u.rate:null;
   const mn=(DB.dayinfo[d]||{}).main;
   const rts=routinesForDate(d), rd=rdoneOf(d);
-  const rtHtml=rts.map(rt=>`<div class="wtask ${rd[rt.id]?"done":""}"><span class="pdot" style="background:${priInfo(rt.pri).c}"></span>${rt.time?`<b class="wt-time">${esc(rt.time)}</b>`:""}<span class="tt-title">${esc(rt.title)}<span style="color:#7a7a7a;font-size:10px"> ·루틴</span></span></div>`).join("");
-  const taskHtml=items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="background:${priInfo(s.priority).c}"></span>${s.time?`<b class="wt-time">${esc(s.time)}</b>`:""}<span class="tt-title">${esc(s.title)}</span></div>`).join("");
+  const rtHtml=rts.map(rt=>`<div class="wtask ${rd[rt.id]?"done":""}"><span class="pdot" style="${pdotSt(rt.pri)}"></span>${rt.time?`<b class="wt-time">${esc(rt.time)}</b>`:""}<span class="tt-title">${esc(rt.title)}<span style="color:#7a7a7a;font-size:10px"> ·루틴</span></span></div>`).join("");
+  const taskHtml=items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="${pdotSt(s.priority)}"></span>${s.time?`<b class="wt-time">${esc(s.time)}</b>`:""}<span class="tt-title">${esc(s.title)}</span></div>`).join("");
   return `<div class="wcol ${isT?"today":""} ${isSel?"sel":""}" onclick="selectDay('${d}')">
     <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${pct!==null?` · <span style="color:var(--accent)">${pct}%</span>`:""}</div>
     ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
@@ -1067,7 +1106,7 @@ function taskRow(s,i,col){
     const tI=`<input class="ie ie-time" value="${esc(s.time||"")}" placeholder="시간" inputmode="numeric" onchange="schedField(${i},'time',this)" onkeydown="ieKey(event)">`;
     const pI=`<select class="ie ie-pri" onchange="schedField(${i},'priority',this)" onkeydown="ieKey(event)"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select>`;
     return `<div class="item editing" data-edit="1">
-      <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+      <button class="chk pc ${s.done?"on":""}" style="--pc:${p.f||"var(--line)"}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
       <div class="bd">
         <div class="t ie-row">
           ${pc?pI:tI}
@@ -1082,18 +1121,20 @@ function taskRow(s,i,col){
       <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
   }
   const ca=col?`,'${col}'`:"";
+  /* 빠른 메뉴: PC=행 우클릭, 모바일=⋯ 버튼 (롱프레스는 쓰지 않는다) */
+  const cm=ctxAttr("t",i), more=ctxMore("t",i);
   /* 우선순위 카드: 한 줄 행 — 제목 …… 시간(흐리게). 비고는 마우스 툴팁·수정 모드에서 */
   const title=`${s.time?`<span class="tt-time">${esc(s.time)}</span>`:""}<span class="tt-title">${esc(s.title)}</span>`;
-  if(pc)return `<div class="item tl-one ${s.done?"done":""}">
-    <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+  if(pc)return `<div class="item tl-one ${s.done?"done":""}"${cm}>
+    <button class="chk pc ${s.done?"on":""}" style="--pc:${p.f||"var(--line)"}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="${s.note?esc(s.note)+" · ":""}클릭해서 수정"><span class="t">${esc(s.title)}</span>${s.time?`<span class="tt-dim tl-time">${esc(s.time)}</span>`:""}</div>
-    <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
+    ${more}<button class="del" onclick="rm('schedules',${i})">×</button></div>`;
   const meta=`<span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}`;
-  return `<div class="item ${s.done?"done":""}">
-    <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+  return `<div class="item ${s.done?"done":""}"${cm}>
+    <button class="chk pc ${s.done?"on":""}" style="--pc:${p.f||"var(--line)"}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="클릭해서 수정"><div class="t tl-tt">${title}</div>
       <div class="meta">${meta}</div></div>
-    <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
+    ${more}<button class="del" onclick="rm('schedules',${i})">×</button></div>`;
 }
 function routineRow(r,done,col){
   const p=priInfo(r.pri);
@@ -1104,7 +1145,7 @@ function routineRow(r,done,col){
     const tI=`<input class="ie ie-time" value="${esc(r.time||"")}" placeholder="시간" inputmode="numeric" onchange="rtDayField('${r.id}','time',this)" onkeydown="ieKey(event)">`;
     const pI=`<select class="ie ie-pri" onchange="rtDayField('${r.id}','pri',this)" onkeydown="ieKey(event)"><option value=""${!r.pri?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${r.pri==n?" selected":""}>${n}순위</option>`).join("")}</select>`;
     return `<div class="item editing" data-edit="1">
-      <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+      <button class="chk pc ${done?"on":""}" style="--pc:${p.f||"var(--line)"}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
       <div class="bd">
         <div class="t ie-row">
           ${pc?pI:tI}
@@ -1118,17 +1159,117 @@ function routineRow(r,done,col){
       <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기">×</button></div>`;
   }
   const ca=col?`,'${col}'`:"";
-  if(pc)return `<div class="item tl-one ${done?"done":""}">
-    <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+  const cm=ctxAttr("r",r.id), more=ctxMore("r",r.id);
+  if(pc)return `<div class="item tl-one ${done?"done":""}"${cm}>
+    <button class="chk pc ${done?"on":""}" style="--pc:${p.f||"var(--line)"}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="${rtRecurLabel(r,1)} · 클릭해서 이 날짜만 수정"><span class="t">${esc(r.title)}</span>${r.time?`<span class="tt-dim tl-time">${esc(r.time)}</span>`:""}</div>
-    <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
+    ${more}<button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
   const title=`${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}<span class="tt-title">${esc(r.title)}</span>`;
-  return `<div class="item ${done?"done":""}">
-    <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+  return `<div class="item ${done?"done":""}"${cm}>
+    <button class="chk pc ${done?"on":""}" style="--pc:${p.f||"var(--line)"}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="클릭해서 이 날짜만 수정"><div class="t tl-tt">${title}</div>
       <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r,1)}</div></div>
-    <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
+    ${more}<button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
 }
+/* ===== 빠른 메뉴 (TickTick 우클릭 메뉴 모양) =====
+   [날짜] 오늘·내일·다음주·날짜선택 / [우선 순위] 깃발 4개 / 구분선 / 삭제.
+   일정 = schedField('date')·priority+save()·rm.
+   루틴 = rtMove(이 회차만 다른 날로, 반복 규칙은 그대로)·rtDayField('pri')(이 날만)·routineSkip('이 날 건너뛰기'). */
+function ctxArgs(k,key){return `'${k}',${k==="t"?key:`'${key}'`}`;}
+function ctxAttr(k,key){return isMobile()?"":` oncontextmenu="ctxOpen(event,${ctxArgs(k,key)})"`;}
+function ctxMore(k,key){return isMobile()?`<button class="more" onclick="ctxOpen(event,${ctxArgs(k,key)},this)" title="메뉴" aria-label="메뉴">⋯</button>`:"";}
+const CX_SVG=b=>`<svg class="cx-svg" viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+const CX_CAL='<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>';
+const CX_IC={
+  today:CX_SVG('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>'),
+  tom:CX_SVG('<path d="M3 18.5h18M7 18.5a5 5 0 0 1 10 0M12 6.5v3.2M5.6 10.6l1.7 1.5M18.4 10.6l-1.7 1.5M10 4.5l2-2 2 2"/>'),
+  nw:CX_SVG(CX_CAL+'<text x="12" y="18" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none">+7</text>'),
+  pick:CX_SVG(CX_CAL+'<g fill="currentColor" stroke="none"><circle cx="8.5" cy="13.3" r="1"/><circle cx="12" cy="13.3" r="1"/><circle cx="15.5" cy="13.3" r="1"/><circle cx="8.5" cy="16.8" r="1"/><circle cx="12" cy="16.8" r="1"/></g>'),
+  flag:c=>CX_SVG(`<path d="M5.5 21V3.8" stroke="${c||"currentColor"}"/><path d="M5.5 4.3h12l-2.7 4.4 2.7 4.4h-12" fill="${c||"none"}" stroke="${c||"currentColor"}"/>`),
+  trash:CX_SVG('<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/>'),
+  skip:CX_SVG('<circle cx="12" cy="12" r="8.5"/><path d="M6 18L18 6"/>')
+};
+let ctx=null,ctxPickTgt=null;
+/* 메뉴를 연 뒤 저장·병합으로 배열 순서가 바뀌어도 같은 일정을 가리키도록 id 로 다시 찾는다 */
+function ctxIdx(t){if(!t)return -1;if(t.id!=null){const j=DB.schedules.findIndex(s=>s.id===t.id);if(j>=0)return j;}return DB.schedules[t.i]?t.i:-1;}
+window.ctxOpen=(e,k,key,btn)=>{
+  e.preventDefault();e.stopPropagation();
+  ctxClose();
+  let cur;
+  if(k==="t"){const s=DB.schedules[key];if(!s)return;ctx={k,i:key,id:s.id!=null?s.id:null};cur={date:s.date,pri:s.priority};}
+  else{const r=routinesForDate(selDay).find(x=>x.id===key);if(!r)return;ctx={k,id:key};cur={date:selDay,pri:r.pri};}
+  const pr=parseInt(cur.pri)||null;
+  const dateRow=`<div class="ctxm-lab">날짜</div><div class="ctxm-ic">${[["today","오늘"],["tom","내일"],["nw","다음주"]].map(([d,t])=>{const v=presetDate(d);
+      return `<button type="button" class="${cur.date===v?"on":""}" title="${t} (${v})" onclick="ctxDate('${d}')">${CX_IC[d]}</button>`;}).join("")}<button type="button" title="날짜 선택" onclick="ctxDate('pick')">${CX_IC.pick}</button></div>`;
+  const priRow=`<div class="ctxm-lab">우선 순위${k==="r"?'<span class="ctxm-note">이 날만</span>':""}</div><div class="ctxm-ic">${[1,2,3,4].map(n=>`<button type="button" class="${pr===n?"on":""}" title="${n}순위" onclick="ctxPri(${n})">${CX_IC.flag(PRI[n].f)}</button>`).join("")}</div>`;
+  const last=k==="t"?`<button type="button" class="ctxm-row bad" onclick="ctxDel()">${CX_IC.trash}<span>삭제</span></button>`
+                    :`<button type="button" class="ctxm-row bad" onclick="ctxDel()">${CX_IC.skip}<span>이 날 건너뛰기</span></button>`;
+  const m=document.createElement("div");m.className="ctxm";m.id="ctxm";m.setAttribute("role","menu");
+  m.innerHTML=dateRow+priRow+'<div class="ctxm-sep"></div>'+last;
+  document.body.appendChild(m);
+  /* 커서(또는 ⋯ 버튼) 위치에 띄우고, 화면 밖으로 나가면 안쪽으로 당긴다 */
+  const W=window.innerWidth,H=window.innerHeight,w=m.offsetWidth,h=m.offsetHeight;
+  let x,y;const rc=btn?btn.getBoundingClientRect():null;
+  if(rc){x=rc.right-w;y=rc.bottom+4;}else{x=e.clientX;y=e.clientY;}
+  if(x+w>W-8)x=W-w-8;if(x<8)x=8;
+  if(y+h>H-8)y=rc?rc.top-h-4:y-h;if(y<8)y=8;
+  m.style.left=x+"px";m.style.top=y+"px";
+  setTimeout(function(){if(!document.getElementById("ctxm"))return;
+    document.addEventListener("mousedown",ctxOutside,true);document.addEventListener("touchstart",ctxOutside,true);},0);
+};
+function ctxOutside(ev){if(ev.target&&ev.target.closest&&ev.target.closest("#ctxm"))return;ctxClose();}
+function ctxClose(){
+  const m=document.getElementById("ctxm");if(m)m.remove();ctx=null;
+  document.removeEventListener("mousedown",ctxOutside,true);document.removeEventListener("touchstart",ctxOutside,true);
+}
+window.ctxClose=ctxClose;
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&document.getElementById("ctxm"))ctxClose();});
+window.addEventListener("resize",function(){if(document.getElementById("ctxm"))ctxClose();});
+function ctxSetDate(i,v){
+  const s=DB.schedules[i];if(!s||v===s.date)return;
+  schedField(i,"date",{value:v});   /* 기존 날짜 저장 경로(형식 검사·save 포함) */
+  editSchedIdx=null;editRtId=null;rSchedule();
+}
+/* 루틴 회차 옮기기. 받는 날에 이미 같은 루틴이 있으면 두 회차가 하나로 합쳐지므로 막는다. */
+function ctxRtSetDate(id,from,v){
+  if(!v||v===from)return;
+  if(routinesForDate(v).some(r=>r.id===id)){alert("그 날에는 이미 이 루틴이 있어요.");return;}
+  if(rtMove(id,from,v)){editSchedIdx=null;editRtId=null;rSchedule();}
+}
+/* 날짜 반영 — 일정은 index(id로 재확인), 루틴은 id + 보내는 날 */
+function ctxApplyDate(t,v){
+  if(!t)return;
+  if(t.k==="r"){ctxRtSetDate(t.id,t.from,v);return;}
+  const i=ctxIdx(t);if(i>=0)ctxSetDate(i,v);
+}
+window.ctxDate=(d)=>{
+  const t=ctx;if(!t){ctxClose();return;}
+  const tg=t.k==="r"?{k:"r",id:t.id,from:selDay}:{k:"t",i:t.i,id:t.id};
+  if(tg.k==="t"&&ctxIdx(tg)<0){ctxClose();return;}
+  if(d==="pick"){
+    /* 날짜선택: 메뉴 밖의 숨은 날짜칸으로 달력을 띄운다(메뉴가 닫혀도 선택값을 받도록) */
+    let el=document.getElementById("ctxPick");
+    if(!el){el=document.createElement("input");el.type="date";el.id="ctxPick";el.tabIndex=-1;
+      el.onchange=function(){const p=ctxPickTgt;ctxPickTgt=null;if(this.value)ctxApplyDate(p,this.value);};
+      document.body.appendChild(el);}
+    const m=document.getElementById("ctxm"),r=m?m.getBoundingClientRect():{left:8,top:8};
+    el.style.left=r.left+"px";el.style.top=r.top+"px";
+    el.value=tg.k==="r"?tg.from:(DB.schedules[ctxIdx(tg)].date||"");ctxPickTgt=tg;
+    ctxClose();openPicker(el);return;
+  }
+  ctxClose();ctxApplyDate(tg,presetDate(d));
+};
+window.ctxPri=(n)=>{
+  const t=ctx;if(!t)return;
+  if(t.k==="t"){const i=ctxIdx(t);ctxClose();if(i<0)return;DB.schedules[i].priority=n;save();}
+  else{ctxClose();rtDayField(t.id,"pri",{value:String(n)});}
+  editSchedIdx=null;editRtId=null;rSchedule();
+};
+window.ctxDel=()=>{
+  const t=ctx;if(!t)return;
+  if(t.k==="t"){const i=ctxIdx(t);ctxClose();if(i>=0)rm("schedules",i);}
+  else{ctxClose();routineSkip(t.id);}
+};
 let todaySort="time",editSchedIdx=null,editRtId=null,editCol=null,doneOpen=false;
 function drawDay(){
   const el=document.getElementById("tlist");
@@ -1150,12 +1291,12 @@ function drawDay(){
   const byP=(a,b)=>(a.done-b.done)||(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99"));
   const rowOf=col=>u=>u.kind==="task"?taskRow(u.s,u.i,col):routineRow(u.r,u.done,col);
   const list=(sort,col)=>units.slice().sort(sort==="time"?byTime:byP).map(rowOf(col)).join("");
-  const empty='<div class="empty">이 날 업무가 없어요.</div>';
+  const empty=`<div class="empty">${selDay===T()?"오늘은 일정이 없어요.":"이 날 업무가 없어요."}<div class="empty-sub">위 '업무 추가'에서 넣을 수 있어요.</div></div>`;
 
   /* 시간순 카드: 남은 일만 펼쳐두고, 완료는 맨 아래 '완료 N'에 접어둔다 */
   const timeList=()=>{
     const arr=units.slice().sort(byTime), open=arr.filter(u=>!u.done), done=arr.filter(u=>u.done);
-    return open.map(rowOf("time")).join("")
+    return (open.length?open.map(rowOf("time")).join(""):'<div class="empty">모두 끝냈어요.</div>')
       +(done.length?`<button class="tl-donebtn" onclick="toggleDone()">완료 ${done.length} ${doneOpen?"▾":"▸"}</button>
         ${doneOpen?`<div class="tl-donelist">${done.map(rowOf("time")).join("")}</div>`:""}`:"");
   };
@@ -1166,7 +1307,7 @@ function drawDay(){
       const all=arr.filter(u=>{const n=parseInt(u.pri);return ([1,2,3,4].includes(n)?n:null)===g;});
       if(!all.length)return "";
       const open=all.filter(u=>!u.done), pi=priInfo(g);
-      return `<div class="tl-grp" style="--pc:${pi.c}"><div class="tl-g">${pi.t}<span class="tl-gn">${all.length-open.length}/${all.length}</span></div>
+      return `<div class="tl-grp" style="--pc:${pi.f||"var(--line)"};--pt:${pi.f||"var(--ink)"}"><div class="tl-g">${pi.t}<span class="tl-gn">${all.length-open.length}/${all.length}</span></div>
         ${open.length?open.map(rowOf("pri")).join(""):'<div class="tl-alldone">모두 완료</div>'}</div>`;
     }).join("");
   };
@@ -1295,24 +1436,30 @@ let routineTab="daily", routineSel=new Set(), routineEdit=null;
 
 function lastDomOf(ds){const d=new Date(ds+"T00:00:00");return new Date(d.getFullYear(),d.getMonth()+1,0).getDate();}
 
-/* 반복 규칙상 그 날짜에 해당하는 루틴 (그날만 건너뛴 것도 포함) */
+/* 반복 규칙(시작·종료일 포함)만 따졌을 때 그 날짜에 해당하는지 */
+function routineRuleHits(r,ds,dow,dom,lastDom){
+  if(dow===undefined){const dt=new Date(ds+"T00:00:00");dow=dt.getDay();dom=dt.getDate();lastDom=lastDomOf(ds);}
+  if(r.startDate&&ds<r.startDate)return false;   /* 시작일 이전엔 표시 안 함 */
+  if(r.endDate&&ds>r.endDate)return false;       /* 종료일 이후엔 표시 안 함 */
+  if(r.freq==="daily")return true;
+  if(r.freq==="weekly")return (r.wd||[]).includes(dow);
+  if(r.freq==="monthly"){
+    if(r.day==="last")return dom===lastDom;
+    return dom===Math.min(parseInt(r.day)||1,lastDom);   /* 말일 보정 */
+  }
+  return false;
+}
+/* 반복 규칙상 그 날짜에 해당하는 루틴 (그날만 건너뛴 것도 포함, 다른 날에서 옮겨온 것도 포함) */
 function routinesMatching(ds){
   const list=DB.routines||[];
   if(!list.length||!ds)return [];
   const dt=new Date(ds+"T00:00:00");
   const dow=dt.getDay(), dom=dt.getDate(), lastDom=lastDomOf(ds);
-  const ov=roverOf(ds);
+  const ov=roverOf(ds), add=raddOf(ds);
   return list.filter(r=>{
     if(r.paused)return false;
-    if(r.startDate&&ds<r.startDate)return false;   /* 시작일 이전엔 표시 안 함 */
-    if(r.endDate&&ds>r.endDate)return false;       /* 종료일 이후엔 표시 안 함 */
-    if(r.freq==="daily")return true;
-    if(r.freq==="weekly")return (r.wd||[]).includes(dow);
-    if(r.freq==="monthly"){
-      if(r.day==="last")return dom===lastDom;
-      return dom===Math.min(parseInt(r.day)||1,lastDom);   /* 말일 보정 */
-    }
-    return false;
+    if(add[r.id])return true;                      /* 다른 날에서 이 날로 옮겨온 루틴 */
+    return routineRuleHits(r,ds,dow,dom,lastDom);
   }).map(r=>applyRover(r,ov[r.id]))
     .sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
 }
@@ -1341,6 +1488,31 @@ function rdoneOf(ds){return ((DB.dayinfo[ds]||{}).rdone)||{};}
 function rskipOf(ds){return ((DB.dayinfo[ds]||{}).rskip)||{};}
 /* 그 날짜만 적용되는 루틴 수정분 */
 function roverOf(ds){return ((DB.dayinfo[ds]||{}).rover)||{};}
+/* 다른 날에서 이 날로 옮겨온 루틴 {루틴id:true} */
+function raddOf(ds){return ((DB.dayinfo[ds]||{}).radd)||{};}
+
+/* 루틴 한 회차를 다른 날짜로 옮긴다. 루틴 원본(반복 규칙)은 건드리지 않는다.
+   보내는 날: 옮겨온 회차였으면 radd 를 지우고, 아니면 rskip(이 날 빼기). 완료표시는 지운다.
+   받는 날: 그 날 빼둔 상태(rskip)면 풀고, 규칙상 원래 없는 날이면 radd 로 추가.
+   그 날짜만의 수정분(rover: 시간·제목·순위)도 함께 옮긴다. 되돌려 옮기면 원래 상태로 돌아온다. */
+function rtMove(id,from,to){
+  const base=(DB.routines||[]).find(x=>x.id===id);
+  if(!base||!from||!to||from===to||!/^(19|20)\d\d-\d\d-\d\d$/.test(to))return false;
+  const di=k=>DB.dayinfo[k]||(DB.dayinfo[k]={});
+  const tidy=(o,k)=>{if(o[k]&&!Object.keys(o[k]).length)delete o[k];};
+  const src=di(from);
+  if(src.radd&&src.radd[id]){delete src.radd[id];tidy(src,"radd");}
+  else{(src.rskip||(src.rskip={}))[id]=true;}
+  if(src.rdone){delete src.rdone[id];tidy(src,"rdone");}
+  const ov=src.rover&&src.rover[id];
+  if(src.rover){delete src.rover[id];tidy(src,"rover");}
+  const tgt=di(to);
+  if(tgt.rskip&&tgt.rskip[id]){delete tgt.rskip[id];tidy(tgt,"rskip");}
+  if(!routineRuleHits(base,to))(tgt.radd||(tgt.radd={}))[id]=true;
+  if(ov&&!(tgt.rover&&tgt.rover[id]))(tgt.rover||(tgt.rover={}))[id]=ov;
+  save();
+  return true;
+}
 
 /* 일정 + 루틴을 합친 그 날의 달성 현황 — 앱 안 모든 달성률의 단일 기준 */
 function dayUnits(ds){
@@ -1390,6 +1562,7 @@ function purgeRdone(id){
     if(v.rdone)delete v.rdone[id];
     if(v.rskip)delete v.rskip[id];
     if(v.rover)delete v.rover[id];
+    if(v.radd)delete v.radd[id];
   });
 }
 function purgeOrphanRdone(){
@@ -1397,7 +1570,7 @@ function purgeOrphanRdone(){
   let n=0;
   Object.values(DB.dayinfo||{}).forEach(v=>{
     if(!v)return;
-    ["rdone","rskip","rover"].forEach(k=>{
+    ["rdone","rskip","rover","radd"].forEach(k=>{
       if(!v[k])return;
       Object.keys(v[k]).forEach(id=>{if(!alive.has(id)){delete v[k][id];n++;}});
     });
