@@ -1173,8 +1173,8 @@ function routineRow(r,done,col){
 }
 /* ===== 빠른 메뉴 (TickTick 우클릭 메뉴 모양) =====
    [날짜] 오늘·내일·다음주·날짜선택 / [우선 순위] 깃발 4개 / 구분선 / 삭제.
-   저장은 전부 기존 경로를 탄다: 일정 = schedField('date')·priority+save()·rm, 루틴 = rtDayField('pri')(이 날만)·routineSkip.
-   루틴은 날짜를 옮길 수 없으므로 날짜 줄 없이 우선순위(이 날만)와 '이 날 건너뛰기'만. */
+   일정 = schedField('date')·priority+save()·rm.
+   루틴 = rtMove(이 회차만 다른 날로, 반복 규칙은 그대로)·rtDayField('pri')(이 날만)·routineSkip('이 날 건너뛰기'). */
 function ctxArgs(k,key){return `'${k}',${k==="t"?key:`'${key}'`}`;}
 function ctxAttr(k,key){return isMobile()?"":` oncontextmenu="ctxOpen(event,${ctxArgs(k,key)})"`;}
 function ctxMore(k,key){return isMobile()?`<button class="more" onclick="ctxOpen(event,${ctxArgs(k,key)},this)" title="메뉴" aria-label="메뉴">⋯</button>`:"";}
@@ -1197,10 +1197,10 @@ window.ctxOpen=(e,k,key,btn)=>{
   ctxClose();
   let cur;
   if(k==="t"){const s=DB.schedules[key];if(!s)return;ctx={k,i:key,id:s.id!=null?s.id:null};cur={date:s.date,pri:s.priority};}
-  else{const r=routinesForDate(selDay).find(x=>x.id===key);if(!r)return;ctx={k,id:key};cur={pri:r.pri};}
+  else{const r=routinesForDate(selDay).find(x=>x.id===key);if(!r)return;ctx={k,id:key};cur={date:selDay,pri:r.pri};}
   const pr=parseInt(cur.pri)||null;
-  const dateRow=k==="t"?`<div class="ctxm-lab">날짜</div><div class="ctxm-ic">${[["today","오늘"],["tom","내일"],["nw","다음주"]].map(([d,t])=>{const v=presetDate(d);
-      return `<button type="button" class="${cur.date===v?"on":""}" title="${t} (${v})" onclick="ctxDate('${d}')">${CX_IC[d]}</button>`;}).join("")}<button type="button" title="날짜 선택" onclick="ctxDate('pick')">${CX_IC.pick}</button></div>`:"";
+  const dateRow=`<div class="ctxm-lab">날짜</div><div class="ctxm-ic">${[["today","오늘"],["tom","내일"],["nw","다음주"]].map(([d,t])=>{const v=presetDate(d);
+      return `<button type="button" class="${cur.date===v?"on":""}" title="${t} (${v})" onclick="ctxDate('${d}')">${CX_IC[d]}</button>`;}).join("")}<button type="button" title="날짜 선택" onclick="ctxDate('pick')">${CX_IC.pick}</button></div>`;
   const priRow=`<div class="ctxm-lab">우선 순위${k==="r"?'<span class="ctxm-note">이 날만</span>':""}</div><div class="ctxm-ic">${[1,2,3,4].map(n=>`<button type="button" class="${pr===n?"on":""}" title="${n}순위" onclick="ctxPri(${n})">${CX_IC.flag(PRI[n].f)}</button>`).join("")}</div>`;
   const last=k==="t"?`<button type="button" class="ctxm-row bad" onclick="ctxDel()">${CX_IC.trash}<span>삭제</span></button>`
                     :`<button type="button" class="ctxm-row bad" onclick="ctxDel()">${CX_IC.skip}<span>이 날 건너뛰기</span></button>`;
@@ -1230,20 +1230,34 @@ function ctxSetDate(i,v){
   schedField(i,"date",{value:v});   /* 기존 날짜 저장 경로(형식 검사·save 포함) */
   editSchedIdx=null;editRtId=null;rSchedule();
 }
+/* 루틴 회차 옮기기. 받는 날에 이미 같은 루틴이 있으면 두 회차가 하나로 합쳐지므로 막는다. */
+function ctxRtSetDate(id,from,v){
+  if(!v||v===from)return;
+  if(routinesForDate(v).some(r=>r.id===id)){alert("그 날에는 이미 이 루틴이 있어요.");return;}
+  if(rtMove(id,from,v)){editSchedIdx=null;editRtId=null;rSchedule();}
+}
+/* 날짜 반영 — 일정은 index(id로 재확인), 루틴은 id + 보내는 날 */
+function ctxApplyDate(t,v){
+  if(!t)return;
+  if(t.k==="r"){ctxRtSetDate(t.id,t.from,v);return;}
+  const i=ctxIdx(t);if(i>=0)ctxSetDate(i,v);
+}
 window.ctxDate=(d)=>{
-  const t=ctx,i=ctxIdx(t);if(i<0){ctxClose();return;}
+  const t=ctx;if(!t){ctxClose();return;}
+  const tg=t.k==="r"?{k:"r",id:t.id,from:selDay}:{k:"t",i:t.i,id:t.id};
+  if(tg.k==="t"&&ctxIdx(tg)<0){ctxClose();return;}
   if(d==="pick"){
     /* 날짜선택: 메뉴 밖의 숨은 날짜칸으로 달력을 띄운다(메뉴가 닫혀도 선택값을 받도록) */
     let el=document.getElementById("ctxPick");
     if(!el){el=document.createElement("input");el.type="date";el.id="ctxPick";el.tabIndex=-1;
-      el.onchange=function(){const j=ctxIdx(ctxPickTgt);ctxPickTgt=null;if(j>=0&&this.value)ctxSetDate(j,this.value);};
+      el.onchange=function(){const p=ctxPickTgt;ctxPickTgt=null;if(this.value)ctxApplyDate(p,this.value);};
       document.body.appendChild(el);}
     const m=document.getElementById("ctxm"),r=m?m.getBoundingClientRect():{left:8,top:8};
     el.style.left=r.left+"px";el.style.top=r.top+"px";
-    el.value=DB.schedules[i].date||"";ctxPickTgt={i:t.i,id:t.id};
+    el.value=tg.k==="r"?tg.from:(DB.schedules[ctxIdx(tg)].date||"");ctxPickTgt=tg;
     ctxClose();openPicker(el);return;
   }
-  ctxClose();ctxSetDate(i,presetDate(d));
+  ctxClose();ctxApplyDate(tg,presetDate(d));
 };
 window.ctxPri=(n)=>{
   const t=ctx;if(!t)return;
@@ -1422,24 +1436,30 @@ let routineTab="daily", routineSel=new Set(), routineEdit=null;
 
 function lastDomOf(ds){const d=new Date(ds+"T00:00:00");return new Date(d.getFullYear(),d.getMonth()+1,0).getDate();}
 
-/* 반복 규칙상 그 날짜에 해당하는 루틴 (그날만 건너뛴 것도 포함) */
+/* 반복 규칙(시작·종료일 포함)만 따졌을 때 그 날짜에 해당하는지 */
+function routineRuleHits(r,ds,dow,dom,lastDom){
+  if(dow===undefined){const dt=new Date(ds+"T00:00:00");dow=dt.getDay();dom=dt.getDate();lastDom=lastDomOf(ds);}
+  if(r.startDate&&ds<r.startDate)return false;   /* 시작일 이전엔 표시 안 함 */
+  if(r.endDate&&ds>r.endDate)return false;       /* 종료일 이후엔 표시 안 함 */
+  if(r.freq==="daily")return true;
+  if(r.freq==="weekly")return (r.wd||[]).includes(dow);
+  if(r.freq==="monthly"){
+    if(r.day==="last")return dom===lastDom;
+    return dom===Math.min(parseInt(r.day)||1,lastDom);   /* 말일 보정 */
+  }
+  return false;
+}
+/* 반복 규칙상 그 날짜에 해당하는 루틴 (그날만 건너뛴 것도 포함, 다른 날에서 옮겨온 것도 포함) */
 function routinesMatching(ds){
   const list=DB.routines||[];
   if(!list.length||!ds)return [];
   const dt=new Date(ds+"T00:00:00");
   const dow=dt.getDay(), dom=dt.getDate(), lastDom=lastDomOf(ds);
-  const ov=roverOf(ds);
+  const ov=roverOf(ds), add=raddOf(ds);
   return list.filter(r=>{
     if(r.paused)return false;
-    if(r.startDate&&ds<r.startDate)return false;   /* 시작일 이전엔 표시 안 함 */
-    if(r.endDate&&ds>r.endDate)return false;       /* 종료일 이후엔 표시 안 함 */
-    if(r.freq==="daily")return true;
-    if(r.freq==="weekly")return (r.wd||[]).includes(dow);
-    if(r.freq==="monthly"){
-      if(r.day==="last")return dom===lastDom;
-      return dom===Math.min(parseInt(r.day)||1,lastDom);   /* 말일 보정 */
-    }
-    return false;
+    if(add[r.id])return true;                      /* 다른 날에서 이 날로 옮겨온 루틴 */
+    return routineRuleHits(r,ds,dow,dom,lastDom);
   }).map(r=>applyRover(r,ov[r.id]))
     .sort((a,b)=>(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99")));
 }
@@ -1468,6 +1488,31 @@ function rdoneOf(ds){return ((DB.dayinfo[ds]||{}).rdone)||{};}
 function rskipOf(ds){return ((DB.dayinfo[ds]||{}).rskip)||{};}
 /* 그 날짜만 적용되는 루틴 수정분 */
 function roverOf(ds){return ((DB.dayinfo[ds]||{}).rover)||{};}
+/* 다른 날에서 이 날로 옮겨온 루틴 {루틴id:true} */
+function raddOf(ds){return ((DB.dayinfo[ds]||{}).radd)||{};}
+
+/* 루틴 한 회차를 다른 날짜로 옮긴다. 루틴 원본(반복 규칙)은 건드리지 않는다.
+   보내는 날: 옮겨온 회차였으면 radd 를 지우고, 아니면 rskip(이 날 빼기). 완료표시는 지운다.
+   받는 날: 그 날 빼둔 상태(rskip)면 풀고, 규칙상 원래 없는 날이면 radd 로 추가.
+   그 날짜만의 수정분(rover: 시간·제목·순위)도 함께 옮긴다. 되돌려 옮기면 원래 상태로 돌아온다. */
+function rtMove(id,from,to){
+  const base=(DB.routines||[]).find(x=>x.id===id);
+  if(!base||!from||!to||from===to||!/^(19|20)\d\d-\d\d-\d\d$/.test(to))return false;
+  const di=k=>DB.dayinfo[k]||(DB.dayinfo[k]={});
+  const tidy=(o,k)=>{if(o[k]&&!Object.keys(o[k]).length)delete o[k];};
+  const src=di(from);
+  if(src.radd&&src.radd[id]){delete src.radd[id];tidy(src,"radd");}
+  else{(src.rskip||(src.rskip={}))[id]=true;}
+  if(src.rdone){delete src.rdone[id];tidy(src,"rdone");}
+  const ov=src.rover&&src.rover[id];
+  if(src.rover){delete src.rover[id];tidy(src,"rover");}
+  const tgt=di(to);
+  if(tgt.rskip&&tgt.rskip[id]){delete tgt.rskip[id];tidy(tgt,"rskip");}
+  if(!routineRuleHits(base,to))(tgt.radd||(tgt.radd={}))[id]=true;
+  if(ov&&!(tgt.rover&&tgt.rover[id]))(tgt.rover||(tgt.rover={}))[id]=ov;
+  save();
+  return true;
+}
 
 /* 일정 + 루틴을 합친 그 날의 달성 현황 — 앱 안 모든 달성률의 단일 기준 */
 function dayUnits(ds){
@@ -1517,6 +1562,7 @@ function purgeRdone(id){
     if(v.rdone)delete v.rdone[id];
     if(v.rskip)delete v.rskip[id];
     if(v.rover)delete v.rover[id];
+    if(v.radd)delete v.radd[id];
   });
 }
 function purgeOrphanRdone(){
@@ -1524,7 +1570,7 @@ function purgeOrphanRdone(){
   let n=0;
   Object.values(DB.dayinfo||{}).forEach(v=>{
     if(!v)return;
-    ["rdone","rskip","rover"].forEach(k=>{
+    ["rdone","rskip","rover","radd"].forEach(k=>{
       if(!v[k])return;
       Object.keys(v[k]).forEach(id=>{if(!alive.has(id)){delete v[k][id];n++;}});
     });
