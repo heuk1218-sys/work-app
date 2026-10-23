@@ -340,6 +340,8 @@
   /* 시간칸과 같은 폭이어야 아래 '비고'가 위 '업무내용'과 왼쪽 끝이 맞는다 */
   .ie-pri{flex:0 0 72px}
   .ie-note{flex:1;min-width:0}
+  /* 날짜 옮기기 — 자주 안 쓰므로 비고 줄 오른쪽 끝에 흐리고 작게 */
+  .ie-date{flex:0 0 auto;width:auto;font-size:12px;color:#7a7a7a;color-scheme:dark}
   .ie-hint{flex:1;min-width:0;font-size:12px;color:#7a7a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .item.editing{background:#242426;border-radius:4px}
   /* 모바일 '업무 추가' — 수정 모드 행과 같은 뼈대. 체크박스가 없으니 좌우 여백만 준다 */
@@ -364,7 +366,7 @@
   /* 모바일 사파리는 16px 미만 입력칸을 탭하면 화면을 확대해버린다. 그래서 16px 로 올리되,
      그대로 두면 13px 짜리 '비고' 줄이 높아져 행이 밀린다.
      줄높이를 20.8px(=13px*1.6) 에 맞춰 글자만 키우고 차지하는 높이는 그대로 둔다. */
-  @media(max-width:760px){.ie-pri,.ie-note{font-size:16px;line-height:1.3}}
+  @media(max-width:760px){.ie-pri,.ie-note,.ie-date{font-size:16px;line-height:1.3}}
   .detail-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
   .editb{background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 8px;align-self:center}
   .editb:hover{color:var(--accent)}
@@ -424,9 +426,10 @@
     <button class="side-close" onclick="toggleMenu()" aria-label="닫기"><i data-lucide="x"></i></button>
     <div class="brand"><span class="brand-bar"></span><span>업무관리</span><button class="side-collapse" onclick="toggleMenu()" aria-label="메뉴 접기/펼치기"><i data-lucide="panel-left"></i></button></div>
     <nav id="nav">
-      <button data-p="dashboard" class="on"><i class="ico" data-lucide="layout-dashboard"></i><span class="lab">대시보드</span></button>
+      <!-- 대시보드는 잘 안 봐서 일시적으로 숨김(첫 화면 = 일정). 다시 쓰려면 display:none 을 지우고 page 기본값도 되돌린다. -->
+      <button data-p="dashboard" style="display:none"><i class="ico" data-lucide="layout-dashboard"></i><span class="lab">대시보드</span></button>
       <div class="nav-sec">개인</div>
-      <button data-p="schedule"><i class="ico" data-lucide="calendar-check"></i><span class="lab">일정</span></button>
+      <button data-p="schedule" class="on"><i class="ico" data-lucide="calendar-check"></i><span class="lab">일정</span></button>
       <button data-p="calendar"><i class="ico" data-lucide="calendar"></i><span class="lab">캘린더</span></button>
       <button data-p="diary"><i class="ico" data-lucide="book"></i><span class="lab">일기</span></button>
       <button data-p="goals"><i class="ico" data-lucide="target"></i><span class="lab">목표</span></button>
@@ -575,7 +578,7 @@ const main=document.getElementById("main");
 const DOW=["일","월","화","수","목","금","토"];
 
 /* ===== 네비게이션 ===== */
-let page="dashboard";
+let page="schedule";
 window.toggleMenu=()=>{
   if(window.innerWidth<=760){document.querySelector("aside").classList.toggle("open");document.getElementById("backdrop").classList.toggle("show");}
   else{document.querySelector(".layout").classList.toggle("collapsed");}
@@ -933,15 +936,10 @@ function rSchedule(){
       :`<div class="meta mt">지나간 날짜에 완료되지 않은 업무예요. 눌러서 오늘로 옮기거나 완료 처리할 수 있어요.</div>`}
     </div>`:"";
 
-  /* 과부하 · 저녁 시간대 경고 */
-  const ov=overloadWarning(weekDays);
-  const ev=eveningStats();
-  const warns=[];
-  ov.forEach(o=>warns.push(`<b>${fmt(o.date)}</b>에 ${o.total}건이 몰려 있어요.${o.miss!==null?` 이 요일은 평소 미완료율이 <b style="color:var(--bad)">${o.miss}%</b>예요.`:""} 일부를 앞당겨 보세요.`));
-  if(ev.rate!==null&&ev.total>=8&&ev.rate<75)warns.push(`20시 이후로 잡은 일정은 지금까지 <b style="color:var(--bad)">${ev.rate}%</b>만 끝났어요 (${ev.done}/${ev.total}). 늦은 시간 배치는 신중히.`);
-  const overloadHtml=warns.length?`<div class="card" style="border-color:var(--line)">
-    <h2 style="margin:0 0 10px">눈여겨볼 점</h2>
-    ${warns.map(w=>`<div class="meta" style="line-height:1.9">· ${w}</div>`).join("")}</div>`:"";
+  /* (과부하·저녁 시간대 경고 '눈여겨볼 점' 카드는 잘 안 봐서 뺐다. overloadWarning/eveningStats 함수는 남겨둠) */
+  /* 다시 그리면 .week-scroll 이 새로 만들어져 가로 스크롤이 0(월요일)으로 돌아간다.
+     이전 위치를 기억했다가 되돌리고, 선택한 날짜칸이 화면 밖이면 그 칸이 보이게 민다. */
+  const _wsOld=document.querySelector(".week-scroll"),_wsLeft=_wsOld?_wsOld.scrollLeft:null;
   main.innerHTML=`<h1 class="page-h">일정</h1><p class="page-sub">${mob?"하루씩 넘겨보며 정리해요.":"이번 주 업무를 한눈에 보고 정리해요."}</p>
   <div class="card"><div class="cal-head">
       <button onclick="weekMove(${-step})">${mob?"‹ 이전날":"‹ 이전주"}</button>
@@ -950,7 +948,6 @@ function rSchedule(){
     <div class="week-scroll"><div class="week-grid" style="grid-template-columns:repeat(${days.length},minmax(${mob?"100%":"190px"},1fr))">${days.map(weekCol).join("")}</div></div>
     <div style="display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:var(--muted)"><span>이번주 달성률 <b style="color:var(--accent)">${weekRate}%</b></span><span>${dayLabel} 달성률 <b style="color:var(--accent)">${dayRate}%</b></span></div></div>
   ${staleHtml}
-  ${overloadHtml}
   <div class="card"><h2>${dayLabel} 주요업무</h2>
     <textarea id="daymain" rows="2" placeholder="이 날의 핵심 일정·업무를 적어두세요 (예: 11시 스터디, 14시 회의)" onchange="setMain(this.value)">${esc((DB.dayinfo[selDay]||{}).main||"")}</textarea></div>
   <details class="acard"><summary>업무 추가</summary><div class="acbody">
@@ -978,6 +975,14 @@ function rSchedule(){
     <div id="tlist"></div></div>`:`<div id="tlist"></div>`}
   <div class="card"><h2>${dayLabel} 메모</h2><textarea rows="3" placeholder="메모를 적어두세요" onchange="setDayField('memo',this.value)">${esc(di.memo||"")}</textarea></div>
   <div class="card"><h2>${dayLabel} 회고</h2><textarea rows="3" placeholder="오늘 하루를 돌아보며 회고를 적어보세요" onchange="setDayField('retro',this.value)">${esc(di.retro||"")}</textarea></div>`;
+  const wsc=main.querySelector(".week-scroll");
+  if(wsc&&!mob){
+    if(_wsLeft!==null)wsc.scrollLeft=_wsLeft;
+    const sc=wsc.querySelector(".wcol.sel");
+    if(sc){const rc=sc.getBoundingClientRect(),rb=wsc.getBoundingClientRect();
+      if(rc.left<rb.left)wsc.scrollLeft+=rc.left-rb.left;
+      else if(rc.right>rb.right)wsc.scrollLeft+=rc.right-rb.right;}
+  }
   document.getElementById("sadd").onclick=()=>{
     const t=val("stt");if(!t)return alert("업무 내용을 입력하세요.");
     DB.schedules.push({id:uid(),date:val("sd")||selDay,time:normTime(val("stime")),title:t,priority:parseInt(val("spri"))||null,done:false,note:val("snote")});
@@ -1071,6 +1076,7 @@ function taskRow(s,i,col){
         <div class="meta ie-row">
           ${pc?tI:pI}
           <input class="ie ie-note" value="${esc(s.note||"")}" placeholder="비고" onchange="schedField(${i},'note',this)" onkeydown="ieKey(event)">
+          <input type="date" class="ie ie-date" value="${esc(s.date||"")}" title="날짜 옮기기" onchange="schedField(${i},'date',this)" onkeydown="ieKey(event)">
         </div>
       </div>
       <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
@@ -1232,6 +1238,13 @@ window.schedField=(i,f,el)=>{
   else if(f==="title"){const t=el.value.trim();if(t)s.title=t;else el.value=s.title;}
   else if(f==="priority"){s.priority=parseInt(el.value)||null;}
   else if(f==="note"){s.note=el.value.trim();}
+  else if(f==="date"){
+    /* 날짜를 바꾸면 이 날 목록에서 빠지므로 저장 후 수정 모드를 닫고 다시 그린다.
+       키보드로 연도를 치는 도중(0002-…)에 change 가 와도 무시한다. */
+    const v=el.value;
+    if(!/^(19|20)\d\d-\d\d-\d\d$/.test(v)||v===s.date){el.value=s.date;return;}
+    s.date=v;save();ieExit();return;
+  }
   save();
 };
 
