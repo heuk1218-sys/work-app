@@ -620,8 +620,11 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
 document.getElementById("logout").onclick=async()=>{if(confirm("로그아웃할까요?")){await sb.auth.signOut();location.reload();}};
 const PAGES={dashboard:rDashboard,schedule:rSchedule,routines:rRoutines,calendar:rCalendar,diary:rDiary,goals:rGoals,faith:rFaith,clients:rClients,costs:rCosts,retro:rRetro,books:rBooks,notes:rNotes,feedback:rFeedback,accounts:rAccounts,backup:rBackup};
 /* 한 페이지가 죽어도 앱 전체가 멈추지 않도록 렌더를 격리한다 */
+/* 같은 페이지를 다시 그릴 때(체크박스·삭제 등) 스크롤 위치를 지킨다.
+   main 을 통째로 바꾸는 순간 페이지가 잠깐 짧아져 브라우저가 스크롤을 위로 당겨버리기 때문. */
+let renderedPage=null;
 function render(){
-  const fn=PAGES[page];
+  const fn=PAGES[page], samePage=renderedPage===page, sy=window.scrollY;
   try{
     if(typeof fn!=="function")throw new Error("알 수 없는 페이지: "+page);
     fn();
@@ -633,6 +636,8 @@ function render(){
         <button class="ghostb mt" onclick="render()">다시 시도</button></div>`;
   }
   try{if(typeof setSearchPlaceholder==="function")setSearchPlaceholder();sizeGrow();if(window.lucide)lucide.createIcons();}catch(e){console.warn("[render] 후처리",e);}
+  renderedPage=page;
+  if(samePage&&window.scrollY!==sy)window.scrollTo(0,sy);
 }
 /* 텍스트영역 자동 늘어남: 내용에 맞춰 커지고 페이지가 통째로 스크롤됨 */
 function autoGrow(ta){if(!ta)return;ta.style.height="auto";ta.style.height=(ta.scrollHeight+2)+"px";}
@@ -935,6 +940,7 @@ window.doneStale=(i)=>{const s=DB.schedules[i];if(!s)return;s.done=true;save();r
 window.toggleStale=()=>{staleOpen=!staleOpen;rSchedule();};
 let staleOpen=false;
 function rSchedule(){
+  const _sy=window.scrollY;   /* 다시 그려도 보던 위치 유지 (맨 끝에서 되돌림) */
   if(!selDay)selDay=T();
   const mob=isMobile();
   let days;
@@ -1019,6 +1025,8 @@ function rSchedule(){
     save();render();
   };
   drawDay();
+  try{sizeGrow();}catch(_){}
+  if(window.scrollY!==_sy)window.scrollTo(0,_sy);
 }
 /* ---- 날짜 프리셋 (빠른 메뉴용) ----
    기준은 선택한 날이 아니라 '진짜 오늘'. 다음주 = 다음 주 월요일. */
