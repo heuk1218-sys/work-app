@@ -142,6 +142,7 @@
   .ghostb.danger{color:var(--bad)}
   .linklike{background:none;border:none;color:var(--accent);font-size:12.5px;cursor:pointer;padding:2px 4px}
   .empty{color:var(--muted);text-align:center;padding:22px 0;font-size:13.5px}
+  .empty-sub{font-size:12px;color:#6a6a6a;margin-top:4px}
   .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:10px;background:var(--accent-soft);color:var(--accent-2)}
 
   .item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
@@ -238,7 +239,7 @@
   .wcol.today .wcol-h{color:var(--accent)}
   .wtask{font-size:12px;line-height:1.35;display:flex;align-items:flex-start;gap:5px;padding:4px 6px;border-radius:3px;margin-bottom:3px;background:var(--card);border:1px solid var(--line);word-break:keep-all}
   .wtask.done{opacity:.5;text-decoration:line-through}
-  .pdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:4px}
+  .pdot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;margin-top:3.5px;box-shadow:0 0 0 1.5px rgba(0,0,0,.45)}
   .wempty{color:#8f8f8f;font-size:11px;text-align:center;padding:4px 0}
   .wmain{font-size:11.5px;font-weight:600;color:var(--accent-2);background:var(--accent-soft);border-radius:3px;padding:4px 7px;margin-bottom:5px;white-space:normal;line-height:1.4;word-break:break-word}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -343,6 +344,20 @@
   /* 날짜 옮기기 — 자주 안 쓰므로 비고 줄 오른쪽 끝에 흐리고 작게 */
   .ie-date{flex:0 0 auto;width:auto;font-size:12px;color:#7a7a7a;color-scheme:dark}
   .ie-hint{flex:1;min-width:0;font-size:12px;color:#7a7a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* 날짜 프리셋 칩 [오늘][내일][다음주][날짜선택] — 추가폼·수정폼 날짜칸 옆 */
+  .dchips{display:flex;gap:4px;flex:0 0 auto;align-items:center}
+  .row>.dchips{flex:0 0 auto}
+  .dchip{background:transparent;border:1px solid var(--line);color:var(--muted);font-size:11.5px;line-height:1.2;padding:3px 7px;border-radius:10px;cursor:pointer;white-space:nowrap;font-family:inherit}
+  .dchip:hover{border-color:#6e6e73;color:var(--ink)}
+  .dchip.on{border-color:var(--accent);color:var(--accent-2);background:var(--accent-soft)}
+  @media(max-width:760px){
+    .dchip{font-size:13px;padding:6px 10px}
+    .item.editing .meta.ie-row{flex-wrap:wrap}
+    .item.editing .meta.ie-row>.dchips{flex:1 0 100%;margin-top:6px}
+  }
+  /* 우선순위 색을 체크박스 테두리에 (PRI 색 재사용, --pc 는 행에서 넘겨준다) */
+  .chk.pc{border-color:var(--pc)}
+  .chk.pc.on{border-color:var(--accent)}
   .item.editing{background:#242426;border-radius:4px}
   /* 모바일 '업무 추가' — 수정 모드 행과 같은 뼈대. 체크박스가 없으니 좌우 여백만 준다 */
   .item.editing.add-form{padding:11px 12px;border-bottom:none}
@@ -961,10 +976,11 @@ function rSchedule(){
         <div class="meta ie-row">
           <select id="spri" class="ie ie-pri"><option value="" selected>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}">${n}순위</option>`).join("")}</select>
           <input id="snote" class="ie ie-note" placeholder="비고" onkeydown="if(event.key==='Enter')document.getElementById('sadd').click()"></div></div></div>
-      <div class="row mt"><input type="date" id="sd" class="n1" value="${selDay}" title="날짜"><button class="addb" id="sadd" style="flex:1 1 46%">+ 추가</button></div></div></details>`:`
+      <div class="row mt">${dchips("addDateChip(",selDay,"sdchips")}</div>
+      <div class="row mt"><input type="date" id="sd" class="n1" value="${selDay}" title="날짜" oninput="dchipSync()" onchange="dchipSync()"><button class="addb" id="sadd" style="flex:1 1 46%">+ 추가</button></div></div></details>`:`
     <div class="row"><input id="stime" class="n2" placeholder="시간" inputmode="numeric" style="flex:0 0 92px">
       <input id="stt" class="mobwide" placeholder="업무 내용">
-      <input type="date" id="sd" class="n1" value="${selDay}" title="날짜" style="flex:0 0 140px"></div>
+      <input type="date" id="sd" class="n1" value="${selDay}" title="날짜" style="flex:0 0 140px" oninput="dchipSync()" onchange="dchipSync()">${dchips("addDateChip(",selDay,"sdchips")}</div>
     <div class="row mt"><select id="spri" class="n2" style="flex:0 0 92px">
         <option value="" selected>미지정</option><option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option><option value="4">4순위</option></select>
       <input id="snote" class="mobwide" placeholder="비고 (선택)">
@@ -990,6 +1006,37 @@ function rSchedule(){
   };
   drawDay();
 }
+/* ---- 날짜 프리셋 칩 ----
+   기준은 선택한 날이 아니라 '진짜 오늘'. 다음주 = 다음 주 월요일.
+   call 은 onclick 앞부분(예: "addDateChip(" / "schedDateChip(3,") — 뒤에 'k') 를 붙인다. */
+function presetDate(k){
+  const d=new Date(T()+"T00:00:00");
+  if(k==="tom")d.setDate(d.getDate()+1);
+  else if(k==="nw")d.setDate(d.getDate()+7-((d.getDay()+6)%7));
+  return d.toLocaleDateString("sv-SE");
+}
+function dchips(call,cur,id){
+  const P=[["today","오늘"],["tom","내일"],["nw","다음주"]];
+  return `<span class="dchips"${id?` id="${id}"`:""}>${P.map(([k,t])=>{const v=presetDate(k);
+    return `<button type="button" class="dchip${cur===v?" on":""}" data-k="${k}" title="${v}" onclick="${call}'${k}')">${t}</button>`;}).join("")}<button type="button" class="dchip" onclick="${call}'pick')">날짜선택</button></span>`;
+}
+function openPicker(el){try{if(el.showPicker){el.showPicker();return;}}catch(_){}el.focus();el.click();}
+/* 추가폼: 날짜칸 값만 바꾼다(저장은 '+ 추가' 때) */
+function dchipSync(){
+  const el=document.getElementById("sd"),box=document.getElementById("sdchips");if(!el||!box)return;
+  box.querySelectorAll(".dchip[data-k]").forEach(b=>b.classList.toggle("on",presetDate(b.dataset.k)===el.value));
+}
+window.dchipSync=dchipSync;
+window.addDateChip=(k)=>{
+  const el=document.getElementById("sd");if(!el)return;
+  if(k==="pick"){openPicker(el);return;}
+  el.value=presetDate(k);dchipSync();
+};
+/* 수정폼: 기존 저장 경로(schedField 'date') 그대로 탄다 */
+window.schedDateChip=(i,k)=>{
+  if(k==="pick"){const el=document.querySelector('#tlist [data-edit="1"] .ie-date');if(el)openPicker(el);return;}
+  schedField(i,"date",{value:presetDate(k)});
+};
 /* (시·분 드롭다운을 없애면서 pickTime() 도 제거했다 — 시간은 stime 칸에 직접 입력) */
 function normTime(s){s=(s||"").trim();if(!s)return"";s=s.replace(/[^0-9:]/g,"");let h,m,mm=s.match(/^(\d{1,2}):(\d{1,2})$/);if(mm){h=+mm[1];m=+mm[2];}else if(/^\d{3,4}$/.test(s)){h=+s.slice(0,s.length-2);m=+s.slice(-2);}else if(/^\d{1,2}$/.test(s)){h=+s;m=0;}else return"";if(h>23||m>59)return"";return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
 window.weekMove=(d)=>{const x=new Date(selDay+"T00:00:00");x.setDate(x.getDate()+d);selDay=x.toLocaleDateString("sv-SE");editSchedIdx=null;editRtId=null;rSchedule();};
@@ -1067,7 +1114,7 @@ function taskRow(s,i,col){
     const tI=`<input class="ie ie-time" value="${esc(s.time||"")}" placeholder="시간" inputmode="numeric" onchange="schedField(${i},'time',this)" onkeydown="ieKey(event)">`;
     const pI=`<select class="ie ie-pri" onchange="schedField(${i},'priority',this)" onkeydown="ieKey(event)"><option value=""${!s.priority?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${s.priority==n?" selected":""}>${n}순위</option>`).join("")}</select>`;
     return `<div class="item editing" data-edit="1">
-      <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+      <button class="chk pc ${s.done?"on":""}" style="--pc:${p.c}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
       <div class="bd">
         <div class="t ie-row">
           ${pc?pI:tI}
@@ -1077,6 +1124,7 @@ function taskRow(s,i,col){
           ${pc?tI:pI}
           <input class="ie ie-note" value="${esc(s.note||"")}" placeholder="비고" onchange="schedField(${i},'note',this)" onkeydown="ieKey(event)">
           <input type="date" class="ie ie-date" value="${esc(s.date||"")}" title="날짜 옮기기" onchange="schedField(${i},'date',this)" onkeydown="ieKey(event)">
+          ${dchips(`schedDateChip(${i},`,s.date)}
         </div>
       </div>
       <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
@@ -1085,12 +1133,12 @@ function taskRow(s,i,col){
   /* 우선순위 카드: 한 줄 행 — 제목 …… 시간(흐리게). 비고는 마우스 툴팁·수정 모드에서 */
   const title=`${s.time?`<span class="tt-time">${esc(s.time)}</span>`:""}<span class="tt-title">${esc(s.title)}</span>`;
   if(pc)return `<div class="item tl-one ${s.done?"done":""}">
-    <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+    <button class="chk pc ${s.done?"on":""}" style="--pc:${p.c}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="${s.note?esc(s.note)+" · ":""}클릭해서 수정"><span class="t">${esc(s.title)}</span>${s.time?`<span class="tt-dim tl-time">${esc(s.time)}</span>`:""}</div>
     <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
   const meta=`<span style="color:${p.c};font-weight:500">${p.t}</span>${s.note?" · "+esc(s.note):""}`;
   return `<div class="item ${s.done?"done":""}">
-    <button class="chk ${s.done?"on":""}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
+    <button class="chk pc ${s.done?"on":""}" style="--pc:${p.c}" onclick="tg('schedules',${i},'done')">${s.done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="schedEdit(${i}${ca})" title="클릭해서 수정"><div class="t tl-tt">${title}</div>
       <div class="meta">${meta}</div></div>
     <button class="del" onclick="rm('schedules',${i})">×</button></div>`;
@@ -1104,7 +1152,7 @@ function routineRow(r,done,col){
     const tI=`<input class="ie ie-time" value="${esc(r.time||"")}" placeholder="시간" inputmode="numeric" onchange="rtDayField('${r.id}','time',this)" onkeydown="ieKey(event)">`;
     const pI=`<select class="ie ie-pri" onchange="rtDayField('${r.id}','pri',this)" onkeydown="ieKey(event)"><option value=""${!r.pri?" selected":""}>미지정</option>${[1,2,3,4].map(n=>`<option value="${n}"${r.pri==n?" selected":""}>${n}순위</option>`).join("")}</select>`;
     return `<div class="item editing" data-edit="1">
-      <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+      <button class="chk pc ${done?"on":""}" style="--pc:${p.c}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
       <div class="bd">
         <div class="t ie-row">
           ${pc?pI:tI}
@@ -1119,12 +1167,12 @@ function routineRow(r,done,col){
   }
   const ca=col?`,'${col}'`:"";
   if(pc)return `<div class="item tl-one ${done?"done":""}">
-    <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+    <button class="chk pc ${done?"on":""}" style="--pc:${p.c}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="${rtRecurLabel(r,1)} · 클릭해서 이 날짜만 수정"><span class="t">${esc(r.title)}</span>${r.time?`<span class="tt-dim tl-time">${esc(r.time)}</span>`:""}</div>
     <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
   const title=`${r.time?`<span class="tt-time">${esc(r.time)}</span>`:""}<span class="tt-title">${esc(r.title)}</span>`;
   return `<div class="item ${done?"done":""}">
-    <button class="chk ${done?"on":""}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
+    <button class="chk pc ${done?"on":""}" style="--pc:${p.c}" onclick="routineToggle('${r.id}')">${done?"✓":""}</button>
     <div class="bd" style="cursor:pointer" onclick="rtDayEdit('${r.id}'${ca})" title="클릭해서 이 날짜만 수정"><div class="t tl-tt">${title}</div>
       <div class="meta"><span style="color:${p.c};font-weight:500">${p.t}</span> · ${rtRecurLabel(r,1)}</div></div>
     <button class="del" onclick="routineSkip('${r.id}')" title="이 날 하루만 빼기 (루틴은 유지)">×</button></div>`;
@@ -1150,12 +1198,12 @@ function drawDay(){
   const byP=(a,b)=>(a.done-b.done)||(priRank(a.pri)-priRank(b.pri))||((a.time||"99:99").localeCompare(b.time||"99:99"));
   const rowOf=col=>u=>u.kind==="task"?taskRow(u.s,u.i,col):routineRow(u.r,u.done,col);
   const list=(sort,col)=>units.slice().sort(sort==="time"?byTime:byP).map(rowOf(col)).join("");
-  const empty='<div class="empty">이 날 업무가 없어요.</div>';
+  const empty=`<div class="empty">${selDay===T()?"오늘은 일정이 없어요.":"이 날 업무가 없어요."}<div class="empty-sub">위 '업무 추가'에서 넣을 수 있어요.</div></div>`;
 
   /* 시간순 카드: 남은 일만 펼쳐두고, 완료는 맨 아래 '완료 N'에 접어둔다 */
   const timeList=()=>{
     const arr=units.slice().sort(byTime), open=arr.filter(u=>!u.done), done=arr.filter(u=>u.done);
-    return open.map(rowOf("time")).join("")
+    return (open.length?open.map(rowOf("time")).join(""):'<div class="empty">모두 끝냈어요.</div>')
       +(done.length?`<button class="tl-donebtn" onclick="toggleDone()">완료 ${done.length} ${doneOpen?"▾":"▸"}</button>
         ${doneOpen?`<div class="tl-donelist">${done.map(rowOf("time")).join("")}</div>`:""}`:"");
   };
