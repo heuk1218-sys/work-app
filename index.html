@@ -2604,23 +2604,23 @@ window.placeEditCancel=()=>{editPlaceId=null;drawPlaces();};
 window.placeSave=(id)=>{const p=DB.places.find(x=>x.id===id);if(p){const t=document.getElementById("epl_t_"+id).value.trim();if(t)p.title=t;p.pw=document.getElementById("epl_pw_"+id).value.trim();p.etc=document.getElementById("epl_etc_"+id).value.trim();}editPlaceId=null;save();drawPlaces();};
 window.delPlaceId=(id)=>{DB.places=DB.places.filter(x=>x.id!==id);editPlaceId=null;save();drawPlaces();};
 window.delPlace=(i)=>{DB.places.splice(i,1);save();drawPlaces();};
-const BANKCOLS=[["title","TITLE"],["use","용도"],["account","계좌번호"],["card","카드번호"],["sendOnce","송금한도(1회)"],["sendDay","송금한도(1일)"],["withdrawOnce","인출한도(1회)"],["withdrawDay","인출한도(1일)"],["payday","결제일"]];
+const BANKCOLS=[["title","TITLE"],["use","용도"],["account","계좌번호"],["card","카드번호"],["pw","비밀번호"],["sendOnce","송금한도(1회)"],["sendDay","송금한도(1일)"],["withdrawOnce","인출한도(1회)"],["withdrawDay","인출한도(1일)"],["payday","결제일"]];
 function renderBanks(biz){
   const lbl=biz?"사업자 ":"";
   document.getElementById("abody").innerHTML=`
    <details class="acard"><summary>${lbl}은행 추가</summary><div class="acbody">
-     <div class="row"><input id="b_t" class="n2" placeholder="은행(TITLE)"><input id="b_use" class="n2" placeholder="용도"><input id="b_acc" placeholder="계좌번호"><input id="b_card" placeholder="카드번호"></div>
+     <div class="row"><input id="b_t" class="n2" placeholder="은행(TITLE)"><input id="b_use" class="n2" placeholder="용도"><input id="b_acc" placeholder="계좌번호"><input id="b_card" placeholder="카드번호"><input id="b_pw" class="n2" placeholder="비밀번호"></div>
      <div class="row mt"><input id="b_so" class="n2" placeholder="송금한도(1회)"><input id="b_sd" class="n2" placeholder="송금한도(1일)"><input id="b_wo" class="n2" placeholder="인출한도(1회)"><input id="b_wd" class="n2" placeholder="인출한도(1일)"><input id="b_pay" class="n2" placeholder="결제일"></div>
      <button class="addb mt" id="b_add">+ 추가</button></div></details>
    <div class="card"><h2>${lbl}은행</h2><div class="tblwrap">${bankTable(biz)}</div></div>`;
   document.getElementById("b_add").onclick=()=>{const t=val("b_t");if(!t)return alert("은행명을 입력하세요.");
-    DB.banks.push({id:uid(),title:t,use:val("b_use"),account:val("b_acc"),card:val("b_card"),sendOnce:val("b_so"),sendDay:val("b_sd"),withdrawOnce:val("b_wo"),withdrawDay:val("b_wd"),payday:val("b_pay"),biz:!!biz});save();renderBanks(biz);};
+    DB.banks.push({id:uid(),title:t,use:val("b_use"),account:val("b_acc"),card:val("b_card"),pw:val("b_pw"),sendOnce:val("b_so"),sendDay:val("b_sd"),withdrawOnce:val("b_wo"),withdrawDay:val("b_wd"),payday:val("b_pay"),biz:!!biz});save();renderBanks(biz);};
 }
 function bankTable(biz){
   DB.banks.forEach(b=>{if(!b.id)b.id=uid();});
   const rows=DB.banks.map((b,i)=>({b,i})).filter(o=>!!o.b.biz===!!biz);
   if(!rows.length)return '<div class="empty">등록된 은행이 없어요.</div>';
-  return `<table class="tbl" style="min-width:1160px"><tr><th style="width:26px"></th>${BANKCOLS.map(c=>`<th>${c[1]}</th>`).join("")}<th></th></tr>
+  return `<table class="tbl" style="min-width:1260px"><tr><th style="width:26px"></th>${BANKCOLS.map(c=>`<th>${c[1]}</th>`).join("")}<th></th></tr>
     ${rows.map(({b})=>{
       if(b.id===editBankId){
         return `<tr><td></td>${BANKCOLS.map(c=>`<td style="padding:4px 5px"><input id="eb_${c[0]}_${b.id}" value="${esc(b[c[0]]||"")}" placeholder="${c[1]}" style="width:100%;min-width:96px;padding:7px 8px"></td>`).join("")}<td style="white-space:nowrap;text-align:right"><button class="linklike" onclick="bankSave('${b.id}')">저장</button><button class="linklike" onclick="bankEditCancel()">취소</button></td></tr>`;
