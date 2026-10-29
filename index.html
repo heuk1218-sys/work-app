@@ -242,6 +242,9 @@
   .pdot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;margin-top:3.5px;box-shadow:0 0 0 1.5px rgba(0,0,0,.45)}
   .wempty{color:#8f8f8f;font-size:11px;text-align:center;padding:4px 0}
   .wmain{font-size:11.5px;font-weight:600;color:var(--accent-2);background:var(--accent-soft);border-radius:3px;padding:4px 7px;margin-bottom:5px;white-space:normal;line-height:1.4;word-break:break-word}
+  /* 매년 반복 주요업무: 초록 계열 */
+  .anv{background:#1f3326;color:#a6d9a0}
+  .cal-grid .ev.anv{background:#1f3326;color:#a6d9a0;border-left:3px solid #6cc070}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:760px){
     /* iOS 사파리는 글자크기 16px 미만인 입력칸을 탭하면 화면을 자동 확대한다.
@@ -596,7 +599,7 @@ const DB={
   notes:[{id:uid(),date:T(),title:"첫 노트",content:"자유롭게 기록하는 공간이에요."}]
 };
 if(!DB.books)DB.books=[];
-if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];if(!DB.routines)DB.routines=[];if(!DB.feedback)DB.feedback=[];
+if(!DB.accounts)DB.accounts=[];if(!DB.places)DB.places=[];if(!DB.banks)DB.banks=[];if(!DB.costs)DB.costs=[];if(!DB.notes)DB.notes=[];if(!DB.sermons)DB.sermons=[];if(!DB.routines)DB.routines=[];if(!DB.annuals)DB.annuals=[];if(!DB.feedback)DB.feedback=[];
 let _saveT,dataReady=false;function save(){clearTimeout(_saveT);_saveT=setTimeout(()=>{if(sb&&currentUser&&dataReady)sb.from("app_data").upsert({user_id:currentUser.id,data:DB,updated_at:new Date().toISOString()}).then(null,e=>console.warn("save",e));},700);}
 function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function fmt(d){if(!d)return"";const x=new Date(d+"T00:00:00");const w=["일","월","화","수","목","금","토"];return `${x.getMonth()+1}월 ${x.getDate()}일 (${w[x.getDay()]})`;}
@@ -985,6 +988,7 @@ function rSchedule(){
     <div style="display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:var(--muted)"><span>이번주 달성률 <b style="color:var(--accent)">${weekRate}%</b></span><span>${dayLabel} 달성률 <b style="color:var(--accent)">${dayRate}%</b></span></div></div>
   ${staleHtml}
   <div class="card"><h2>${dayLabel} 주요업무</h2>
+    ${annualChips(selDay)}
     <textarea id="daymain" rows="2" placeholder="이 날의 핵심 일정·업무를 적어두세요 (예: 11시 스터디, 14시 회의)" onchange="setMain(this.value)">${esc((DB.dayinfo[selDay]||{}).main||"")}</textarea></div>
   <details class="acard"><summary>업무 추가</summary><div class="acbody">
     <!-- 아래 '오늘 업무' 줄과 칸 순서·폭을 맞췄다: [시간][업무내용] / [우선순위][비고].
@@ -1091,11 +1095,13 @@ function weekCol(d){
   const u=dayUnits(d);
   const pct=u.total?u.rate:null;
   const mn=(DB.dayinfo[d]||{}).main;
+  const ans=annualsFor(d);
   const rts=routinesForDate(d), rd=rdoneOf(d);
   const rtHtml=rts.map(rt=>`<div class="wtask ${rd[rt.id]?"done":""}"><span class="pdot" style="${pdotSt(rt.pri)}"></span>${rt.time?`<b class="wt-time">${esc(rt.time)}</b>`:""}<span class="tt-title">${esc(rt.title)}<span style="color:#7a7a7a;font-size:10px"> ·루틴</span></span></div>`).join("");
   const taskHtml=items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="${pdotSt(s.priority)}"></span>${s.time?`<b class="wt-time">${esc(s.time)}</b>`:""}<span class="tt-title">${esc(s.title)}</span></div>`).join("");
   return `<div class="wcol ${isT?"today":""} ${isSel?"sel":""}" onclick="selectDay('${d}')">
     <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${pct!==null?` · <span style="color:var(--accent)">${pct}%</span>`:""}</div>
+    ${ans.map(a=>`<div class="wmain anv">${esc(a.title)}</div>`).join("")}
     ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
     ${rtHtml}${taskHtml||(rts.length?"":'<div class="wempty">—</div>')}</div>`;
 }
@@ -1730,6 +1736,77 @@ const HOL_VAR={
   "2026-02-16":"설날","2026-02-17":"설날","2026-02-18":"설날","2026-03-02":"대체공휴일","2026-05-24":"부처님오신날","2026-05-25":"대체공휴일","2026-09-24":"추석","2026-09-25":"추석","2026-09-26":"추석","2026-10-05":"대체공휴일"
 };
 function holName(ds){if(HOL_VAR[ds])return HOL_VAR[ds];return HOL_FIXED[ds.slice(5)]||"";}
+/* ===== 매년 반복 주요업무 (생일·기념일 등) =====
+   DB.annuals = [{id,title,cal:"solar"|"lunar",m,d}]. 날짜마다 기록을 만들지 않고 화면 그릴 때 규칙으로 판정.
+   음력은 브라우저 내장 한국 음력(Intl dangi)으로 계산. 윤달은 평달로만 맞춤. */
+let anEditId=null,anOpen=false;const _lunC={};let _lunF=null;
+function lunarMD(ds){
+  if(ds in _lunC)return _lunC[ds];
+  let r=null;
+  try{if(!_lunF)_lunF=new Intl.DateTimeFormat("en-u-ca-dangi",{timeZone:"Asia/Seoul",month:"numeric",day:"numeric"});
+    const p=_lunF.formatToParts(new Date(ds+"T12:00:00+09:00"));const mo=(p.find(x=>x.type==="month")||{}).value||"";
+    r={m:parseInt(mo),d:parseInt((p.find(x=>x.type==="day")||{}).value),leap:/bis/.test(mo)};
+    if(!(r.m>0&&r.d>0))r=null;}catch(e){r=null;}
+  return _lunC[ds]=r;
+}
+function dsAdd(ds,n){const t=new Date(ds+"T00:00:00");t.setDate(t.getDate()+n);return t.toLocaleDateString("sv-SE");}
+function annualHits(a,ds){
+  const m=+ds.slice(5,7),d=+ds.slice(8,10);
+  if(a.cal!=="lunar"){
+    if(a.m===m&&a.d===d)return true;
+    return a.m===2&&a.d===29&&m===2&&d===28&&new Date(+ds.slice(0,4),1,29).getMonth()!==1; // 2/29 → 평년엔 2/28
+  }
+  const l=lunarMD(ds);if(!l||l.leap||l.m!==a.m)return false;
+  if(l.d===a.d)return true;
+  if(a.d===30&&l.d===29){const nx=lunarMD(dsAdd(ds,1));return !!nx&&nx.d===1;} // 작은달(29일)엔 그믐에
+  return false;
+}
+function annualsFor(ds){return (DB.annuals||[]).filter(a=>annualHits(a,ds));}
+function annualLabel(a){return (a.cal==="lunar"?"음력 ":"양력 ")+a.m+"월 "+a.d+"일";}
+function annualNext(a){const t=T();for(let i=0;i<400;i++){const ds=dsAdd(t,i);if(annualHits(a,ds))return {ds,i};}return null;}
+function annualChips(ds){
+  const ans=annualsFor(ds);if(!ans.length)return "";
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${ans.map(a=>`<span class="pill anv">${esc(a.title)} <span style="opacity:.7">· 매년 ${annualLabel(a)}</span></span>`).join("")}</div>`;
+}
+function annualCard(){
+  const list=(DB.annuals||[]).map(a=>({a,n:annualNext(a)})).sort((x,y)=>(x.n?x.n.i:999)-(y.n?y.n.i:999));
+  const ed=anEditId&&(DB.annuals||[]).find(x=>x.id===anEditId);
+  const base=calSel||T();
+  const cal=ed?ed.cal:"solar";
+  const m=ed?ed.m:+base.slice(5,7), d=ed?ed.d:+base.slice(8,10);
+  return `<details class="acard"${anOpen||ed?" open":""} ontoggle="anSetOpen(this.open)"><summary>매년 반복 <span class="meta" style="font-weight:400">· ${list.length}개</span></summary><div class="acbody">
+    <div class="meta">생일·기념일처럼 매년 같은 날 돌아오는 주요업무예요. 음력은 해마다 양력 날짜를 자동으로 계산해요. (윤달은 평달 기준)</div>
+    <div class="row mt" style="flex-wrap:wrap">
+      <input id="an_title" placeholder="예: 어머니 생신" value="${ed?esc(ed.title):""}" style="flex:2 1 180px" onkeydown="if(event.key==='Enter')anSave()">
+      <select id="an_cal" class="n2" style="flex:0 0 84px" onchange="anCalChg()"><option value="solar" ${cal==="solar"?"selected":""}>양력</option><option value="lunar" ${cal==="lunar"?"selected":""}>음력</option></select>
+      <select id="an_m" class="n2" style="flex:0 0 80px">${[...Array(12)].map((_,i)=>`<option value="${i+1}" ${m===i+1?"selected":""}>${i+1}월</option>`).join("")}</select>
+      <select id="an_d" class="n2" style="flex:0 0 80px">${[...Array(cal==="lunar"?30:31)].map((_,i)=>`<option value="${i+1}" ${d===i+1?"selected":""}>${i+1}일</option>`).join("")}</select>
+      <button class="addb" style="flex:0 0 100px" onclick="anSave()">${ed?"수정 저장":"+ 추가"}</button>${ed?`<button class="ghostb" style="flex:0 0 70px" onclick="anCancel()">취소</button>`:""}</div>
+    <div class="mt">${list.length?list.map(({a,n})=>`<div class="item"><div class="bd"><div class="t">${esc(a.title)}</div><div class="meta">매년 ${annualLabel(a)}${n?` · 다음 ${fmt(n.ds)}${n.i===0?" · 오늘":` · D-${n.i}`}`:""}</div></div>
+      <button class="editb" onclick="anEdit('${a.id}')">수정</button><button class="del" onclick="anDel('${a.id}')">×</button></div>`).join(""):'<div class="empty">등록된 매년 반복 일정이 없어요.</div>'}</div></div></details>`;
+}
+window.anSetOpen=(v)=>{anOpen=v;};
+window.anCalChg=()=>{
+  const c=document.getElementById("an_cal").value,ms=document.getElementById("an_m"),dsl=document.getElementById("an_d");
+  let m=+ms.value,d=+dsl.value;
+  if(!anEditId){const base=calSel||T();if(c==="lunar"){const l=lunarMD(base);if(l){m=l.m;d=l.d;}}else{m=+base.slice(5,7);d=+base.slice(8,10);}}
+  if(c==="lunar"&&d>30)d=30;
+  ms.value=m;dsl.innerHTML=[...Array(c==="lunar"?30:31)].map((_,i)=>`<option value="${i+1}" ${d===i+1?"selected":""}>${i+1}일</option>`).join("");
+};
+window.anSave=()=>{
+  const title=document.getElementById("an_title").value.trim();if(!title){document.getElementById("an_title").focus();return;}
+  const cal=document.getElementById("an_cal").value==="lunar"?"lunar":"solar";
+  const m=+document.getElementById("an_m").value,d=+document.getElementById("an_d").value;
+  if(!DB.annuals)DB.annuals=[];
+  const ed=anEditId&&DB.annuals.find(x=>x.id===anEditId);
+  if(ed){ed.title=title;ed.cal=cal;ed.m=m;ed.d=d;}else DB.annuals.push({id:uid(),title,cal,m,d});
+  anEditId=null;save();rCalendar();
+};
+window.anEdit=(id)=>{anEditId=id;rCalendar();const e=document.getElementById("an_title");if(e){e.scrollIntoView({block:"center"});e.focus();}};
+window.anCancel=()=>{anEditId=null;rCalendar();};
+window.anDel=(id)=>{const it=(DB.annuals||[]).find(x=>x.id===id);if(!it)return;
+  if(!confirm(`"${it.title}" 매년 반복을 삭제할까요?`))return;
+  DB.annuals=DB.annuals.filter(x=>x.id!==id);if(anEditId===id)anEditId=null;save();rCalendar();};
 function rCalendar(){
   const now=new Date();if(calY==null){calY=now.getFullYear();calM=now.getMonth();}
   const ym=`${calY}-${String(calM+1).padStart(2,"0")}`;
@@ -1741,15 +1818,17 @@ function rCalendar(){
     <button onclick="calMove(1)">다음 ›</button></div>
     <div class="cal-grid" id="cg"></div></div>
   ${calSel?`<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h2 style="margin:0;flex:1">${fmt(calSel)} 주요업무</h2>${holName(calSel)?`<span class="pill" style="background:#3a2530;color:#e9a0a0">${holName(calSel)}</span>`:""}<button class="editb" onclick="calPickClose()">닫기</button></div>
+    ${annualChips(calSel)}
     <textarea id="calmain" rows="3" placeholder="이 날의 주요 일정·업무를 적어요" onchange="setCalMain(this.value)">${esc((DB.dayinfo[calSel]||{}).main||"")}</textarea></div>`:`<div class="card"><div class="meta">날짜를 ${mob?"선택":"클릭"}하면 그날의 주요업무를 추가·수정할 수 있어요. (공휴일·일요일은 빨간색)</div></div>`}
   <div class="card"><h2>${calM+1}월 주요 메모</h2>
-    <textarea id="mmemo" rows="4" placeholder="이번 달 중요한 것을 메모해두세요" onchange="setMonthMemo(this.value)">${esc(DB.monthmemo[ym]||"")}</textarea></div>`;
+    <textarea id="mmemo" rows="4" placeholder="이번 달 중요한 것을 메모해두세요" onchange="setMonthMemo(this.value)">${esc(DB.monthmemo[ym]||"")}</textarea></div>
+  ${annualCard()}`;
   drawCal();
 }
 function drawCalList(){
   const g=document.getElementById("cg");const days=new Date(calY,calM+1,0).getDate();const rows=[];
-  for(let d=1;d<=days;d++){const ds=`${calY}-${String(calM+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;const m=(DB.dayinfo[ds]||{}).main;const hn=holName(ds);if((m&&m.trim())||hn)rows.push({ds,d,m,hn});}
-  g.innerHTML=rows.length?rows.map(r=>{const dt=new Date(r.ds+"T00:00:00");const isT=r.ds===T();const red=r.hn||dt.getDay()===0;return `<div class="item link" style="cursor:pointer" onclick="calPick('${r.ds}')"><div class="bd"><div class="meta" style="color:${red?"#e57373":(isT?"var(--accent)":"var(--muted)")}">${r.d}일 (${DOW[dt.getDay()]})${r.hn?" · "+r.hn:""}</div>${r.m?`<div style="margin-top:2px">${esc(r.m)}</div>`:""}</div><span class="meta" style="align-self:center">›</span></div>`;}).join(""):'<div class="empty">이 달 주요 일정·공휴일이 없어요.</div>';
+  for(let d=1;d<=days;d++){const ds=`${calY}-${String(calM+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;const m=(DB.dayinfo[ds]||{}).main;const hn=holName(ds);const an=annualsFor(ds);if((m&&m.trim())||hn||an.length)rows.push({ds,d,m,hn,an});}
+  g.innerHTML=rows.length?rows.map(r=>{const dt=new Date(r.ds+"T00:00:00");const isT=r.ds===T();const red=r.hn||dt.getDay()===0;return `<div class="item link" style="cursor:pointer" onclick="calPick('${r.ds}')"><div class="bd"><div class="meta" style="color:${red?"#e57373":(isT?"var(--accent)":"var(--muted)")}">${r.d}일 (${DOW[dt.getDay()]})${r.hn?" · "+r.hn:""}</div>${r.an.map(a=>`<div style="margin-top:2px;color:#a6d9a0">${esc(a.title)}</div>`).join("")}${r.m?`<div style="margin-top:2px">${esc(r.m)}</div>`:""}</div><span class="meta" style="align-self:center">›</span></div>`;}).join(""):'<div class="empty">이 달 주요 일정·공휴일이 없어요.</div>';
 }
 window.calMove=(d)=>{calM+=d;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}rCalendar();};
 window.setMonthMemo=(v)=>{const ym=`${calY}-${String(calM+1).padStart(2,"0")}`;DB.monthmemo[ym]=v;save();};
@@ -1767,7 +1846,7 @@ function drawCal(){
     const dt=new Date(ds+"T00:00:00");const dow=dt.getDay();
     const isT=ds===T();const hn=holName(ds);const red=hn||dow===0;
     const mtxt=(DB.dayinfo[ds]||{}).main;
-    html+=`<div class="cell ${isT?"today":""}" onclick="calPick('${ds}')" style="cursor:pointer;${ds===calSel?"box-shadow:inset 0 0 0 2px var(--accent);":""}"><div class="dn" style="${red?"color:#e57373":(dow===6?"color:#6f9de0":"")}">${d}</div>${hn?`<div class="ev" style="background:#3a2530;color:#e9a0a0;border-left:3px solid #cf7f7f">${hn}</div>`:""}${mtxt?`<div class="ev" style="white-space:normal;border-left:3px solid var(--accent)">${esc(mtxt)}</div>`:""}</div>`;
+    html+=`<div class="cell ${isT?"today":""}" onclick="calPick('${ds}')" style="cursor:pointer;${ds===calSel?"box-shadow:inset 0 0 0 2px var(--accent);":""}"><div class="dn" style="${red?"color:#e57373":(dow===6?"color:#6f9de0":"")}">${d}</div>${hn?`<div class="ev" style="background:#3a2530;color:#e9a0a0;border-left:3px solid #cf7f7f">${hn}</div>`:""}${annualsFor(ds).map(a=>`<div class="ev anv">${esc(a.title)}</div>`).join("")}${mtxt?`<div class="ev" style="white-space:normal;border-left:3px solid var(--accent)">${esc(mtxt)}</div>`:""}</div>`;
   }
   g.innerHTML=html;
 }
@@ -2965,7 +3044,7 @@ document.addEventListener("click",e=>{const t=e.target;if(t.tagName==="INPUT"&&(
    인증 코어가 로그인에 성공한 뒤 이 함수를 호출한다.
    반환값: "ok" | "loadfail" */
 window.__appBoot=async function(){
-  const ARR=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","backups"];
+  const ARR=["schedules","routines","annuals","diary","goals","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","backups"];
   let loaded=false,loadFailed=false;
   try{const r=await sb.from("app_data").select("data").eq("user_id",currentUser.id).maybeSingle();
     if(r.error){loadFailed=true;}
@@ -3059,7 +3138,7 @@ if(window.lucide)lucide.createIcons();
   /* ---- 컬럼 구성 ---- */
   /* backups 는 별도 테이블로 빠졌으므로 병합 대상에서 제외한다
      (남겨두면 백업 파일 가져오기 때 블롭 안으로 다시 들어온다) */
-  const ARRAY_COLS=["schedules","routines","diary","goals","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","trash"];
+  const ARRAY_COLS=["schedules","routines","annuals","diary","goals","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","trash"];
   const MAP_COLS=["dayinfo","monthmemo"];
 
   let baseState=null, baseVersion=null, _mt=null, _busy=false, _pending=false;
