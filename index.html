@@ -242,6 +242,9 @@
   .pdot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;margin-top:3.5px;box-shadow:0 0 0 1.5px rgba(0,0,0,.45)}
   .wempty{color:#8f8f8f;font-size:11px;text-align:center;padding:4px 0}
   .wmain{font-size:11.5px;font-weight:600;color:var(--accent-2);background:var(--accent-soft);border-radius:3px;padding:4px 7px;margin-bottom:5px;white-space:normal;line-height:1.4;word-break:break-word}
+  /* 매년 반복 주요업무: 초록 계열 */
+  .anv{background:#1f3326;color:#a6d9a0}
+  .cal-grid .ev.anv{background:#1f3326;color:#a6d9a0;border-left:3px solid #6cc070}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:760px){
     /* iOS 사파리는 글자크기 16px 미만인 입력칸을 탭하면 화면을 자동 확대한다.
@@ -1098,7 +1101,7 @@ function weekCol(d){
   const taskHtml=items.map(({s})=>`<div class="wtask ${s.done?"done":""}"><span class="pdot" style="${pdotSt(s.priority)}"></span>${s.time?`<b class="wt-time">${esc(s.time)}</b>`:""}<span class="tt-title">${esc(s.title)}</span></div>`).join("");
   return `<div class="wcol ${isT?"today":""} ${isSel?"sel":""}" onclick="selectDay('${d}')">
     <div class="wcol-h">${dt.getDate()}일 ${DOW[dt.getDay()]}${pct!==null?` · <span style="color:var(--accent)">${pct}%</span>`:""}</div>
-    ${ans.map(a=>`<div class="wmain">🔁 ${esc(a.title)}</div>`).join("")}
+    ${ans.map(a=>`<div class="wmain anv">${esc(a.title)}</div>`).join("")}
     ${mn&&mn.trim()?`<div class="wmain">📌 ${esc(mn)}</div>`:""}
     ${rtHtml}${taskHtml||(rts.length?"":'<div class="wempty">—</div>')}</div>`;
 }
@@ -1736,7 +1739,7 @@ function holName(ds){if(HOL_VAR[ds])return HOL_VAR[ds];return HOL_FIXED[ds.slice
 /* ===== 매년 반복 주요업무 (생일·기념일 등) =====
    DB.annuals = [{id,title,cal:"solar"|"lunar",m,d}]. 날짜마다 기록을 만들지 않고 화면 그릴 때 규칙으로 판정.
    음력은 브라우저 내장 한국 음력(Intl dangi)으로 계산. 윤달은 평달로만 맞춤. */
-let anEditId=null;const _lunC={};let _lunF=null;
+let anEditId=null,anOpen=false;const _lunC={};let _lunF=null;
 function lunarMD(ds){
   if(ds in _lunC)return _lunC[ds];
   let r=null;
@@ -1763,7 +1766,7 @@ function annualLabel(a){return (a.cal==="lunar"?"음력 ":"양력 ")+a.m+"월 "+
 function annualNext(a){const t=T();for(let i=0;i<400;i++){const ds=dsAdd(t,i);if(annualHits(a,ds))return {ds,i};}return null;}
 function annualChips(ds){
   const ans=annualsFor(ds);if(!ans.length)return "";
-  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${ans.map(a=>`<span class="pill" style="background:var(--accent-soft);color:var(--accent-2)">🔁 ${esc(a.title)} <span style="opacity:.7">· 매년 ${annualLabel(a)}</span></span>`).join("")}</div>`;
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${ans.map(a=>`<span class="pill anv">${esc(a.title)} <span style="opacity:.7">· 매년 ${annualLabel(a)}</span></span>`).join("")}</div>`;
 }
 function annualCard(){
   const list=(DB.annuals||[]).map(a=>({a,n:annualNext(a)})).sort((x,y)=>(x.n?x.n.i:999)-(y.n?y.n.i:999));
@@ -1771,7 +1774,7 @@ function annualCard(){
   const base=calSel||T();
   const cal=ed?ed.cal:"solar";
   const m=ed?ed.m:+base.slice(5,7), d=ed?ed.d:+base.slice(8,10);
-  return `<div class="card"><h2>매년 반복 <span class="meta" style="font-weight:400">· ${list.length}개</span></h2>
+  return `<details class="acard"${anOpen||ed?" open":""} ontoggle="anSetOpen(this.open)"><summary>매년 반복 <span class="meta" style="font-weight:400">· ${list.length}개</span></summary><div class="acbody">
     <div class="meta">생일·기념일처럼 매년 같은 날 돌아오는 주요업무예요. 음력은 해마다 양력 날짜를 자동으로 계산해요. (윤달은 평달 기준)</div>
     <div class="row mt" style="flex-wrap:wrap">
       <input id="an_title" placeholder="예: 어머니 생신" value="${ed?esc(ed.title):""}" style="flex:2 1 180px" onkeydown="if(event.key==='Enter')anSave()">
@@ -1780,8 +1783,9 @@ function annualCard(){
       <select id="an_d" class="n2" style="flex:0 0 80px">${[...Array(cal==="lunar"?30:31)].map((_,i)=>`<option value="${i+1}" ${d===i+1?"selected":""}>${i+1}일</option>`).join("")}</select>
       <button class="addb" style="flex:0 0 100px" onclick="anSave()">${ed?"수정 저장":"+ 추가"}</button>${ed?`<button class="ghostb" style="flex:0 0 70px" onclick="anCancel()">취소</button>`:""}</div>
     <div class="mt">${list.length?list.map(({a,n})=>`<div class="item"><div class="bd"><div class="t">${esc(a.title)}</div><div class="meta">매년 ${annualLabel(a)}${n?` · 다음 ${fmt(n.ds)}${n.i===0?" · 오늘":` · D-${n.i}`}`:""}</div></div>
-      <button class="editb" onclick="anEdit('${a.id}')">수정</button><button class="del" onclick="anDel('${a.id}')">×</button></div>`).join(""):'<div class="empty">등록된 매년 반복 일정이 없어요.</div>'}</div></div>`;
+      <button class="editb" onclick="anEdit('${a.id}')">수정</button><button class="del" onclick="anDel('${a.id}')">×</button></div>`).join(""):'<div class="empty">등록된 매년 반복 일정이 없어요.</div>'}</div></div></details>`;
 }
+window.anSetOpen=(v)=>{anOpen=v;};
 window.anCalChg=()=>{
   const c=document.getElementById("an_cal").value,ms=document.getElementById("an_m"),dsl=document.getElementById("an_d");
   let m=+ms.value,d=+dsl.value;
@@ -1824,7 +1828,7 @@ function rCalendar(){
 function drawCalList(){
   const g=document.getElementById("cg");const days=new Date(calY,calM+1,0).getDate();const rows=[];
   for(let d=1;d<=days;d++){const ds=`${calY}-${String(calM+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;const m=(DB.dayinfo[ds]||{}).main;const hn=holName(ds);const an=annualsFor(ds);if((m&&m.trim())||hn||an.length)rows.push({ds,d,m,hn,an});}
-  g.innerHTML=rows.length?rows.map(r=>{const dt=new Date(r.ds+"T00:00:00");const isT=r.ds===T();const red=r.hn||dt.getDay()===0;return `<div class="item link" style="cursor:pointer" onclick="calPick('${r.ds}')"><div class="bd"><div class="meta" style="color:${red?"#e57373":(isT?"var(--accent)":"var(--muted)")}">${r.d}일 (${DOW[dt.getDay()]})${r.hn?" · "+r.hn:""}</div>${r.an.map(a=>`<div style="margin-top:2px;color:var(--accent-2)">🔁 ${esc(a.title)}</div>`).join("")}${r.m?`<div style="margin-top:2px">${esc(r.m)}</div>`:""}</div><span class="meta" style="align-self:center">›</span></div>`;}).join(""):'<div class="empty">이 달 주요 일정·공휴일이 없어요.</div>';
+  g.innerHTML=rows.length?rows.map(r=>{const dt=new Date(r.ds+"T00:00:00");const isT=r.ds===T();const red=r.hn||dt.getDay()===0;return `<div class="item link" style="cursor:pointer" onclick="calPick('${r.ds}')"><div class="bd"><div class="meta" style="color:${red?"#e57373":(isT?"var(--accent)":"var(--muted)")}">${r.d}일 (${DOW[dt.getDay()]})${r.hn?" · "+r.hn:""}</div>${r.an.map(a=>`<div style="margin-top:2px;color:#a6d9a0">${esc(a.title)}</div>`).join("")}${r.m?`<div style="margin-top:2px">${esc(r.m)}</div>`:""}</div><span class="meta" style="align-self:center">›</span></div>`;}).join(""):'<div class="empty">이 달 주요 일정·공휴일이 없어요.</div>';
 }
 window.calMove=(d)=>{calM+=d;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}rCalendar();};
 window.setMonthMemo=(v)=>{const ym=`${calY}-${String(calM+1).padStart(2,"0")}`;DB.monthmemo[ym]=v;save();};
@@ -1842,7 +1846,7 @@ function drawCal(){
     const dt=new Date(ds+"T00:00:00");const dow=dt.getDay();
     const isT=ds===T();const hn=holName(ds);const red=hn||dow===0;
     const mtxt=(DB.dayinfo[ds]||{}).main;
-    html+=`<div class="cell ${isT?"today":""}" onclick="calPick('${ds}')" style="cursor:pointer;${ds===calSel?"box-shadow:inset 0 0 0 2px var(--accent);":""}"><div class="dn" style="${red?"color:#e57373":(dow===6?"color:#6f9de0":"")}">${d}</div>${hn?`<div class="ev" style="background:#3a2530;color:#e9a0a0;border-left:3px solid #cf7f7f">${hn}</div>`:""}${annualsFor(ds).map(a=>`<div class="ev" style="background:var(--accent-soft);color:var(--accent-2);border-left:3px solid var(--accent-2)">🔁 ${esc(a.title)}</div>`).join("")}${mtxt?`<div class="ev" style="white-space:normal;border-left:3px solid var(--accent)">${esc(mtxt)}</div>`:""}</div>`;
+    html+=`<div class="cell ${isT?"today":""}" onclick="calPick('${ds}')" style="cursor:pointer;${ds===calSel?"box-shadow:inset 0 0 0 2px var(--accent);":""}"><div class="dn" style="${red?"color:#e57373":(dow===6?"color:#6f9de0":"")}">${d}</div>${hn?`<div class="ev" style="background:#3a2530;color:#e9a0a0;border-left:3px solid #cf7f7f">${hn}</div>`:""}${annualsFor(ds).map(a=>`<div class="ev anv">${esc(a.title)}</div>`).join("")}${mtxt?`<div class="ev" style="white-space:normal;border-left:3px solid var(--accent)">${esc(mtxt)}</div>`:""}</div>`;
   }
   g.innerHTML=html;
 }
