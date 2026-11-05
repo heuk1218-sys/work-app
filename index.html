@@ -63,6 +63,9 @@
     .ta-fill{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
     .detail-body{min-height:calc(100vh - 290px);min-height:calc(100dvh - 290px)}
   }
+  /* 사진이 붙은 글은 본문이 화면을 채우지 않게 — 글 바로 아래에 사진이 오도록 (일기·QT·설교·독서·노트·피드백 공통) */
+  .detail-body:has(+ .dimg-view){min-height:0}
+  .ta-fill:has(~ .dimg-grid .dimg){min-height:160px}
   input[type=range]{accent-color:var(--accent);padding:0}
   input[type=date],input[type=time]{cursor:pointer}
   input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(0.85);cursor:pointer;opacity:.85;font-size:16px}
