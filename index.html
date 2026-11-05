@@ -450,16 +450,17 @@
 
   /* ════════ 토스(TDS) 디자인 — 2026-11-06 (22차, 다크) ════════
      기능·마크업은 그대로 두고 겉모습만 덮어쓴다. 이 블록과 위 :root 토큰만 되돌리면 원래 다크 디자인으로 돌아간다.
+     라운드는 예전 값(4~8px) 그대로 — 토스식 큰 라운드는 사용자 요청으로 뺐다(22차-3).
      원칙: 가장 어두운 바탕(greyBackground) + 한 단계 밝은 카드, 강조색은 토스 블루 하나, 1px 헤어라인, 큰 라운드, 그림자는 떠 있는 것에만. */
   body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",Roboto,sans-serif;
        letter-spacing:-.005em;line-height:1.55;-webkit-font-smoothing:antialiased}
-  button{border-radius:10px;transition:background-color .12s cubic-bezier(.22,.61,.36,1),color .12s,border-color .12s,box-shadow .2s}
-  input,textarea,select{background:var(--input);border:1px solid var(--line);border-radius:12px;color:var(--ink);transition:border-color .2s,background-color .2s,box-shadow .2s}
+  button{transition:background-color .12s cubic-bezier(.22,.61,.36,1),color .12s,border-color .12s,box-shadow .2s}
+  input,textarea,select{background:var(--input);border:1px solid var(--line);color:var(--ink);transition:border-color .2s,background-color .2s,box-shadow .2s}
   input:focus,textarea:focus,select:focus{background:var(--input-focus);border-color:var(--accent);box-shadow:0 0 0 .5px var(--accent)}
   input::placeholder,textarea::placeholder{color:var(--grey-400)}
   input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(.85);opacity:.6}
   input[type=checkbox],input[type=radio]{accent-color:var(--accent)}
-  .mdedit{border-radius:12px}
+  .mdedit{}
   .mdedit:focus{background:var(--input-focus);box-shadow:0 0 0 .5px var(--accent)}
   .mdedit.is-empty:before{color:var(--grey-400)}
   .md-hint{color:var(--grey-500)}
@@ -469,14 +470,14 @@
   /* 상단바(모바일)·메뉴 */
   .topbar{background:var(--side);border-bottom:1px solid var(--line)}
   .topbar .tb-title{font-weight:700;letter-spacing:-.01em}
-  .side-collapse{color:var(--grey-400);border-radius:8px}
+  .side-collapse{color:var(--grey-400);}
   .side-collapse:hover{color:var(--ink);background:var(--side-hover)}
   .copyright-fixed{color:var(--grey-400)}
   .backdrop.show{background:rgba(0,0,0,.56)}
   aside{border-right:1px solid var(--line)}
   aside .brand{color:var(--ink-strong);letter-spacing:-.02em}
-  .brand-bar{border-radius:2px}
-  aside nav button{color:var(--side-ink);font-weight:500;border-radius:12px}
+  .brand-bar{}
+  aside nav button{color:var(--side-ink);font-weight:500;}
   aside nav button svg{color:var(--grey-500)}
   aside nav button:hover{background:var(--side-hover);color:var(--ink)}
   aside nav button.on{background:var(--accent-soft);color:var(--accent);font-weight:700}
@@ -486,93 +487,93 @@
 
   /* 잠금(로그인) 화면 */
   .lock{background:var(--bg)}
-  .lock-card{border:none;border-radius:24px;padding:40px 28px 32px;box-shadow:0 4px 12px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
+  .lock-card{border:none;padding:40px 28px 32px;box-shadow:0 4px 12px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3)}
   .lock-card h1{font-size:24px;letter-spacing:-.02em;margin-bottom:6px}
   .lock-card p{font-size:15px;color:var(--grey-600)}
   .lock-card input{height:52px;letter-spacing:4px}
-  .lock-card button{height:56px;padding:0;border-radius:16px;font-size:17px}
+  .lock-card button{height:56px;padding:0;font-size:17px}
   .lock-card button:active{background:var(--accent-press)}
   .lock-msg{color:var(--bad)}
 
   /* 카드·제목 */
   .page-h{letter-spacing:-.02em;line-height:1.3;margin-bottom:6px}
   .page-sub{color:var(--grey-600)}
-  .card{border:none;border-radius:20px;box-shadow:none;padding:22px 24px}
+  .card{border:none;box-shadow:none;padding:22px 24px}
   .card h2{font-size:18px;font-weight:700;letter-spacing:-.015em}
-  details.acard{border:none;border-radius:20px;box-shadow:none}
+  details.acard{border:none;box-shadow:none}
   details.acard>summary{padding:18px 24px;font-size:17px;font-weight:700;letter-spacing:-.01em}
   details.acard .acbody{padding:0 24px 22px}
 
   /* 버튼 */
-  .addb{background:var(--accent);color:var(--on-accent);border-radius:14px;padding:13px;font-size:16px}
+  .addb{background:var(--accent);color:var(--on-accent);padding:13px;font-size:16px}
   .addb:hover{background:var(--accent-press);color:var(--on-accent)}
-  .ghostb{background:var(--grey-100);border:1px solid transparent;color:var(--ink);border-radius:12px;font-weight:600}
+  .ghostb{background:var(--grey-100);border:1px solid transparent;color:var(--ink);font-weight:600}
   .ghostb:hover{background:var(--grey-200);border-color:transparent}
   .ghostb.danger{background:var(--bad-soft);color:var(--bad)}
   .ghostb.danger:hover{background:var(--bad-soft2)}
   .linklike{color:var(--accent);font-weight:600}
-  .editb{color:var(--grey-500);border-radius:8px}
+  .editb{color:var(--grey-500);}
   .editb:hover{color:var(--accent);background:var(--accent-soft)}
   .empty{color:var(--grey-500)}
   .empty-sub{color:var(--grey-400)}
-  .pill{border-radius:999px;font-weight:600;padding:2px 10px;color:var(--accent)}
+  .pill{font-weight:600;padding:2px 10px;color:var(--accent)}
 
   /* 목록 행 */
   .item{border-bottom:1px solid var(--line-soft)}
-  .item.link:hover{background:var(--grey-50);border-radius:12px}
-  .item.editing{background:var(--grey-50);border-radius:12px}
+  .item.link:hover{background:var(--grey-50);}
+  .item.editing{background:var(--grey-50);}
   .meta{color:var(--grey-600)}
   .del,.more{color:var(--grey-400)}
   .del:hover{color:var(--bad)}
   .more:hover{color:var(--ink)}
-  .chk{width:22px;height:22px;flex:0 0 22px;margin-top:1px;border:1.5px solid var(--grey-300);border-radius:6px;background:transparent;font-size:13px;font-weight:700}
+  .chk{width:22px;height:22px;flex:0 0 22px;margin-top:1px;border:1.5px solid var(--grey-300);background:transparent;font-size:13px;font-weight:700}
   .chk.on,.chk.pc.on{background:var(--accent);border-color:var(--accent);color:#fff}
   .rt-sec-h{color:var(--grey-600);border-bottom:1px solid var(--line)}
   .rt-sec-empty,.rt-cnt{color:var(--grey-500)}
-  .rt-sec.rt-over{background:var(--grey-50);border-radius:12px}
+  .rt-sec.rt-over{background:var(--grey-50);}
 
   /* 칩(하위 탭)·세그먼트 */
   .sub-tabs{gap:8px}
-  .sub-tabs button{height:34px;padding:0 14px;border-radius:999px;background:transparent;border:1px solid var(--line);color:var(--grey-700);font-weight:600}
+  .sub-tabs button{height:34px;padding:0 14px;background:transparent;border:1px solid var(--line);color:var(--grey-700);font-weight:600}
   .sub-tabs button:hover{background:var(--grey-50)}
   .sub-tabs button.on{background:var(--grey-900);border-color:var(--grey-900);color:#17171C}
-  .linkchip{border-radius:999px;background:var(--accent-soft);border:none;color:var(--accent);font-weight:600}
+  .linkchip{background:var(--accent-soft);border:none;color:var(--accent);font-weight:600}
   .linkchip:hover{background:var(--accent-soft2)}
-  .sort-toggle{background:var(--grey-100);border-radius:10px;padding:3px;gap:2px}
-  .sort-toggle button{background:transparent;border:none;color:var(--grey-700);border-radius:8px;font-weight:600}
+  .sort-toggle{background:var(--grey-100);border-radius:5px;padding:3px;gap:2px}
+  .sort-toggle button{background:transparent;border:none;color:var(--grey-700);font-weight:600}
   .sort-toggle button.on{background:var(--seg-on);color:var(--ink-strong);box-shadow:0 1px 2px rgba(0,0,0,.3)}
 
   /* 표·통계 */
   table.tbl th{color:var(--grey-500);font-weight:600;border-bottom:1px solid var(--line)}
   table.tbl td{border-bottom:1px solid var(--line-soft);font-variant-numeric:tabular-nums}
-  .stat .s{background:var(--grey-50);border:none;border-radius:16px}
+  .stat .s{background:var(--grey-50);border:none;}
   .stat .s .lab{color:var(--grey-600)}
   .stat .s .val{color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 
   /* 통계보고 O/X */
-  .rpt-nav,.cal-head button{background:var(--grey-100);border:none;color:var(--grey-700);border-radius:10px;font-weight:600}
+  .rpt-nav,.cal-head button{background:var(--grey-100);border:none;color:var(--grey-700);font-weight:600}
   .rpt-nav:hover:not(:disabled),.cal-head button:hover{background:var(--grey-200);color:var(--ink);border-color:transparent}
   .rpt-row{border-bottom:1px solid var(--line-soft)}
-  .oxb{border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--grey-400)}
+  .oxb{border:1px solid var(--line);background:transparent;color:var(--grey-400)}
   .oxb.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .rpt-bar{background:var(--grey-200);border-radius:999px}
-  .rpt-bar>i{background:var(--accent);border-radius:999px}
+  .rpt-bar{background:var(--grey-200);}
+  .rpt-bar>i{background:var(--accent);}
 
   /* 캘린더 */
   .cal-head{margin-bottom:12px}
-  .cal-grid{background:var(--line-soft);border:1px solid var(--line-soft);border-radius:16px}
+  .cal-grid{background:var(--line-soft);border:1px solid var(--line-soft);}
   .cal-grid .dow{background:var(--card);color:var(--grey-500);font-weight:600}
   .cal-grid .cell{background:var(--card)}
   .cal-grid .cell .dn{color:var(--grey-700);font-weight:600}
   .cal-grid .cell.today .dn{background:var(--accent);color:#fff}
   .cal-grid .cell.out{background:var(--bg)}
   .cal-grid .cell.out .dn{color:var(--grey-400)}
-  .cal-grid .ev{background:var(--grey-100);color:var(--grey-800);border-radius:6px}
+  .cal-grid .ev{background:var(--grey-100);color:var(--grey-800);}
   .anv{background:var(--an-bg);color:var(--an-ink)}
   .cal-grid .ev.anv{background:var(--an-bg);color:var(--an-ink);border-left:none}
 
   /* PC 주간 칸 — 파랑은 오늘 전용(기존 규칙 유지) */
-  .wcol{background:var(--grey-50);border:1px solid var(--line-soft);border-radius:14px}
+  .wcol{background:var(--grey-50);border:1px solid var(--line-soft);}
   .wcol:hover{border-color:var(--grey-300)}
   .wcol.today,.wcol.today:hover{border-color:var(--accent);background:var(--card)}
   .wcol.sel{border-color:var(--grey-500);background:var(--card);box-shadow:0 0 0 3px var(--grey-100)}
@@ -580,10 +581,10 @@
   .wcol-h{color:var(--grey-500)}
   .wcol.sel .wcol-h{color:var(--ink)}
   .wcol.today .wcol-h{color:var(--accent)}
-  .wtask{background:var(--grey-100);border:1px solid var(--line);border-radius:8px}
+  .wtask{background:var(--grey-100);border:1px solid var(--line);}
   .pdot{box-shadow:none}
   .wempty{color:var(--grey-400)}
-  .wmain{background:var(--accent-soft);color:var(--accent);border-radius:8px}
+  .wmain{background:var(--accent-soft);color:var(--accent);}
 
   /* 오늘 업무 2카드 */
   .tt-time,.wt-time{color:var(--grey-600)}
@@ -598,7 +599,7 @@
   .tl-g::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pc);flex:0 0 8px}
 
   /* 제자리 수정 */
-  .ie{border-radius:6px}
+  .ie{}
   .ie:hover{border-color:var(--line)}
   .ie:focus{background:var(--input-focus);border-color:var(--accent);box-shadow:none}
   .ie::placeholder{color:var(--grey-400)}
@@ -607,25 +608,25 @@
   .ie-hint{color:var(--grey-500)}
 
   /* 빠른 메뉴 */
-  .ctxm{background:var(--float);border:1px solid rgba(255,255,255,.06);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.3);padding:8px 0}
+  .ctxm{background:var(--float);border:1px solid rgba(255,255,255,.06);box-shadow:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.3);padding:8px 0}
   .ctxm-lab{color:var(--grey-500);font-weight:600}
   .ctxm-note{color:var(--grey-400)}
-  .ctxm-ic button{color:var(--grey-700);border-radius:10px}
+  .ctxm-ic button{color:var(--grey-700);}
   .ctxm-ic button:hover{background:var(--grey-100)}
   .ctxm-ic button.on{background:var(--accent-soft);color:var(--accent)}
   .ctxm-row:hover{background:var(--grey-50)}
 
   /* 사진 */
-  .dimg,.dimg-v{border:1px solid var(--line-soft);border-radius:12px;background:var(--grey-100)}
+  .dimg,.dimg-v{border:1px solid var(--line-soft);background:var(--grey-100)}
   .dimg-x{background:rgba(0,0,0,.5)}
   .dimg-stat{color:var(--accent)}
 
   /* 전체 검색 */
-  .gsearch-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+  .gsearch-box{background:var(--card);border:1px solid var(--line);padding:8px 12px}
   .gsearch-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 .5px var(--accent)}
   .gsearch-box svg{color:var(--grey-500)}
   .gsearch-box input,.gsearch-box input:focus{background:transparent;border:none;box-shadow:none}
-  .gresults{background:var(--float);border:1px solid rgba(255,255,255,.06);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.3);padding:6px 0}
+  .gresults{background:var(--float);border:1px solid rgba(255,255,255,.06);box-shadow:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.3);padding:6px 0}
   .gres-item{border-bottom:none;padding:10px 16px}
   .gres-item:hover{background:var(--grey-50)}
   .gres-item .gs,.gres-empty{color:var(--grey-500)}
@@ -635,7 +636,7 @@
     details.acard>summary{padding:16px 18px}
     details.acard .acbody{padding:0 18px 18px}
     .gsearch-box{padding:6px 10px}
-    .cal-grid{border-radius:12px}
+    .cal-grid{}
   }
 </style>
 </head>
