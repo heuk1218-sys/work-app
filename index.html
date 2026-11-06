@@ -77,9 +77,7 @@
   input[type=range]{accent-color:var(--accent);padding:0}
   input[type=date],input[type=time]{cursor:pointer}
   input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(0.85);cursor:pointer;opacity:.85;font-size:16px}
-  .hidden{display:none!important}
 
-  .demo-banner{background:#262626;color:#cfcfcf;text-align:center;font-size:12.5px;padding:7px}
 
   .layout{display:flex;min-height:100vh}
   .topbar{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--side);position:sticky;top:0;z-index:40;border-bottom:1px solid var(--line)}
@@ -465,7 +463,6 @@
   .mdedit.is-empty:before{color:var(--grey-400)}
   .md-hint{color:var(--grey-500)}
   .md-h3{color:var(--accent)}
-  .demo-banner{background:var(--accent-soft);color:var(--accent)}
 
   /* 상단바(모바일)·메뉴 */
   .topbar{background:var(--side);border-bottom:1px solid var(--line)}
@@ -1099,39 +1096,6 @@ function daysLate(ds){
   const a=new Date(ds+"T00:00:00"), b=new Date(T()+"T00:00:00");
   return Math.round((b-a)/86400000);
 }
-/* 요일별 과거 미완료율 — 과부하 경고의 근거 */
-function dowMissRate(){
-  const today=T(), hist={};
-  DB.schedules.forEach(s=>{
-    if(!s.date||s.date>=today)return;
-    const w=new Date(s.date+"T00:00:00").getDay();
-    if(!hist[w])hist[w]={t:0,u:0};
-    hist[w].t++; if(!s.done)hist[w].u++;
-  });
-  return hist;
-}
-/* 이번 주 남은 날 중 일이 몰린 날 */
-function overloadWarning(weekDays){
-  const today=T(), hist=dowMissRate(), out=[];
-  weekDays.forEach(d=>{
-    if(d<today)return;
-    const u=dayUnits(d);
-    if(u.total<10)return;                       /* 10건 미만은 경고하지 않음 */
-    const h=hist[new Date(d+"T00:00:00").getDay()];
-    out.push({date:d,total:u.total,miss:(h&&h.t>=10)?Math.round(100*h.u/h.t):null});
-  });
-  return out;
-}
-/* 20시 이후로 잡은 일정의 과거 완료율 */
-function eveningStats(){
-  const today=T(); let t=0,d=0;
-  DB.schedules.forEach(s=>{
-    if(!s.date||s.date>=today||!s.time)return;
-    if(parseInt(s.time.slice(0,2))<20)return;
-    t++; if(s.done)d++;
-  });
-  return {total:t,done:d,rate:t?Math.round(100*d/t):null};
-}
 /* 밀린 업무를 오늘로 (사용자가 직접 누를 때만 실행) */
 window.pullTask=(i)=>{const s=DB.schedules[i];if(!s)return;s.date=T();save();rSchedule();};
 window.pullAllStale=()=>{
@@ -1177,7 +1141,7 @@ function rSchedule(){
       :`<div class="meta mt">지나간 날짜에 완료되지 않은 업무예요. 눌러서 오늘로 옮기거나 완료 처리할 수 있어요.</div>`}
     </div>`:"";
 
-  /* (과부하·저녁 시간대 경고 '눈여겨볼 점' 카드는 잘 안 봐서 뺐다. overloadWarning/eveningStats 함수는 남겨둠) */
+  /* (과부하·저녁 시간대 경고 '눈여겨볼 점' 카드는 2026-10-23에 삭제) */
   /* 다시 그리면 .week-scroll 이 새로 만들어져 가로 스크롤이 0(월요일)으로 돌아간다.
      이전 위치를 기억했다가 되돌리고, 선택한 날짜칸이 화면 밖이면 그 칸이 보이게 민다. */
   const _wsOld=document.querySelector(".week-scroll"),_wsLeft=_wsOld?_wsOld.scrollLeft:null;
@@ -1559,7 +1523,6 @@ function fitTitles(){
 }
 window.goToday=()=>{selDay=T();editSchedIdx=null;editRtId=null;rSchedule();};
 window.schedEdit=(i,col)=>{editSchedIdx=i;editRtId=null;editCol=col||null;drawDay();ieArm();};
-window.schedEditCancel=()=>{ieExit();};
 
 /* ---- 제자리 수정 공통 ----
    입력칸마다 onchange 로 바로 저장한다(= 저장 버튼이 필요 없다).
@@ -1695,11 +1658,6 @@ function routinesForDate(ds){
   const skip=rskipOf(ds);
   return routinesMatching(ds).filter(r=>!skip[r.id]);
 }
-/* 그날만 건너뛴 루틴 목록 */
-function routinesSkipped(ds){
-  const skip=rskipOf(ds);
-  return routinesMatching(ds).filter(r=>skip[r.id]);
-}
 function rdoneOf(ds){return ((DB.dayinfo[ds]||{}).rdone)||{};}
 function rskipOf(ds){return ((DB.dayinfo[ds]||{}).rskip)||{};}
 /* 그 날짜만 적용되는 루틴 수정분 */
@@ -1762,12 +1720,6 @@ window.routineSkip=(id,ds)=>{
   if(!di.rskip)di.rskip={};
   di.rskip[id]=true;
   if(di.rdone)delete di.rdone[id];   /* 건너뛴 건 완료가 아니다 */
-  save();render();
-};
-window.routineUnskip=(id,ds)=>{
-  const d=ds||selDay;
-  const di=DB.dayinfo[d];
-  if(di&&di.rskip){delete di.rskip[id];}
   save();render();
 };
 
@@ -2026,11 +1978,6 @@ function rCalendar(){
     <textarea id="mmemo" rows="4" placeholder="이번 달 중요한 것을 메모해두세요" onchange="setMonthMemo(this.value)">${esc(DB.monthmemo[ym]||"")}</textarea></div>
   ${annualCard()}`;
   drawCal();
-}
-function drawCalList(){
-  const g=document.getElementById("cg");const days=new Date(calY,calM+1,0).getDate();const rows=[];
-  for(let d=1;d<=days;d++){const ds=`${calY}-${String(calM+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;const m=(DB.dayinfo[ds]||{}).main;const hn=holName(ds);const an=annualsFor(ds);if((m&&m.trim())||hn||an.length)rows.push({ds,d,m,hn,an});}
-  g.innerHTML=rows.length?rows.map(r=>{const dt=new Date(r.ds+"T00:00:00");const isT=r.ds===T();const red=r.hn||dt.getDay()===0;return `<div class="item link" style="cursor:pointer" onclick="calPick('${r.ds}')"><div class="bd"><div class="meta" style="color:${red?"#F66570":(isT?"var(--accent)":"var(--muted)")}">${r.d}일 (${DOW[dt.getDay()]})${r.hn?" · "+r.hn:""}</div>${r.an.map(a=>`<div style="margin-top:2px;color:var(--an-ink)">${esc(a.title)}</div>`).join("")}${r.m?`<div style="margin-top:2px">${esc(r.m)}</div>`:""}</div><span class="meta" style="align-self:center">›</span></div>`;}).join(""):'<div class="empty">이 달 주요 일정·공휴일이 없어요.</div>';
 }
 window.calMove=(d)=>{calM+=d;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}rCalendar();};
 window.setMonthMemo=(v)=>{const ym=`${calY}-${String(calM+1).padStart(2,"0")}`;DB.monthmemo[ym]=v;save();};
@@ -2856,7 +2803,6 @@ window.acctEdit=(id)=>{editAcctId=id;rAccounts();};
 window.acctEditCancel=()=>{editAcctId=null;rAccounts();};
 window.acctSave=(id)=>{const a=DB.accounts.find(x=>x.id===id);if(a){const t=document.getElementById("ea_t_"+id).value.trim();if(t)a.title=t;a.accId=document.getElementById("ea_id_"+id).value.trim();a.pw=document.getElementById("ea_pw_"+id).value.trim();a.etc=document.getElementById("ea_etc_"+id).value.trim();}editAcctId=null;save();rAccounts();};
 window.delAcctId=(id)=>{DB.accounts=DB.accounts.filter(x=>x.id!==id);editAcctId=null;save();rAccounts();};
-window.delAcct=(i)=>{DB.accounts.splice(i,1);save();rAccounts();};
 function renderPlaces(){
   document.getElementById("abody").innerHTML=`
    <details class="acard"><summary>장소 추가</summary><div class="acbody">
@@ -2884,7 +2830,6 @@ window.placeEdit=(id)=>{editPlaceId=id;drawPlaces();};
 window.placeEditCancel=()=>{editPlaceId=null;drawPlaces();};
 window.placeSave=(id)=>{const p=DB.places.find(x=>x.id===id);if(p){const t=document.getElementById("epl_t_"+id).value.trim();if(t)p.title=t;p.pw=document.getElementById("epl_pw_"+id).value.trim();p.etc=document.getElementById("epl_etc_"+id).value.trim();}editPlaceId=null;save();drawPlaces();};
 window.delPlaceId=(id)=>{DB.places=DB.places.filter(x=>x.id!==id);editPlaceId=null;save();drawPlaces();};
-window.delPlace=(i)=>{DB.places.splice(i,1);save();drawPlaces();};
 const BANKCOLS=[["title","TITLE"],["use","용도"],["account","계좌번호"],["card","카드번호"],["pw","비밀번호"],["sendOnce","송금한도(1회)"],["sendDay","송금한도(1일)"],["withdrawOnce","인출한도(1회)"],["withdrawDay","인출한도(1일)"],["payday","결제일"]];
 function renderBanks(biz){
   const lbl=biz?"사업자 ":"";
@@ -2913,7 +2858,6 @@ window.bankEdit=(id)=>{editBankId=id;rAccounts();};
 window.bankEditCancel=()=>{editBankId=null;rAccounts();};
 window.bankSave=(id)=>{const b=DB.banks.find(x=>x.id===id);if(b){BANKCOLS.forEach(c=>{const el=document.getElementById("eb_"+c[0]+"_"+id);if(el)b[c[0]]=el.value.trim();});}editBankId=null;save();rAccounts();};
 window.delBankId=(id)=>{DB.banks=DB.banks.filter(x=>x.id!==id);editBankId=null;save();rAccounts();};
-window.delBank=(i)=>{DB.banks.splice(i,1);save();rAccounts();};
 
 /* ===== 8) 독서노트 (연도·상태·장르·제목·노트) ===== */
 let bookMode="list", bookSel=null, bookYear=null, bookStatus="all";
@@ -2990,7 +2934,6 @@ function bookDetail(){
 
 /* ===== 비용관리 (고정 비용) ===== */
 let editCostId=null;
-function costDay(s){const m=(s||"").match(/\d+/);return m?parseInt(m[1]):32;}
 function rCosts(){
   main.innerHTML=`<h1 class="page-h">비용관리</h1><p class="page-sub">고정 비용을 관리해요.</p>
   <div class="stat" id="costStat"></div>
@@ -3027,7 +2970,6 @@ window.costEditCancel=()=>{editCostId=null;drawCosts();};
 window.costSave=(id)=>{const c=DB.costs.find(x=>x.id===id);if(c){const it=document.getElementById("ec_it_"+id).value.trim();if(it)c.item=it;c.amount=parseInt(document.getElementById("ec_am_"+id).value)||0;c.day=document.getElementById("ec_dy_"+id).value.trim();c.comment=document.getElementById("ec_cm_"+id).value.trim();}editCostId=null;save();drawCosts();};
 window.costMove=(id,dir)=>rowMove("costs",id,dir);
 window.delCostId=(id)=>{DB.costs=DB.costs.filter(x=>x.id!==id);editCostId=null;save();drawCosts();};
-window.delCost=(i)=>{DB.costs.splice(i,1);save();drawCosts();};
 
 /* ===== 노트 (게시판식 · 연도별) ===== */
 let noteMode="list", noteSel=null, noteYear=null;
