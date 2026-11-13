@@ -655,15 +655,17 @@
   .gt-sc.dragging{user-select:none}
   .gt-tr{position:relative}
   /* 목표 카테고리 묶음 + 접기 */
-  .gc-h{display:flex;align-items:center;gap:8px;padding:12px 4px 10px;cursor:pointer;border-bottom:1px solid var(--line);user-select:none}
-  .gc-h+.gc-h,.gc-body+.gc-h{margin-top:6px}
+  .gv-top{margin:4px 2px 12px}
+  .gv-top h2{font-size:18px;font-weight:700;letter-spacing:-.015em;color:var(--ink-strong)}
+  .gc-h{display:flex;align-items:center;gap:8px;padding:0 0 12px;cursor:pointer;border-bottom:1px solid var(--line);user-select:none}
+  .gc-card.fold .gc-h{padding-bottom:0;border-bottom:0}
+  .gc-card .gc-nm{font-size:16px}
+  .gc-card .gt{margin-top:12px}
+  .gc-body>div:last-child{border-bottom:0!important;padding-bottom:0!important}
   .gc-nm{font-weight:700;color:var(--ink-strong);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .gc-car{width:14px;flex:none;color:var(--muted);font-size:10px;text-align:center}
   .gc-h .kpi-m{width:70px;flex:none}
-  .gc-body{padding-left:14px}
-  .gc-empty{padding:10px 0;font-size:13px;color:var(--grey-500)}
-  .gt-r.c{height:30px;background:var(--grey-100);cursor:pointer;user-select:none}
-  .gt-lab .gt-r.c{padding-left:8px;font-size:12.5px;font-weight:700;color:var(--ink-strong)}
+  .gc-empty{padding:12px 0 0;font-size:13px;color:var(--grey-500)}
   .gt-fold{background:none;border:0;color:var(--muted);width:14px;padding:0;font-size:10px;cursor:pointer;flex:none}
   .gt-hd{height:40px;border-bottom:1px solid var(--line);display:flex;align-items:flex-end;padding:0 12px 7px;font-size:12px;color:var(--grey-500)}
   .gt-r{height:34px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;position:relative}
@@ -2386,7 +2388,7 @@ function rGoals(){
   <div class="sub-tabs" style="flex-wrap:wrap">${years.map(y=>`<button class="${y===String(goalYear)?"on":""}" onclick="setGoalYear('${y}')">${y}년</button>`).join("")}<button onclick="addGoalYear()" style="border-style:dashed;color:var(--muted)">＋ 연도</button></div>
   <details class="acard"><summary>목표 추가</summary><div class="acbody">
     <div class="row">${cats.length?`<select id="gcat" style="flex:0 0 140px" onchange="goalAddCat=this.value"><option value="">미분류</option>${cats.map(c=>`<option value="${c.id}"${c.id===goalAddCat?" selected":""}>${esc(c.name)}</option>`).join("")}</select>`:""}<input id="gt" placeholder="이루고 싶은 목표"><button class="addb" id="gadd" style="flex:0 0 84px">+ 추가</button></div></div></details>
-  <div class="card"><div class="gv-head"><h2>${goalYear}년 목표</h2><div style="display:flex;align-items:center;gap:8px"><button class="linklike" onclick="gcAdd()">+ 카테고리</button><div class="gv-seg"><button class="${goalView==="list"?"on":""}" onclick="setGoalView('list')">목록</button><button class="${goalView==="timeline"?"on":""}" onclick="setGoalView('timeline')">타임라인</button></div></div></div><div id="glist"></div></div>`;
+  <div class="gv-head gv-top"><h2>${goalYear}년 목표</h2><div style="display:flex;align-items:center;gap:8px"><button class="linklike" onclick="gcAdd()">+ 카테고리</button><div class="gv-seg"><button class="${goalView==="list"?"on":""}" onclick="setGoalView('list')">목록</button><button class="${goalView==="timeline"?"on":""}" onclick="setGoalView('timeline')">타임라인</button></div></div></div><div id="glist"></div>`;
   document.getElementById("gadd").onclick=()=>{const t=val("gt");if(!t)return alert("목표를 입력하세요.");
     const ce=document.getElementById("gcat"),cat=ce?ce.value:"";
     DB.goals.push({id:uid(),year:String(goalYear),title:t,progress:0,desc:"",cat});if(cat)goalFold["c:"+cat]=false;save();drawG();document.getElementById("gt").value="";};
@@ -2436,8 +2438,8 @@ function goalAutoProg(g){const t=g.tasks||[];if(t.length)g.progress=Math.round(t
 function gtBase(){const t=T();return t.slice(0,4)===String(goalYear)?t:String(goalYear)+"-01-01";}
 function drawGantt(rows){
   const e=document.getElementById("glist");if(!e)return;
-  const prevSc=document.getElementById("gtSc");const keep=prevSc?prevSc.scrollLeft:null;
-  if(!rows.length){e.innerHTML='<div class="empty">이 해에 등록된 목표가 없어요.</div>';return;}
+  const prevSc=e.querySelector(".gt-sc");const keep=prevSc?prevSc.scrollLeft:null;
+  if(!rows.length&&!gcRows().length){e.innerHTML='<div class="card"><div class="empty">이 해에 등록된 목표가 없어요.</div></div>';return;}
   let from=String(goalYear)+"-01-01",to=String(goalYear)+"-12-31";
   rows.forEach(g=>{(g.tasks||[]).forEach(t=>{if(t.start&&t.start<from)from=t.start;if(t.end&&t.end>to)to=t.end;});(g.ms||[]).forEach(m=>{if(m.date&&m.date<from)from=m.date;if(m.date&&m.date>to)to=m.date;});});
   from=from.slice(0,7)+"-01";{const d=gtD(to.slice(0,7)+"-01");d.setMonth(d.getMonth()+1);d.setDate(0);to=d.toLocaleDateString("sv-SE");}
@@ -2450,37 +2452,41 @@ function drawGantt(rows){
     while(d<=end){const nd=new Date(d.getFullYear(),d.getMonth(),d.getDate()+7),days=Math.min(7,Math.round((end-d)/864e5)+1),fm=d.getDate()<=7;
       cols+=`<div class="gt-c${fm?" y":""}" style="width:${days*ppd}px"><div class="h"><b>${fm?(d.getMonth()+1)+"월":""}</b>${d.getDate()}일</div></div>`;d=nd;}
   }
-  let L='<div class="gt-hd">목표 / 과제</div>',R="",any=false,gi=-1,anyOpen=false;
-  goalGroups(rows).forEach(gr=>{
-   if(gr.key){const f=!!goalFold[gr.key];
-     L+=`<div class="gt-r c" onclick="gFold('${gr.key}')" title="눌러서 접기/펼치기"><span class="gc-car">${f?"▶":"▼"}</span><span class="gt-tt">${gr.cat?esc(gr.cat.name):"미분류"}</span><span class="gt-pc">${gr.goals.length}개 · ${gcAvg(gr.goals)}%</span></div>`;
-     R+=`<div class="gt-r c" onclick="gFold('${gr.key}')"></div>`;
-     if(f){gi+=gr.goals.length;return;}}
-   gr.goals.forEach(g=>{gi++;
-    const col=GT_COLORS[gi%GT_COLORS.length],ms=g.ms||[],gf=!!goalFold["g:"+g.id],tk=gf?[]:(g.tasks||[]);
-    const nT=(g.tasks||[]).length;if(nT&&!gf)anyOpen=true;
-    L+=`<div class="gt-r g"><button class="gt-fold" onclick="gFold('g:${g.id}')" title="${gf?"과제 "+nT+"개 펼치기":"과제 접기"}" style="${nT?"":"visibility:hidden"}">${gf?"▶":"▼"}</button><i class="gt-dot" style="background:${col}"></i><span class="gt-tt" title="${esc(g.title)}">${esc(g.title)}</span><span class="gt-pc">${g.progress||0}%</span><button class="gt-add" onclick="gtAddTask('${g.id}')" title="과제 추가">+과제</button><button class="gt-add" onclick="gtAddMs('${g.id}')" title="마일스톤 추가">+◆</button></div>`;
-    if(gf&&nT)any=true;
-    let gr="";
-    const dated=(g.tasks||[]).filter(t=>t.start&&t.end);
-    if(dated.length){const s=dated.map(t=>t.start).sort()[0],en=dated.map(t=>t.end).sort().pop();gr+=`<div class="gt-bar sum" style="left:${X(s)}px;width:${X(en)-X(s)+ppd}px;background:${col}"></div>`;}
-    ms.forEach(m=>{if(!m.date)return;any=true;const sel=gtSel&&gtSel.id===m.id;gr+=`<i class="gt-ms" style="left:${X(m.date)+ppd/2}px;background:${col};${sel?"outline:2px solid var(--ink-strong);":""}" onclick="gtOpen('${g.id}','ms','${m.id}')" title="${esc(m.title)} · ${m.date}"></i><span class="gt-bl gt-msl" style="left:${X(m.date)+6}px" onclick="gtOpen('${g.id}','ms','${m.id}')">${esc(m.title)}</span>`;});
-    R+=`<div class="gt-r g">${gr}</div>`;
-    tk.forEach(t=>{any=true;const sel=gtSel&&gtSel.id===t.id;
-      L+=`<div class="gt-r t${sel?" sel":""}" onclick="gtOpen('${g.id}','task','${t.id}')"><span class="gt-tt" title="${esc(t.title)}">${esc(t.title)}</span>${t.who?`<span class="gt-who">${esc(t.who)}</span>`:""}</div>`;
-      if(t.start&&t.end){const l=X(t.start),w=X(t.end)-l+ppd,p=Number(t.progress)||0;
-        R+=`<div class="gt-r${sel?" sel":""}"><div class="gt-bar" style="left:${l}px;width:${w}px;background:${col}40" onclick="gtOpen('${g.id}','task','${t.id}')" title="${esc(t.title)} · ${t.start} ~ ${t.end} · ${p}%"><i style="width:${p}%;background:${col}"></i></div><span class="gt-bl" style="left:${l+w}px">${p>=100?"완료":p?p+"%":t.end.slice(5).replace("-","/")+" 마감"}</span></div>`;
-      }else R+=`<div class="gt-r${sel?" sel":""}"></div>`;
-    });
-   });
-  });
   const td=T(),nowX=(td>=from&&td<=to)?X(td)+ppd/2:null;
+  const selG=gtSel?gtSel.gid:null;
+  let any=false,gi=-1,anyOpen=false,cards="";
+  goalGroups(rows).forEach(gr=>{
+    const f=gr.key?!!goalFold[gr.key]:false;
+    if(f){gi+=gr.goals.length;cards+=`<div class="card gc-card fold">${gcHead(gr)}</div>`;return;}
+    let L='<div class="gt-hd">목표 / 과제</div>',R="",hasSel=false;
+    gr.goals.forEach(g=>{gi++;if(g.id===selG)hasSel=true;
+      const col=GT_COLORS[gi%GT_COLORS.length],ms=g.ms||[],gf=!!goalFold["g:"+g.id],tk=gf?[]:(g.tasks||[]);
+      const nT=(g.tasks||[]).length;if(nT&&!gf)anyOpen=true;if(gf&&nT)any=true;
+      L+=`<div class="gt-r g"><button class="gt-fold" onclick="gFold('g:${g.id}')" title="${gf?"과제 "+nT+"개 펼치기":"과제 접기"}" style="${nT?"":"visibility:hidden"}">${gf?"▶":"▼"}</button><i class="gt-dot" style="background:${col}"></i><span class="gt-tt" title="${esc(g.title)}">${esc(g.title)}</span><span class="gt-pc">${g.progress||0}%</span><button class="gt-add" onclick="gtAddTask('${g.id}')" title="과제 추가">+과제</button><button class="gt-add" onclick="gtAddMs('${g.id}')" title="마일스톤 추가">+◆</button></div>`;
+      let gb="";
+      const dated=(g.tasks||[]).filter(t=>t.start&&t.end);
+      if(dated.length){const s=dated.map(t=>t.start).sort()[0],en=dated.map(t=>t.end).sort().pop();gb+=`<div class="gt-bar sum" style="left:${X(s)}px;width:${X(en)-X(s)+ppd}px;background:${col}"></div>`;}
+      ms.forEach(m=>{if(!m.date)return;any=true;const sel=gtSel&&gtSel.id===m.id;gb+=`<i class="gt-ms" style="left:${X(m.date)+ppd/2}px;background:${col};${sel?"outline:2px solid var(--ink-strong);":""}" onclick="gtOpen('${g.id}','ms','${m.id}')" title="${esc(m.title)} · ${m.date}"></i><span class="gt-bl gt-msl" style="left:${X(m.date)+6}px" onclick="gtOpen('${g.id}','ms','${m.id}')">${esc(m.title)}</span>`;});
+      R+=`<div class="gt-r g">${gb}</div>`;
+      tk.forEach(t=>{any=true;const sel=gtSel&&gtSel.id===t.id;
+        L+=`<div class="gt-r t${sel?" sel":""}" onclick="gtOpen('${g.id}','task','${t.id}')"><span class="gt-tt" title="${esc(t.title)}">${esc(t.title)}</span>${t.who?`<span class="gt-who">${esc(t.who)}</span>`:""}</div>`;
+        if(t.start&&t.end){const l=X(t.start),w=X(t.end)-l+ppd,p=Number(t.progress)||0;
+          R+=`<div class="gt-r${sel?" sel":""}"><div class="gt-bar" style="left:${l}px;width:${w}px;background:${col}40" onclick="gtOpen('${g.id}','task','${t.id}')" title="${esc(t.title)} · ${t.start} ~ ${t.end} · ${p}%"><i style="width:${p}%;background:${col}"></i></div><span class="gt-bl" style="left:${l+w}px">${p>=100?"완료":p?p+"%":t.end.slice(5).replace("-","/")+" 마감"}</span></div>`;
+        }else R+=`<div class="gt-r${sel?" sel":""}"></div>`;
+      });
+    });
+    const chart=gr.goals.length
+      ?`<div class="gt"><div class="gt-lab">${L}</div><div class="gt-sc"><div class="gt-tr" style="width:${W}px"><div class="gt-cols">${cols}</div><div class="gt-rows">${R}</div>${nowX!==null?`<div class="gt-now" style="left:${nowX}px" title="오늘"></div>`:""}</div></div></div>`
+      :'<div class="gc-empty">아직 목표가 없어요. 위 ‘목표 추가’에서 이 카테고리를 골라 추가하세요.</div>';
+    const ed=hasSel?gtEditor():"";
+    cards+=gr.key?`<div class="card gc-card">${gcHead(gr)}${chart}${ed}</div>`:`<div class="card">${chart}${ed}</div>`;
+  });
   e.innerHTML=`<div class="gt-tool"><span class="meta">${any?"막대를 누르면 수정해요 · 차트를 끌면 좌우로 넘겨져요":"목표 옆 <b>+과제</b>로 기간이 있는 과제를, <b>+◆</b>로 마일스톤을 추가해요."}</span>
-    <div style="display:flex;align-items:center;gap:8px"><button class="linklike" onclick="gFoldAll(${anyOpen?"true":"false"})">${anyOpen?"과제 모두 접기":"과제 모두 펼치기"}</button><div class="gv-seg"><button class="${gtZoom==="week"?"on":""}" onclick="gtSetZoom('week')">주</button><button class="${gtZoom==="month"?"on":""}" onclick="gtSetZoom('month')">월</button></div></div></div>
-    <div class="gt"><div class="gt-lab">${L}</div><div class="gt-sc" id="gtSc"><div class="gt-tr" style="width:${W}px"><div class="gt-cols">${cols}</div><div class="gt-rows">${R}</div>${nowX!==null?`<div class="gt-now" style="left:${nowX}px" title="오늘"></div>`:""}</div></div></div>
-    ${gtEditor(rows)}`;
-  const sc=document.getElementById("gtSc");
-  if(sc){if(keep!==null)sc.scrollLeft=keep;else if(nowX!==null)sc.scrollLeft=Math.max(0,nowX-80);}
+    <div style="display:flex;align-items:center;gap:8px"><button class="linklike" onclick="gFoldAll(${anyOpen?"true":"false"})">${anyOpen?"과제 모두 접기":"과제 모두 펼치기"}</button><div class="gv-seg"><button class="${gtZoom==="week"?"on":""}" onclick="gtSetZoom('week')">주</button><button class="${gtZoom==="month"?"on":""}" onclick="gtSetZoom('month')">월</button></div></div></div>${cards}`;
+  /* 카테고리 박스마다 차트가 따로 있으므로 좌우 위치를 함께 맞춘다 */
+  const scs=[...e.querySelectorAll(".gt-sc")];
+  const x0=keep!==null?keep:(nowX!==null?Math.max(0,nowX-80):0);
+  scs.forEach(s=>{s.scrollLeft=x0;s.addEventListener("scroll",()=>{const v=s.scrollLeft;scs.forEach(o=>{if(o!==s&&Math.abs(o.scrollLeft-v)>1)o.scrollLeft=v;});});});
   const ed=document.getElementById("gte_t");if(ed&&gtSel&&gtSel.fresh){gtSel.fresh=false;ed.focus();ed.select();}
 }
 function gtFind(){if(!gtSel)return null;const g=DB.goals.find(x=>x.id===gtSel.gid);if(!g)return null;const it=(gtSel.kind==="ms"?g.ms:g.tasks||[]);const x=(it||[]).find(y=>y.id===gtSel.id);return x?{g,x}:null;}
@@ -2496,7 +2502,7 @@ function gtEditor(){
     <label>진행률<div style="display:flex;align-items:center;gap:10px"><input id="gte_p" type="range" min="0" max="100" step="5" value="${p}" style="flex:1" oninput="this.nextElementSibling.textContent=this.value+'%'"><span class="meta" style="width:42px;text-align:right">${p}%</span></div></label>
     ${act}</div>`;
 }
-window.gtSetZoom=(z)=>{gtZoom=z;const sc=document.getElementById("gtSc");if(sc)sc.remove();drawG();};
+window.gtSetZoom=(z)=>{gtZoom=z;document.querySelectorAll("#glist .gt-sc").forEach(sc=>sc.remove());drawG();};
 window.gtOpen=(gid,kind,id)=>{gtSel={gid,kind,id};drawG();};
 window.gtClose=()=>{gtSel=null;drawG();};
 window.gtAddTask=(gid)=>{const g=DB.goals.find(x=>x.id===gid);if(!g)return;if(!Array.isArray(g.tasks))g.tasks=[];const s=gtBase();const t={id:uid(),title:"새 과제",start:s,end:gtAdd(s,13),progress:0,who:""};g.tasks.push(t);goalAutoProg(g);if(goalFold["g:"+gid]){goalFold["g:"+gid]=false;goalFoldSave();}save();gtSel={gid,kind:"task",id:t.id,fresh:true};drawG();};
@@ -2535,9 +2541,9 @@ function drawG(){
     </div>`;
   const groups=goalGroups(rows);
   e.innerHTML=(rows.length||cats.length)?groups.map(gr=>{
-    if(!gr.key)return gr.goals.map((g,ri)=>item(g,ri,gr.goals)).join("");
-    const body=goalFold[gr.key]?"":`<div class="gc-body">${gr.goals.length?gr.goals.map((g,ri)=>item(g,ri,gr.goals)).join(""):'<div class="gc-empty">아직 목표가 없어요. 위 ‘목표 추가’에서 이 카테고리를 골라 추가하세요.</div>'}</div>`;
-    return gcHead(gr)+body;}).join(""):'<div class="empty">이 해에 등록된 목표가 없어요.</div>';
+    if(!gr.key)return `<div class="card"><div class="gc-body">${gr.goals.map((g,ri)=>item(g,ri,gr.goals)).join("")}</div></div>`;
+    if(goalFold[gr.key])return `<div class="card gc-card fold">${gcHead(gr)}</div>`;
+    return `<div class="card gc-card">${gcHead(gr)}<div class="gc-body">${gr.goals.length?gr.goals.map((g,ri)=>item(g,ri,gr.goals)).join(""):'<div class="gc-empty">아직 목표가 없어요. 위 ‘목표 추가’에서 이 카테고리를 골라 추가하세요.</div>'}</div></div>`;}).join(""):'<div class="card"><div class="empty">이 해에 등록된 목표가 없어요.</div></div>';
   if(editGoalId){const el=document.getElementById("eg_"+editGoalId);if(el)el.focus();}
   sizeGrow(e);
 }
