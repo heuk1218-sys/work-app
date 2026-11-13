@@ -642,27 +642,10 @@
   .gv-seg{display:inline-flex;background:var(--input);border-radius:8px;padding:3px;gap:2px}
   .gv-seg button{background:none;border:0;color:var(--muted);font-size:13px;padding:5px 12px;border-radius:6px;cursor:pointer}
   .gv-seg button.on{background:var(--accent);color:var(--on-accent)}
-  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
-  .kpi-tile{background:var(--input);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;min-width:0}
-  .kpi-tile:hover{box-shadow:inset 0 0 0 1px var(--grey-300)}
-  .kpi-tile.edit{cursor:default;gap:8px;box-shadow:inset 0 0 0 1px var(--accent)}
-  .kpi-tile.edit input,.gt-ed input:not([type=range]){background:var(--input-focus)}
-  .kpi-l{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .kpi-v{font-size:22px;font-weight:700;color:var(--ink-strong);font-variant-numeric:tabular-nums}
-  .kpi-v small{font-size:13px;font-weight:500;color:var(--muted)}
+  .gt-ed input:not([type=range]){background:var(--input-focus)}
   .kpi-m{height:6px;border-radius:3px;background:var(--grey-200);overflow:hidden}
   .kpi-m i{display:block;height:100%;background:var(--accent);border-radius:3px}
-  .kpi-n{font-size:12px;color:var(--grey-500)}
   .kpi-act{display:flex;gap:6px;align-items:center}
-  .kt{margin-top:14px;display:flex;flex-direction:column;gap:2px}
-  .kpi-grid+.kt{border-top:1px solid var(--line-soft);padding-top:12px}
-  .kt-h{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
-  .kt-row{display:grid;grid-template-columns:72px minmax(0,1fr) 130px;gap:10px;align-items:center;padding:7px 6px;border-radius:6px;cursor:pointer;font-variant-numeric:tabular-nums}
-  .kt-row:hover{background:var(--input)}
-  .kt-nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .kt-v{text-align:right;font-size:13px}
-  .kt-v small{display:block;font-size:11px;color:var(--grey-500)}
-  .kt-sum{display:flex;justify-content:space-between;padding:10px 6px 0;margin-top:4px;font-weight:600;border-top:1px solid var(--line-soft);font-variant-numeric:tabular-nums}
   .gt-tool{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
   .gt{display:grid;grid-template-columns:230px minmax(0,1fr);border:1px solid var(--line-soft);border-radius:6px;overflow:hidden}
   .gt-lab{border-right:1px solid var(--line);min-width:0}
@@ -716,8 +699,6 @@
     .gt{grid-template-columns:136px minmax(0,1fr)}
     .gt-who,.gt-pc{display:none}
     .gt-lab .gt-r.t{padding-left:18px}
-    .kt-row{grid-template-columns:56px minmax(0,1fr) 108px}
-    .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
 </style>
 </head>
@@ -2387,14 +2368,12 @@ async function drawImgView(kind,paths){
   }
 }
 
-/* ===== 4) 목표 (카테고리 없음 · 진행바 1줄 · 설명 · 핵심 지표 · 타임라인) =====
-   DB.kpis=[{id,year,kind:"kpi"|"team",title,cur,target,unit,note}]
+/* ===== 4) 목표 (카테고리 묶음 · 진행바 1줄 · 설명 · 타임라인) =====
    goal.tasks=[{id,title,start,end,progress,who}], goal.ms=[{id,title,date}] (과제가 있으면 goal.progress = 과제 평균) */
 let goalOpen={};
 let editGoalId=null;
 let goalYear=null;
 let goalView=(()=>{try{return localStorage.getItem("goalView")||"list";}catch(_){return "list";}})();
-let kpiEdit=null;
 let gtSel=null;
 let gtZoom="month";
 function rGoals(){
@@ -2405,14 +2384,12 @@ function rGoals(){
   if(goalAddCat&&!cats.some(c=>c.id===goalAddCat))goalAddCat="";
   main.innerHTML=`<h1 class="page-h">목표</h1><p class="page-sub">연도별로 목표와 진행률을 관리해요.</p>
   <div class="sub-tabs" style="flex-wrap:wrap">${years.map(y=>`<button class="${y===String(goalYear)?"on":""}" onclick="setGoalYear('${y}')">${y}년</button>`).join("")}<button onclick="addGoalYear()" style="border-style:dashed;color:var(--muted)">＋ 연도</button></div>
-  <div id="kpiwrap"></div>
   <details class="acard"><summary>목표 추가</summary><div class="acbody">
     <div class="row">${cats.length?`<select id="gcat" style="flex:0 0 140px" onchange="goalAddCat=this.value"><option value="">미분류</option>${cats.map(c=>`<option value="${c.id}"${c.id===goalAddCat?" selected":""}>${esc(c.name)}</option>`).join("")}</select>`:""}<input id="gt" placeholder="이루고 싶은 목표"><button class="addb" id="gadd" style="flex:0 0 84px">+ 추가</button></div></div></details>
   <div class="card"><div class="gv-head"><h2>${goalYear}년 목표</h2><div style="display:flex;align-items:center;gap:8px"><button class="linklike" onclick="gcAdd()">+ 카테고리</button><div class="gv-seg"><button class="${goalView==="list"?"on":""}" onclick="setGoalView('list')">목록</button><button class="${goalView==="timeline"?"on":""}" onclick="setGoalView('timeline')">타임라인</button></div></div></div><div id="glist"></div></div>`;
   document.getElementById("gadd").onclick=()=>{const t=val("gt");if(!t)return alert("목표를 입력하세요.");
     const ce=document.getElementById("gcat"),cat=ce?ce.value:"";
     DB.goals.push({id:uid(),year:String(goalYear),title:t,progress:0,desc:"",cat});if(cat)goalFold["c:"+cat]=false;save();drawG();document.getElementById("gt").value="";};
-  drawKpi();
   drawG();
 }
 
@@ -2449,43 +2426,6 @@ function gcHead(gr){
 }
 window.gFoldAll=(fold)=>{const cy=String(new Date().getFullYear());DB.goals.filter(g=>String(g.year||cy)===String(goalYear)).forEach(g=>{goalFold["g:"+g.id]=fold;});goalFoldSave();drawG();};
 window.setGoalView=(v)=>{goalView=v;gtSel=null;try{localStorage.setItem("goalView",v);}catch(_){}rGoals();};
-
-/* --- 핵심 지표 (연도별) --- */
-function kpiRows(){if(!Array.isArray(DB.kpis))DB.kpis=[];DB.kpis.forEach(k=>{if(!k.id)k.id=uid();});return DB.kpis.filter(k=>String(k.year)===String(goalYear));}
-function kpiNum(n){const v=Number(n);return isFinite(v)?v.toLocaleString("ko-KR"):"0";}
-function kpiPct(k){const t=Number(k.target)||0,c=Number(k.cur)||0;return t>0?Math.max(0,Math.min(100,Math.round(c/t*100))):0;}
-function kpiEditor(k){
-  return `<div class="kpi-tile edit">
-    <input id="ke_t" value="${esc(k.title)}" placeholder="${k.kind==="team"?"이름":"지표 이름"}">
-    <div class="row"><input id="ke_c" type="number" value="${esc(String(k.cur??""))}" placeholder="현재"><input id="ke_g" type="number" value="${esc(String(k.target??""))}" placeholder="목표"><input id="ke_u" value="${esc(k.unit||"")}" placeholder="단위"></div>
-    <input id="ke_n" value="${esc(k.note||"")}" placeholder="메모 (예: 200만 × 8건)" onkeydown="if(event.key==='Enter')kpiSave('${k.id}')">
-    <div class="kpi-act"><button class="linklike" onclick="kpiSave('${k.id}')">저장</button><button class="linklike" onclick="kpiCancel()">취소</button><button class="linklike" style="color:var(--bad);margin-left:auto" onclick="kpiDel('${k.id}')">삭제</button></div></div>`;
-}
-function drawKpi(){
-  const w=document.getElementById("kpiwrap");if(!w)return;
-  const rows=kpiRows(),ks=rows.filter(k=>k.kind!=="team"),ts=rows.filter(k=>k.kind==="team");
-  const tile=k=>kpiEdit===k.id?kpiEditor(k):`<div class="kpi-tile" onclick="kpiOpen('${k.id}')" title="눌러서 수정">
-      <div class="kpi-l">${esc(k.title)}</div>
-      <div class="kpi-v">${kpiNum(k.cur)}<small> / ${kpiNum(k.target)}${esc(k.unit||"")}</small></div>
-      <div class="kpi-m"><i style="width:${kpiPct(k)}%"></i></div>
-      <div class="kpi-n">${kpiPct(k)}%${k.note?" · "+esc(k.note):""}</div></div>`;
-  const tRow=k=>kpiEdit===k.id?kpiEditor(k):`<div class="kt-row" onclick="kpiOpen('${k.id}')" title="눌러서 수정">
-      <span class="kt-nm">${esc(k.title)}</span><div class="kpi-m"><i style="width:${kpiPct(k)}%"></i></div>
-      <span class="kt-v">${kpiNum(k.cur)} / ${kpiNum(k.target)}${esc(k.unit||"")}${k.note?`<small>${esc(k.note)}</small>`:""}</span></div>`;
-  const sumT=ts.reduce((a,k)=>a+(Number(k.target)||0),0),sumC=ts.reduce((a,k)=>a+(Number(k.cur)||0),0),su=ts.length?esc(ts[0].unit||""):"";
-  w.innerHTML=`<div class="card"><div class="gv-head"><h2>${goalYear}년 핵심 지표</h2><div><button class="linklike" onclick="kpiAdd('kpi')">+ 지표</button><button class="linklike" onclick="kpiAdd('team')">+ 팀원 KPI</button></div></div>
-    ${rows.length?"":'<div class="empty">숫자로 확인할 목표(클라이언트 수, 월 문의 건수 등)를 지표로 추가해 보세요.</div>'}
-    ${ks.length?`<div class="kpi-grid">${ks.map(tile).join("")}</div>`:""}
-    ${ts.length?`<div class="kt"><div class="kt-h">팀원 KPI</div>${ts.map(tRow).join("")}<div class="kt-sum"><span>합계 ${ts.length}명</span><span>${kpiNum(sumC)} / ${kpiNum(sumT)}${su}</span></div></div>`:""}</div>`;
-  if(kpiEdit){const el=document.getElementById("ke_t");if(el)el.focus();}
-}
-window.kpiAdd=(kind)=>{const k={id:uid(),year:String(goalYear),kind,title:kind==="team"?"":"",cur:0,target:0,unit:kind==="team"?"만원":"",note:""};kpiRows();DB.kpis.push(k);kpiEdit=k.id;save();drawKpi();};
-window.kpiOpen=(id)=>{kpiEdit=id;drawKpi();};
-window.kpiCancel=()=>{const k=(DB.kpis||[]).find(x=>x.id===kpiEdit);if(k&&!k.title){DB.kpis=DB.kpis.filter(x=>x!==k);save();}kpiEdit=null;drawKpi();};
-window.kpiSave=(id)=>{const k=(DB.kpis||[]).find(x=>x.id===id);if(!k)return;const g=i=>{const el=document.getElementById(i);return el?el.value.trim():"";};
-  const t=g("ke_t");if(!t)return alert("이름을 입력하세요.");
-  k.title=t;k.cur=Number(g("ke_c"))||0;k.target=Number(g("ke_g"))||0;k.unit=g("ke_u");k.note=g("ke_n");kpiEdit=null;save();drawKpi();};
-window.kpiDel=(id)=>{DB.kpis=(DB.kpis||[]).filter(x=>x.id!==id);kpiEdit=null;save();drawKpi();};
 
 /* --- 타임라인(간트) --- */
 const GT_COLORS=["#3485FA","#9B72F2","#1FB5C4","#1FB86A","#FFA42E","#F04251"];
@@ -3447,7 +3387,7 @@ document.addEventListener("click",e=>{const t=e.target;if(t.tagName==="INPUT"&&(
    인증 코어가 로그인에 성공한 뒤 이 함수를 호출한다.
    반환값: "ok" | "loadfail" */
 window.__appBoot=async function(){
-  const ARR=["schedules","routines","annuals","diary","goals","goalCats","kpis","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","backups"];
+  const ARR=["schedules","routines","annuals","diary","goals","goalCats","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","backups"];
   let loaded=false,loadFailed=false;
   try{const r=await sb.from("app_data").select("data").eq("user_id",currentUser.id).maybeSingle();
     if(r.error){loadFailed=true;}
@@ -3541,7 +3481,7 @@ if(window.lucide)lucide.createIcons();
   /* ---- 컬럼 구성 ---- */
   /* backups 는 별도 테이블로 빠졌으므로 병합 대상에서 제외한다
      (남겨두면 백업 파일 가져오기 때 블롭 안으로 다시 들어온다) */
-  const ARRAY_COLS=["schedules","routines","annuals","diary","goals","goalCats","kpis","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","trash"];
+  const ARRAY_COLS=["schedules","routines","annuals","diary","goals","goalCats","prayers","qt","sermons","clients","costs","notes","feedback","books","accounts","places","banks","trash"];
   const MAP_COLS=["dayinfo","monthmemo"];
 
   let baseState=null, baseVersion=null, _mt=null, _busy=false, _pending=false;
