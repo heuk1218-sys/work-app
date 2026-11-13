@@ -2519,7 +2519,7 @@ function drawGantt(rows){
    gr.goals.forEach(g=>{gi++;
     const col=GT_COLORS[gi%GT_COLORS.length],ms=g.ms||[],gf=!!goalFold["g:"+g.id],tk=gf?[]:(g.tasks||[]);
     const nT=(g.tasks||[]).length;if(nT&&!gf)anyOpen=true;
-    L+=`<div class="gt-r g"><button class="gt-fold" onclick="gFold('g:${g.id}')" title="${gf?"과제 펼치기":"과제 접기"}" style="${nT?"":"visibility:hidden"}">${gf?"▶":"▼"}</button><i class="gt-dot" style="background:${col}"></i><span class="gt-tt" title="${esc(g.title)}">${esc(g.title)}</span><span class="gt-pc">${gf&&nT?"과제 "+nT+" · ":""}${g.progress||0}%</span><button class="gt-add" onclick="gtAddTask('${g.id}')" title="과제 추가">+과제</button><button class="gt-add" onclick="gtAddMs('${g.id}')" title="마일스톤 추가">+◆</button></div>`;
+    L+=`<div class="gt-r g"><button class="gt-fold" onclick="gFold('g:${g.id}')" title="${gf?"과제 "+nT+"개 펼치기":"과제 접기"}" style="${nT?"":"visibility:hidden"}">${gf?"▶":"▼"}</button><i class="gt-dot" style="background:${col}"></i><span class="gt-tt" title="${esc(g.title)}">${esc(g.title)}</span><span class="gt-pc">${g.progress||0}%</span><button class="gt-add" onclick="gtAddTask('${g.id}')" title="과제 추가">+과제</button><button class="gt-add" onclick="gtAddMs('${g.id}')" title="마일스톤 추가">+◆</button></div>`;
     if(gf&&nT)any=true;
     let gr="";
     const dated=(g.tasks||[]).filter(t=>t.start&&t.end);
